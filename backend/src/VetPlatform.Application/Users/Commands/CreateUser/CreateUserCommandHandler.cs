@@ -18,14 +18,18 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
 
     public async Task<Guid> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        if (request.Role == RoleNames.PlatformAdministrator &&
-            _currentUserService.Role != RoleNames.PlatformAdministrator)
+        var isCreatingPlatformAdministrator = request.Role == RoleNames.PlatformAdministrator;
+
+        if (isCreatingPlatformAdministrator && _currentUserService.Role != RoleNames.PlatformAdministrator)
         {
             throw new ForbiddenAccessException("Solo un superadministrador puede crear otros superadministradores.");
         }
 
-        var clinicId = _currentUserService.ClinicId
-            ?? throw new ForbiddenAccessException("El usuario actual no está asociado a ninguna clínica.");
+        // Los superadministradores no pertenecen a ninguna clínica; el resto de roles hereda
+        // la clínica de quien los crea, así queda garantizado que no puedan asignarse a otra.
+        Guid? clinicId = isCreatingPlatformAdministrator
+            ? null
+            : _currentUserService.ClinicId ?? throw new ForbiddenAccessException("El usuario actual no está asociado a ninguna clínica.");
 
         var result = await _identityService.CreateUserAsync(request.Email, request.Password, request.FullName, clinicId, request.Role);
 

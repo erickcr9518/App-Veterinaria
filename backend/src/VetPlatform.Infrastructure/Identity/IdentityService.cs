@@ -50,7 +50,7 @@ public class IdentityService : IIdentityService
         return await BuildAuthenticatedUserAsync(user);
     }
 
-    public async Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid clinicId, string role)
+    public async Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, string role)
     {
         var user = new ApplicationUser
         {

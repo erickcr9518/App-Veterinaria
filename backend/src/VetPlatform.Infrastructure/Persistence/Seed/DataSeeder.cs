@@ -10,6 +10,7 @@ namespace VetPlatform.Infrastructure.Persistence.Seed;
 public static class DataSeeder
 {
     public const string DemoAdminEmail = "admin@vetplatform.dev";
+    public const string DemoPlatformAdminEmail = "superadmin@vetplatform.dev";
 
     public static async Task SeedAsync(
         ApplicationDbContext dbContext,
@@ -23,10 +24,18 @@ public static class DataSeeder
         await SeedPermissionsAsync(dbContext, logger);
         await SeedRolePermissionsAsync(dbContext, roleManager, logger);
 
-        if (seedDemoData)
+        if (!seedDemoData)
         {
-            await SeedDemoClinicAndAdminAsync(dbContext, userManager, logger, demoAdminPassword);
+            return;
         }
+
+        if (string.IsNullOrWhiteSpace(demoAdminPassword))
+        {
+            throw new InvalidOperationException("Seed:DemoAdminPassword es requerido cuando Seed:DemoData esta habilitado.");
+        }
+
+        await SeedDemoClinicAndAdminAsync(dbContext, userManager, logger, demoAdminPassword);
+        await SeedDemoPlatformAdministratorAsync(userManager, logger, demoAdminPassword);
     }
 
     private static async Task SeedRolesAsync(RoleManager<IdentityRole<Guid>> roleManager, ILogger logger)
@@ -83,19 +92,34 @@ public static class DataSeeder
                 continue;
             }
 
-            var existingPermissionIds = await dbContext.RolePermissions
+            var desiredPermissionIds = permissionCodes
+                .Where(permissionsByCode.ContainsKey)
+                .Select(code => permissionsByCode[code].Id)
+                .ToHashSet();
+
+            var existingRolePermissions = await dbContext.RolePermissions
                 .Where(rp => rp.RoleId == role.Id)
-                .Select(rp => rp.PermissionId)
                 .ToListAsync();
 
-            foreach (var code in permissionCodes)
-            {
-                if (!permissionsByCode.TryGetValue(code, out var permission))
-                {
-                    continue;
-                }
+            var staleRolePermissions = existingRolePermissions
+                .Where(rp => !desiredPermissionIds.Contains(rp.PermissionId))
+                .ToList();
 
-                if (existingPermissionIds.Contains(permission.Id))
+            if (staleRolePermissions.Count > 0)
+            {
+                dbContext.RolePermissions.RemoveRange(staleRolePermissions);
+                logger.LogInformation(
+                    "Se removieron {Count} permisos obsoletos del rol {Role}.",
+                    staleRolePermissions.Count, roleName);
+            }
+
+            var existingPermissionIds = existingRolePermissions
+                .Select(rp => rp.PermissionId)
+                .ToHashSet();
+
+            foreach (var permissionId in desiredPermissionIds)
+            {
+                if (existingPermissionIds.Contains(permissionId))
                 {
                     continue;
                 }
@@ -103,7 +127,7 @@ public static class DataSeeder
                 dbContext.RolePermissions.Add(new RolePermission
                 {
                     RoleId = role.Id,
-                    PermissionId = permission.Id,
+                    PermissionId = permissionId,
                 });
             }
         }
@@ -115,13 +139,8 @@ public static class DataSeeder
         ApplicationDbContext dbContext,
         UserManager<ApplicationUser> userManager,
         ILogger logger,
-        string? demoAdminPassword)
+        string demoAdminPassword)
     {
-        if (string.IsNullOrWhiteSpace(demoAdminPassword))
-        {
-            throw new InvalidOperationException("Seed:DemoAdminPassword es requerido cuando Seed:DemoData esta habilitado.");
-        }
-
         var clinic = await dbContext.Clinics.FirstOrDefaultAsync();
         if (clinic is null)
         {
@@ -165,5 +184,38 @@ public static class DataSeeder
 
         await userManager.AddToRoleAsync(adminUser, RoleNames.Administrator);
         logger.LogInformation("Usuario administrador de demostración creado: {Email}", DemoAdminEmail);
+    }
+
+    private static async Task SeedDemoPlatformAdministratorAsync(
+        UserManager<ApplicationUser> userManager,
+        ILogger logger,
+        string demoAdminPassword)
+    {
+        var existingPlatformAdmin = await userManager.FindByEmailAsync(DemoPlatformAdminEmail);
+        if (existingPlatformAdmin is not null)
+        {
+            return;
+        }
+
+        var platformAdmin = new ApplicationUser
+        {
+            UserName = DemoPlatformAdminEmail,
+            Email = DemoPlatformAdminEmail,
+            EmailConfirmed = true,
+            FullName = "Superadministrador Demo",
+            ClinicId = null,
+            IsActive = true,
+        };
+
+        var createResult = await userManager.CreateAsync(platformAdmin, demoAdminPassword);
+        if (!createResult.Succeeded)
+        {
+            logger.LogError("No se pudo crear el usuario superadministrador de demostración: {Errors}",
+                string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        await userManager.AddToRoleAsync(platformAdmin, RoleNames.PlatformAdministrator);
+        logger.LogInformation("Usuario superadministrador de demostración creado: {Email}", DemoPlatformAdminEmail);
     }
 }
