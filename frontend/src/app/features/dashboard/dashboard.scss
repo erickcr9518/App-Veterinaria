@@ -21,17 +21,30 @@ h1 {
   color: var(--ink-soft);
 }
 
-.placeholder-card {
-  border: 1px dashed var(--line);
-  border-radius: 10px;
-  padding: 28px;
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.action-grid a {
+  display: grid;
+  gap: 8px;
+  min-height: 110px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
   color: var(--ink-soft);
+  text-decoration: none;
+}
 
-  p {
-    margin: 0 0 6px;
-  }
+.action-grid strong {
+  color: var(--ink);
+}
 
-  .hint {
-    font-size: 13px;
+@media (max-width: 700px) {
+  .action-grid {
+    grid-template-columns: 1fr;
   }
 }

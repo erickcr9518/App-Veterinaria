@@ -15,6 +15,10 @@ export class Shell {
 
   readonly currentUser = this.authService.currentUser;
 
+  hasPermission(code: string): boolean {
+    return this.authService.hasPermission(code);
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigateByUrl('/login');

@@ -9,6 +9,9 @@ public interface IApplicationDbContext
     DbSet<Permission> Permissions { get; }
     DbSet<RolePermission> RolePermissions { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<Owner> Owners { get; }
+    DbSet<Patient> Patients { get; }
+    DbSet<PatientWeight> PatientWeights { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

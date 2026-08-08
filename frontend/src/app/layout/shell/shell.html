@@ -7,6 +7,12 @@
 
     <nav class="nav-links">
       <a routerLink="/dashboard">Panel</a>
+      @if (hasPermission('owners.read')) {
+        <a routerLink="/owners">Propietarios</a>
+      }
+      @if (hasPermission('patients.read')) {
+        <a routerLink="/patients">Pacientes</a>
+      }
     </nav>
 
     @if (currentUser(); as user) {

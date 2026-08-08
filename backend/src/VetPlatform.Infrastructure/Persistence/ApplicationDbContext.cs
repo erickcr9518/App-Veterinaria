@@ -30,6 +30,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Owner> Owners => Set<Owner>();
+    public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<PatientWeight> PatientWeights => Set<PatientWeight>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

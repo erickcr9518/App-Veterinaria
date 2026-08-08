@@ -1,0 +1,81 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Propietarios</h1>
+      <p>Registra responsables y encuentra rapido sus pacientes asociados.</p>
+    </div>
+    <label class="search">
+      <span>Buscar</span>
+      <input #searchBox type="search" placeholder="Nombre, telefono, correo o identificacion" (input)="updateSearch(searchBox.value)" />
+    </label>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="workspace">
+    <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
+      <h2>Nuevo propietario</h2>
+
+      <label>
+        <span>Nombre completo</span>
+        <input formControlName="fullName" autocomplete="name" />
+      </label>
+
+      <div class="field-row">
+        <label>
+          <span>Telefono</span>
+          <input formControlName="phone" autocomplete="tel" />
+        </label>
+        <label>
+          <span>Identificacion</span>
+          <input formControlName="identificationNumber" />
+        </label>
+      </div>
+
+      <label>
+        <span>Correo</span>
+        <input formControlName="email" type="email" autocomplete="email" />
+      </label>
+
+      <label>
+        <span>Direccion</span>
+        <input formControlName="address" />
+      </label>
+
+      <label>
+        <span>Contacto alternativo</span>
+        <input formControlName="alternateContact" />
+      </label>
+
+      <label>
+        <span>Consentimientos o notas</span>
+        <textarea formControlName="consentNotes" rows="3"></textarea>
+      </label>
+
+      <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : 'Guardar propietario' }}</button>
+    </form>
+
+    <div class="panel list-panel">
+      <h2>Directorio</h2>
+      @if (isLoading()) {
+        <p class="empty">Cargando propietarios...</p>
+      } @else if (hasOwners()) {
+        <div class="list">
+          @for (owner of owners(); track owner.id) {
+            <article class="row">
+              <div>
+                <strong>{{ owner.fullName }}</strong>
+                <span>{{ owner.phone }} @if (owner.email) { - {{ owner.email }} }</span>
+              </div>
+              <small>{{ owner.patientCount }} paciente(s)</small>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="empty">No hay propietarios registrados todavia.</p>
+      }
+    </div>
+  </div>
+</section>

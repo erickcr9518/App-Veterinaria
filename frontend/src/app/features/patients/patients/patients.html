@@ -1,0 +1,120 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Pacientes</h1>
+      <p>Registra perros y gatos con la informacion clinica inicial mas importante.</p>
+    </div>
+    <div class="filters">
+      <label>
+        <span>Buscar</span>
+        <input #searchBox type="search" placeholder="Paciente, propietario, raza o microchip" (input)="updateSearch(searchBox.value)" />
+      </label>
+      <label>
+        <span>Especie</span>
+        <select #speciesSelect (change)="updateSpecies(speciesSelect.value)">
+          <option value="">Todas</option>
+          <option value="Perro">Perro</option>
+          <option value="Gato">Gato</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="workspace">
+    <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
+      <h2>Nuevo paciente</h2>
+
+      <label>
+        <span>Propietario</span>
+        <select formControlName="ownerId">
+          <option value="">Seleccionar</option>
+          @for (owner of owners(); track owner.id) {
+            <option [value]="owner.id">{{ owner.fullName }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="field-row">
+        <label>
+          <span>Nombre</span>
+          <input formControlName="name" />
+        </label>
+        <label>
+          <span>Especie</span>
+          <select formControlName="species">
+            <option value="Perro">Perro</option>
+            <option value="Gato">Gato</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label>
+          <span>Raza</span>
+          <input formControlName="breed" />
+        </label>
+        <label>
+          <span>Edad estimada</span>
+          <input formControlName="estimatedAge" placeholder="Ej. 3 anos" />
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label>
+          <span>Sexo</span>
+          <select formControlName="sex">
+            <option value="Hembra">Hembra</option>
+            <option value="Macho">Macho</option>
+            <option value="No indicado">No indicado</option>
+          </select>
+        </label>
+        <label>
+          <span>Peso kg</span>
+          <input formControlName="currentWeightKg" type="number" step="0.01" min="0" />
+        </label>
+      </div>
+
+      <details>
+        <summary>Detalles clinicos y administrativos</summary>
+        <div class="details-grid">
+          <label><span>Estado reproductivo</span><input formControlName="reproductiveStatus" /></label>
+          <label><span>Color</span><input formControlName="color" /></label>
+          <label><span>Microchip</span><input formControlName="microchipNumber" /></label>
+          <label><span>Estado</span><select formControlName="status"><option>Activo</option><option>Fallecido</option><option>Perdido</option><option>Transferido</option></select></label>
+          <label><span>Alergias</span><textarea formControlName="allergies" rows="2"></textarea></label>
+          <label><span>Enfermedades cronicas</span><textarea formControlName="chronicDiseases" rows="2"></textarea></label>
+          <label><span>Medicamentos actuales</span><textarea formControlName="currentMedications" rows="2"></textarea></label>
+          <label><span>Vacunacion</span><input formControlName="vaccinationStatus" /></label>
+          <label><span>Desparasitacion</span><input formControlName="dewormingStatus" /></label>
+        </div>
+      </details>
+
+      <button type="submit" [disabled]="isSaving() || owners().length === 0">{{ isSaving() ? 'Guardando...' : 'Guardar paciente' }}</button>
+    </form>
+
+    <div class="panel list-panel">
+      <h2>Pacientes registrados</h2>
+      @if (isLoading()) {
+        <p class="empty">Cargando pacientes...</p>
+      } @else if (hasPatients()) {
+        <div class="list">
+          @for (patient of patients(); track patient.id) {
+            <article class="row">
+              <div>
+                <strong>{{ patient.name }}</strong>
+                <span>{{ patient.species }} @if (patient.breed) { - {{ patient.breed }} } - {{ patient.ownerName }}</span>
+              </div>
+              <small>@if (patient.currentWeightKg) { {{ patient.currentWeightKg }} kg } @else { Sin peso }</small>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="empty">No hay pacientes registrados todavia.</p>
+      }
+    </div>
+  </div>
+</section>

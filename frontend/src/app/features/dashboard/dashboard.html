@@ -1,11 +1,17 @@
 <section class="dashboard">
   @if (currentUser(); as user) {
     <h1>Hola, {{ user.fullName.split(' ')[0] }}</h1>
-    <p class="subtitle">Este es el panel de {{ user.clinicName }}. Los módulos de citas, pacientes y consultas se agregarán en las próximas etapas.</p>
+    <p class="subtitle">Este es el panel de {{ user.clinicName }}. Empieza registrando propietarios y pacientes para abrir el expediente clinico.</p>
   }
 
-  <div class="placeholder-card">
-    <p>Todavía no hay nada que mostrar aquí.</p>
-    <p class="hint">El siguiente módulo a construir es Propietarios y Pacientes.</p>
+  <div class="action-grid">
+    <a routerLink="/owners">
+      <strong>Propietarios</strong>
+      <span>Responsables, telefonos, consentimientos y pacientes asociados.</span>
+    </a>
+    <a routerLink="/patients">
+      <strong>Pacientes</strong>
+      <span>Perros y gatos con datos clinicos iniciales y peso actual.</span>
+    </a>
   </div>
 </section>
