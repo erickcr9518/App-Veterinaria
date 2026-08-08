@@ -1,9 +1,16 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using VetPlatform.Application.Auth.Models;
 using VetPlatform.Application.Common.Models;
 using VetPlatform.Domain.Constants;
+using VetPlatform.Domain.Entities;
+using VetPlatform.Infrastructure.Persistence;
+using VetPlatform.Infrastructure.Persistence.Seed;
 
 namespace VetPlatform.Api.IntegrationTests;
 
@@ -102,6 +109,79 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
         });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Seeder_Removes_Stale_Role_Permissions()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Infrastructure.Identity.ApplicationUser>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        var administratorRole = await roleManager.FindByNameAsync(RoleNames.Administrator);
+        Assert.NotNull(administratorRole);
+
+        var clinicsManage = await dbContext.Permissions.SingleAsync(p => p.Code == PermissionCodes.ClinicsManage);
+        dbContext.RolePermissions.Add(new RolePermission
+        {
+            RoleId = administratorRole!.Id,
+            PermissionId = clinicsManage.Id,
+        });
+        await dbContext.SaveChangesAsync(CancellationToken.None);
+
+        await DataSeeder.SeedAsync(
+            dbContext,
+            roleManager,
+            userManager,
+            logger,
+            seedDemoData: false,
+            demoAdminPassword: null);
+
+        var staleGrantExists = await dbContext.RolePermissions.AnyAsync(rp =>
+            rp.RoleId == administratorRole.Id &&
+            rp.PermissionId == clinicsManage.Id);
+
+        Assert.False(staleGrantExists);
+    }
+
+    [Fact]
+    public async Task Platform_Admin_Can_Create_Clinic_Admin_For_Target_Clinic()
+    {
+        var platformEmail = $"platform-{Guid.NewGuid():N}@vetplatform.test";
+        const string platformPassword = "Password123!";
+        await _factory.CreatePlatformAdministratorAsync(platformEmail, platformPassword);
+        var platformAuth = await LoginAsync(platformEmail, platformPassword);
+
+        var clinicResponse = await PostAsAuthenticatedJsonAsync(platformAuth.AccessToken, "/api/clinics", new
+        {
+            name = "Clinica Administrable",
+            legalId = "789",
+            address = "Cartago",
+            phone = "+506 4444-4444",
+            email = "admin-target@clinic.test",
+            timeZone = "America/Costa_Rica",
+        });
+        Assert.Equal(HttpStatusCode.Created, clinicResponse.StatusCode);
+        var clinicId = await clinicResponse.Content.ReadFromJsonAsync<Guid>();
+
+        var adminEmail = $"clinic-admin-{Guid.NewGuid():N}@vetplatform.test";
+        var createUserResponse = await PostAsAuthenticatedJsonAsync(platformAuth.AccessToken, "/api/users", new
+        {
+            email = adminEmail,
+            password = "Password123!",
+            fullName = "Clinic Admin",
+            role = RoleNames.Administrator,
+            clinicId,
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createUserResponse.StatusCode);
+
+        var adminAuth = await LoginAsync(adminEmail, "Password123!");
+        Assert.Equal(RoleNames.Administrator, adminAuth.Role);
+        Assert.Equal(clinicId, adminAuth.ClinicId);
+        Assert.DoesNotContain(PermissionCodes.ClinicsManage, adminAuth.Permissions);
     }
 
     [Fact]

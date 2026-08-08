@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using VetPlatform.Application.Common.Exceptions;
 using VetPlatform.Application.Common.Interfaces;
 using VetPlatform.Domain.Constants;
@@ -9,11 +10,16 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
 {
     private readonly IIdentityService _identityService;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IApplicationDbContext _dbContext;
 
-    public CreateUserCommandHandler(IIdentityService identityService, ICurrentUserService currentUserService)
+    public CreateUserCommandHandler(
+        IIdentityService identityService,
+        ICurrentUserService currentUserService,
+        IApplicationDbContext dbContext)
     {
         _identityService = identityService;
         _currentUserService = currentUserService;
+        _dbContext = dbContext;
     }
 
     public async Task<Guid> Handle(CreateUserCommand request, CancellationToken cancellationToken)
@@ -25,12 +31,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
             throw new ForbiddenAccessException("Solo un superadministrador puede crear otros superadministradores.");
         }
 
-        // Los superadministradores no pertenecen a ninguna clínica; el resto de roles hereda
-        // la clínica de quien los crea, así queda garantizado que no puedan asignarse a otra.
-        Guid? clinicId = isCreatingPlatformAdministrator
-            ? null
-            : _currentUserService.ClinicId ?? throw new ForbiddenAccessException("El usuario actual no está asociado a ninguna clínica.");
-
+        var clinicId = await ResolveClinicIdAsync(request, isCreatingPlatformAdministrator, cancellationToken);
         var result = await _identityService.CreateUserAsync(request.Email, request.Password, request.FullName, clinicId, request.Role);
 
         if (!result.Succeeded)
@@ -42,5 +43,36 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
         }
 
         return result.UserId!.Value;
+    }
+
+    private async Task<Guid?> ResolveClinicIdAsync(
+        CreateUserCommand request,
+        bool isCreatingPlatformAdministrator,
+        CancellationToken cancellationToken)
+    {
+        if (isCreatingPlatformAdministrator)
+        {
+            return null;
+        }
+
+        if (_currentUserService.Role == RoleNames.PlatformAdministrator)
+        {
+            var clinicId = request.ClinicId
+                ?? throw new ValidationException(new[]
+                {
+                    new FluentValidation.Results.ValidationFailure(nameof(request.ClinicId), "La clinica es requerida para crear usuarios de clinica.")
+                });
+
+            var clinicExists = await _dbContext.Clinics.AnyAsync(c => c.Id == clinicId, cancellationToken);
+            if (!clinicExists)
+            {
+                throw new NotFoundException("Clinica", clinicId);
+            }
+
+            return clinicId;
+        }
+
+        return _currentUserService.ClinicId
+            ?? throw new ForbiddenAccessException("El usuario actual no esta asociado a ninguna clinica.");
     }
 }
