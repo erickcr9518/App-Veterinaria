@@ -1,0 +1,20 @@
+# .NET
+backend/**/bin/
+backend/**/obj/
+*.user
+*.suo
+
+# Angular / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Env / secrets
+**/appsettings.Development.json
+**/*.env
+.env
+
+# IDE / OS
+.vs/
+.vscode/
+*.DS_Store

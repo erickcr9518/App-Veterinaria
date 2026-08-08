@@ -1,0 +1,31 @@
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span>🐾</span>
+      <strong>VetPlatform</strong>
+    </div>
+
+    <nav class="nav-links">
+      <a routerLink="/dashboard">Panel</a>
+    </nav>
+
+    @if (currentUser(); as user) {
+      <div class="user-menu">
+        <div class="user-info">
+          <span class="user-name">{{ user.fullName }}</span>
+          <span class="user-role">
+            {{ user.role }}
+            @if (user.clinicName) {
+              · {{ user.clinicName }}
+            }
+          </span>
+        </div>
+        <button type="button" (click)="logout()">Cerrar sesión</button>
+      </div>
+    }
+  </header>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

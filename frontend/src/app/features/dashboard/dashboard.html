@@ -1,0 +1,11 @@
+<section class="dashboard">
+  @if (currentUser(); as user) {
+    <h1>Hola, {{ user.fullName.split(' ')[0] }}</h1>
+    <p class="subtitle">Este es el panel de {{ user.clinicName }}. Los módulos de citas, pacientes y consultas se agregarán en las próximas etapas.</p>
+  }
+
+  <div class="placeholder-card">
+    <p>Todavía no hay nada que mostrar aquí.</p>
+    <p class="hint">El siguiente módulo a construir es Propietarios y Pacientes.</p>
+  </div>
+</section>
