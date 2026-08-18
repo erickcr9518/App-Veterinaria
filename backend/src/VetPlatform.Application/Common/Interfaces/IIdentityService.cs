@@ -13,4 +13,6 @@ public interface IIdentityService
     Task<IReadOnlyList<UserSummary>> GetUsersByClinicAsync(Guid clinicId);
 
     Task<bool> SetUserActiveAsync(Guid userId, bool isActive);
+
+    Task<IReadOnlyDictionary<Guid, string>> GetUserFullNamesAsync(IEnumerable<Guid> userIds);
 }

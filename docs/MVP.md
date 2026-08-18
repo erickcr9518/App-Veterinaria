@@ -82,19 +82,19 @@ Implemented:
 
 - Backend solution and Angular frontend.
 - Auth endpoints: login, refresh, current user.
-- Roles, permissions, and policy-based authorization.
+- Roles, permissions, and policy-based authorization, including a platform-level `SuperAdministrador` separate from clinic-level `Administrador`.
 - Clinic list/create endpoints.
-- User list/create endpoints scoped by clinic.
-- SQL Server EF Core migration.
-- Audit timestamps and soft delete foundation.
-- Global tenant filter foundation for `ITenantEntity`.
-- Owner and patient management for dogs and cats.
-- Owner/patient edit flows in the Angular frontend.
-- Integration tests for login, refresh rotation, permissions, and clinic isolation.
+- User list/create endpoints scoped by clinic, plus platform-admin provisioning of clinic admins for a clinic they choose.
+- Owners and patients, with weight history and progressive-disclosure forms.
+- Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records.
+- SQL Server EF Core migrations.
+- Audit timestamps, soft delete, and optimistic concurrency.
+- Global tenant filter for `ITenantEntity`, reconciled on every startup (stale role permissions are removed, not just added to).
+- Integration tests for login, refresh rotation, permissions, clinic isolation, owners/patients isolation, and the consultation lifecycle (draft -> finalize -> amend, blocked direct edits after finalize, tenant isolation, role restrictions).
 
 ## Current Clinical Modules
 
-Owners and Patients are implemented as the first clinical-administrative module.
+Owners, Patients, and Consultations/SOAP are implemented as the first clinical-administrative modules.
 
 Delivered backend capabilities:
 
@@ -103,8 +103,12 @@ Delivered backend capabilities:
 - One owner can have many patients.
 - Basic patient clinical fields: species, breed, birth date or estimated age, sex, reproductive status, color, current weight, microchip, allergies, chronic diseases, current medications, vaccination status, deworming status, and status.
 - Weight history table.
-- CRUD endpoints with validation, soft delete, audit metadata, and tenant isolation.
-- Integration tests proving users cannot access another clinic's owners or patients.
+- Owner and patient CRUD endpoints with validation, soft delete, audit metadata, and tenant isolation.
+- Consultation entity scoped by clinic and tied to a patient and veterinarian.
+- SOAP fields for subjective, objective, assessment, and plan.
+- Draft and finalized consultation states.
+- Amendments for corrections to finalized consultations.
+- Integration tests proving tenant isolation, role restrictions, and blocked direct edits after finalization.
 
 Delivered frontend capabilities:
 
@@ -118,14 +122,17 @@ Delivered frontend capabilities:
 
 ## Next Module
 
-The next module is Consultations/SOAP:
+The next module is Appointments (Agenda):
 
-- Manual consultation creation tied to a patient and veterinarian.
-- SOAP fields for subjective, objective, assessment, and plan.
-- Draft and finalized states.
-- Immutable finalized consultation behavior through amendments or version history.
-- Clinical timeline entry for each consultation.
-- Permission checks for consultation read/write/finalize actions.
+- Day and week calendar views.
+- Quick-create appointment from the patient record and from the calendar itself.
+- Status changes and cancellation with a required reason.
+- Navigation entries visible according to permissions (recepcion needs this front and center; a veterinarian mid-consultation should not).
+- Appointment entity scoped by clinic: patient, owner, assigned veterinarian, date/time, type of visit, status (scheduled, confirmed, cancelled, completed, no-show), reason, reminders metadata.
+- Day/week range queries.
+- Recepcion can create/edit/cancel any appointment in the clinic (`appointments.write`); a veterinarian can only manage their own (`appointments.write.own`, already defined in `PermissionCodes`).
+- Status transitions with a change history (who changed what and when), consistent with the audit approach already used for consultations.
+- Integration tests proving tenant isolation and the veterinarian-can-only-touch-their-own-appointments rule.
 
 ## UX Direction
 

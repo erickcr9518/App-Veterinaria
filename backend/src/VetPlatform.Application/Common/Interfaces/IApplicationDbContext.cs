@@ -12,6 +12,9 @@ public interface IApplicationDbContext
     DbSet<Owner> Owners { get; }
     DbSet<Patient> Patients { get; }
     DbSet<PatientWeight> PatientWeights { get; }
+    DbSet<Consultation> Consultations { get; }
+    DbSet<SoapNote> SoapNotes { get; }
+    DbSet<ConsultationAmendment> ConsultationAmendments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
