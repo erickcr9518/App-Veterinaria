@@ -88,13 +88,15 @@ Implemented:
 - SQL Server EF Core migration.
 - Audit timestamps and soft delete foundation.
 - Global tenant filter foundation for `ITenantEntity`.
+- Owner and patient management for dogs and cats.
+- Owner/patient edit flows in the Angular frontend.
 - Integration tests for login, refresh rotation, permissions, and clinic isolation.
 
-## Next Module
+## Current Clinical Modules
 
-The next module is Owners and Patients.
+Owners and Patients are implemented as the first clinical-administrative module.
 
-Backend requirements:
+Delivered backend capabilities:
 
 - Owner entity scoped by clinic.
 - Patient entity scoped by clinic.
@@ -104,13 +106,26 @@ Backend requirements:
 - CRUD endpoints with validation, soft delete, audit metadata, and tenant isolation.
 - Integration tests proving users cannot access another clinic's owners or patients.
 
-Frontend requirements:
+Delivered frontend capabilities:
 
 - Owners list with search.
 - Owner detail or compact form.
 - Patients list with owner and species filters.
 - Patient form with progressive sections, keeping essential fields visible first.
 - Navigation entries visible according to permissions.
+- Route guards for owner and patient permissions.
+- Debounced search inputs.
+
+## Next Module
+
+The next module is Consultations/SOAP:
+
+- Manual consultation creation tied to a patient and veterinarian.
+- SOAP fields for subjective, objective, assessment, and plan.
+- Draft and finalized states.
+- Immutable finalized consultation behavior through amendments or version history.
+- Clinical timeline entry for each consultation.
+- Permission checks for consultation read/write/finalize actions.
 
 ## UX Direction
 

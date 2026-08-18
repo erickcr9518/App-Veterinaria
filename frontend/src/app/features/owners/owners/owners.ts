@@ -1,6 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ClinicalService } from '../../../core/services/clinical.service';
 import { Owner } from '../../../core/models/clinical.models';
 
@@ -14,6 +16,8 @@ import { Owner } from '../../../core/models/clinical.models';
 export class Owners implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly clinicalService = inject(ClinicalService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchChanged = new Subject<string>();
 
   readonly owners = signal<Owner[]>([]);
   readonly search = signal('');
@@ -36,6 +40,15 @@ export class Owners implements OnInit {
   });
 
   ngOnInit(): void {
+    this.searchChanged.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((value) => {
+      this.search.set(value);
+      this.loadOwners();
+    });
+
     this.loadOwners();
   }
 
@@ -48,16 +61,19 @@ export class Owners implements OnInit {
         this.owners.set(owners);
         this.isLoading.set(false);
       },
-      error: () => {
-        this.errorMessage.set('No se pudieron cargar los propietarios.');
+      error: (error: unknown) => {
+        this.errorMessage.set(this.getErrorMessage(
+          error,
+          'No tienes permiso para ver propietarios.',
+          'No se pudieron cargar los propietarios.',
+        ));
         this.isLoading.set(false);
       },
     });
   }
 
   updateSearch(value: string): void {
-    this.search.set(value);
-    this.loadOwners();
+    this.searchChanged.next(value);
   }
 
   submit(): void {
@@ -91,8 +107,12 @@ export class Owners implements OnInit {
         this.isSaving.set(false);
         this.loadOwners();
       },
-      error: () => {
-        this.errorMessage.set('No se pudo guardar el propietario.');
+      error: (error: unknown) => {
+        this.errorMessage.set(this.getErrorMessage(
+          error,
+          'No tienes permiso para guardar propietarios.',
+          'No se pudo guardar el propietario.',
+        ));
         this.isSaving.set(false);
       },
     });
@@ -118,5 +138,11 @@ export class Owners implements OnInit {
   private resetForm(): void {
     this.editingOwner.set(null);
     this.form.reset();
+  }
+
+  private getErrorMessage(error: unknown, forbiddenMessage: string, fallbackMessage: string): string {
+    return error instanceof HttpErrorResponse && error.status === 403
+      ? forbiddenMessage
+      : fallbackMessage;
   }
 }

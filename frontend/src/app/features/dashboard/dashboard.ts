@@ -13,4 +13,8 @@ export class Dashboard {
   private readonly authService = inject(AuthService);
 
   readonly currentUser = this.authService.currentUser;
+
+  hasPermission(code: string): boolean {
+    return this.authService.hasPermission(code);
+  }
 }

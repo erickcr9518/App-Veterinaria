@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
   {
@@ -18,10 +19,14 @@ export const routes: Routes = [
       {
         path: 'owners',
         loadComponent: () => import('./features/owners/owners/owners').then((m) => m.Owners),
+        canActivate: [permissionGuard],
+        data: { permission: 'owners.read' },
       },
       {
         path: 'patients',
         loadComponent: () => import('./features/patients/patients/patients').then((m) => m.Patients),
+        canActivate: [permissionGuard],
+        data: { permission: 'patients.read' },
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

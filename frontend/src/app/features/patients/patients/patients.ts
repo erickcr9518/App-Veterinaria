@@ -1,6 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Owner, Patient } from '../../../core/models/clinical.models';
 import { ClinicalService } from '../../../core/services/clinical.service';
 
@@ -14,6 +16,8 @@ import { ClinicalService } from '../../../core/services/clinical.service';
 export class Patients implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly clinicalService = inject(ClinicalService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly searchChanged = new Subject<string>();
 
   readonly owners = signal<Owner[]>([]);
   readonly patients = signal<Patient[]>([]);
@@ -47,6 +51,15 @@ export class Patients implements OnInit {
   });
 
   ngOnInit(): void {
+    this.searchChanged.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((value) => {
+      this.search.set(value);
+      this.loadPatients();
+    });
+
     this.loadOwners();
     this.loadPatients();
   }
@@ -54,7 +67,11 @@ export class Patients implements OnInit {
   loadOwners(): void {
     this.clinicalService.getOwners().subscribe({
       next: (owners) => this.owners.set(owners),
-      error: () => this.errorMessage.set('No se pudieron cargar los propietarios.'),
+      error: (error: unknown) => this.errorMessage.set(this.getErrorMessage(
+        error,
+        'No tienes permiso para ver propietarios.',
+        'No se pudieron cargar los propietarios.',
+      )),
     });
   }
 
@@ -70,16 +87,19 @@ export class Patients implements OnInit {
         this.patients.set(patients);
         this.isLoading.set(false);
       },
-      error: () => {
-        this.errorMessage.set('No se pudieron cargar los pacientes.');
+      error: (error: unknown) => {
+        this.errorMessage.set(this.getErrorMessage(
+          error,
+          'No tienes permiso para ver pacientes.',
+          'No se pudieron cargar los pacientes.',
+        ));
         this.isLoading.set(false);
       },
     });
   }
 
   updateSearch(value: string): void {
-    this.search.set(value);
-    this.loadPatients();
+    this.searchChanged.next(value);
   }
 
   updateSpecies(value: string): void {
@@ -108,8 +128,12 @@ export class Patients implements OnInit {
         this.isSaving.set(false);
         this.loadPatients();
       },
-      error: () => {
-        this.errorMessage.set('No se pudo guardar el paciente.');
+      error: (error: unknown) => {
+        this.errorMessage.set(this.getErrorMessage(
+          error,
+          'No tienes permiso para guardar pacientes.',
+          'No se pudo guardar el paciente.',
+        ));
         this.isSaving.set(false);
       },
     });
@@ -169,5 +193,11 @@ export class Patients implements OnInit {
   private resetForm(): void {
     this.editingPatient.set(null);
     this.form.reset({ species: 'Perro', sex: 'Hembra', status: 'Activo' });
+  }
+
+  private getErrorMessage(error: unknown, forbiddenMessage: string, fallbackMessage: string): string {
+    return error instanceof HttpErrorResponse && error.status === 403
+      ? forbiddenMessage
+      : fallbackMessage;
   }
 }

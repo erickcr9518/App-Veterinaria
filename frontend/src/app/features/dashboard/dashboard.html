@@ -5,13 +5,17 @@
   }
 
   <div class="action-grid">
-    <a routerLink="/owners">
-      <strong>Propietarios</strong>
-      <span>Responsables, telefonos, consentimientos y pacientes asociados.</span>
-    </a>
-    <a routerLink="/patients">
-      <strong>Pacientes</strong>
-      <span>Perros y gatos con datos clinicos iniciales y peso actual.</span>
-    </a>
+    @if (hasPermission('owners.read')) {
+      <a routerLink="/owners">
+        <strong>Propietarios</strong>
+        <span>Responsables, telefonos, consentimientos y pacientes asociados.</span>
+      </a>
+    }
+    @if (hasPermission('patients.read')) {
+      <a routerLink="/patients">
+        <strong>Pacientes</strong>
+        <span>Perros y gatos con datos clinicos iniciales y peso actual.</span>
+      </a>
+    }
   </div>
 </section>
