@@ -33,6 +33,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Owner> Owners => Set<Owner>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<PatientWeight> PatientWeights => Set<PatientWeight>();
+    public DbSet<Consultation> Consultations => Set<Consultation>();
+    public DbSet<SoapNote> SoapNotes => Set<SoapNote>();
+    public DbSet<ConsultationAmendment> ConsultationAmendments => Set<ConsultationAmendment>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

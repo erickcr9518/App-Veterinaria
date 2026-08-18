@@ -115,6 +115,19 @@ public class IdentityService : IIdentityService
         return result.Succeeded;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> GetUserFullNamesAsync(IEnumerable<Guid> userIds)
+    {
+        var distinctIds = userIds.Distinct().ToArray();
+        if (distinctIds.Length == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        return await _userManager.Users
+            .Where(u => distinctIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName);
+    }
+
     private async Task<AuthenticatedUser> BuildAuthenticatedUserAsync(ApplicationUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);
