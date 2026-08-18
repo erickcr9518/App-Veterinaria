@@ -26,7 +26,12 @@
 
   <div class="workspace">
     <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
-      <h2>Nuevo paciente</h2>
+      <div class="form-heading">
+        <h2>{{ formTitle() }}</h2>
+        @if (editingPatient()) {
+          <button class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+        }
+      </div>
 
       <label>
         <span>Propietario</span>
@@ -93,7 +98,7 @@
         </div>
       </details>
 
-      <button type="submit" [disabled]="isSaving() || owners().length === 0">{{ isSaving() ? 'Guardando...' : 'Guardar paciente' }}</button>
+      <button type="submit" [disabled]="isSaving() || owners().length === 0">{{ isSaving() ? 'Guardando...' : submitLabel() }}</button>
     </form>
 
     <div class="panel list-panel">
@@ -108,7 +113,10 @@
                 <strong>{{ patient.name }}</strong>
                 <span>{{ patient.species }} @if (patient.breed) { - {{ patient.breed }} } - {{ patient.ownerName }}</span>
               </div>
-              <small>@if (patient.currentWeightKg) { {{ patient.currentWeightKg }} kg } @else { Sin peso }</small>
+              <div class="row-actions">
+                <small>@if (patient.currentWeightKg) { {{ patient.currentWeightKg }} kg } @else { Sin peso }</small>
+                <button class="ghost-button" type="button" (click)="editPatient(patient)">Editar</button>
+              </div>
             </article>
           }
         </div>

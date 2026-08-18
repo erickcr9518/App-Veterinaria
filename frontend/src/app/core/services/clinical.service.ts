@@ -21,6 +21,10 @@ export class ClinicalService {
     return this.http.post<string>(`${environment.apiUrl}/owners`, request);
   }
 
+  updateOwner(id: string, request: CreateOwnerRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/owners/${id}`, request);
+  }
+
   getPatients(filters: { search?: string; ownerId?: string; species?: string } = {}): Observable<Patient[]> {
     let params = new HttpParams();
     if (filters.search?.trim()) {
@@ -38,5 +42,9 @@ export class ClinicalService {
 
   createPatient(request: CreatePatientRequest): Observable<string> {
     return this.http.post<string>(`${environment.apiUrl}/patients`, request);
+  }
+
+  updatePatient(id: string, request: CreatePatientRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/patients/${id}`, request);
   }
 }

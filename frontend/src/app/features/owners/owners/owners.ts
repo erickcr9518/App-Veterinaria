@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { ClinicalService } from '../../../core/services/clinical.service';
 import { Owner } from '../../../core/models/clinical.models';
 
@@ -19,6 +20,9 @@ export class Owners implements OnInit {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly editingOwner = signal<Owner | null>(null);
+  readonly formTitle = computed(() => this.editingOwner() ? 'Editar propietario' : 'Nuevo propietario');
+  readonly submitLabel = computed(() => this.editingOwner() ? 'Guardar cambios' : 'Guardar propietario');
   readonly hasOwners = computed(() => this.owners().length > 0);
 
   readonly form = this.fb.group({
@@ -66,7 +70,7 @@ export class Owners implements OnInit {
     this.errorMessage.set(null);
 
     const value = this.form.getRawValue();
-    this.clinicalService.createOwner({
+    const request = {
       fullName: value.fullName!,
       identificationNumber: value.identificationNumber,
       phone: value.phone!,
@@ -74,9 +78,16 @@ export class Owners implements OnInit {
       address: value.address,
       alternateContact: value.alternateContact,
       consentNotes: value.consentNotes,
-    }).subscribe({
+    };
+
+    const editingOwner = this.editingOwner();
+    const save$: Observable<string | void> = editingOwner
+      ? this.clinicalService.updateOwner(editingOwner.id, request)
+      : this.clinicalService.createOwner(request);
+
+    save$.subscribe({
       next: () => {
-        this.form.reset();
+        this.resetForm();
         this.isSaving.set(false);
         this.loadOwners();
       },
@@ -85,5 +96,27 @@ export class Owners implements OnInit {
         this.isSaving.set(false);
       },
     });
+  }
+
+  editOwner(owner: Owner): void {
+    this.editingOwner.set(owner);
+    this.form.reset({
+      fullName: owner.fullName,
+      identificationNumber: owner.identificationNumber ?? '',
+      phone: owner.phone,
+      email: owner.email ?? '',
+      address: owner.address ?? '',
+      alternateContact: owner.alternateContact ?? '',
+      consentNotes: owner.consentNotes ?? '',
+    });
+  }
+
+  cancelEdit(): void {
+    this.resetForm();
+  }
+
+  private resetForm(): void {
+    this.editingOwner.set(null);
+    this.form.reset();
   }
 }

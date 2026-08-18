@@ -70,6 +70,13 @@ label {
   gap: 12px;
 }
 
+.form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 label span,
 .filters span {
   font-size: 12px;
@@ -121,6 +128,13 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.ghost-button {
+  border: 1px solid rgba(22, 33, 30, 0.14);
+  background: #fff;
+  color: #0e6e5e;
+  padding: 8px 12px;
+}
+
 .list {
   display: grid;
   gap: 10px;
@@ -136,6 +150,13 @@ button:disabled {
 .row div {
   display: grid;
   gap: 4px;
+}
+
+.row .row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 10px;
 }
 
 .row strong {

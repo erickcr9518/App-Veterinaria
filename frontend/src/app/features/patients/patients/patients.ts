@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { Owner, Patient } from '../../../core/models/clinical.models';
 import { ClinicalService } from '../../../core/services/clinical.service';
 
@@ -21,6 +22,9 @@ export class Patients implements OnInit {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly editingPatient = signal<Patient | null>(null);
+  readonly formTitle = computed(() => this.editingPatient() ? 'Editar paciente' : 'Nuevo paciente');
+  readonly submitLabel = computed(() => this.editingPatient() ? 'Guardar cambios' : 'Guardar paciente');
   readonly hasPatients = computed(() => this.patients().length > 0);
 
   readonly form = this.fb.group({
@@ -92,8 +96,55 @@ export class Patients implements OnInit {
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
+    const request = this.buildRequest();
+    const editingPatient = this.editingPatient();
+    const save$: Observable<string | void> = editingPatient
+      ? this.clinicalService.updatePatient(editingPatient.id, request)
+      : this.clinicalService.createPatient(request);
+
+    save$.subscribe({
+      next: () => {
+        this.resetForm();
+        this.isSaving.set(false);
+        this.loadPatients();
+      },
+      error: () => {
+        this.errorMessage.set('No se pudo guardar el paciente.');
+        this.isSaving.set(false);
+      },
+    });
+  }
+
+  editPatient(patient: Patient): void {
+    this.editingPatient.set(patient);
+    this.form.reset({
+      ownerId: patient.ownerId,
+      name: patient.name,
+      species: patient.species,
+      breed: patient.breed ?? '',
+      estimatedAge: patient.estimatedAge ?? '',
+      sex: patient.sex,
+      reproductiveStatus: patient.reproductiveStatus ?? '',
+      color: patient.color ?? '',
+      currentWeightKg: patient.currentWeightKg ?? null,
+      microchipNumber: patient.microchipNumber ?? '',
+      allergies: patient.allergies ?? '',
+      chronicDiseases: patient.chronicDiseases ?? '',
+      currentMedications: patient.currentMedications ?? '',
+      vaccinationStatus: patient.vaccinationStatus ?? '',
+      dewormingStatus: patient.dewormingStatus ?? '',
+      status: patient.status,
+    });
+  }
+
+  cancelEdit(): void {
+    this.resetForm();
+  }
+
+  private buildRequest() {
     const value = this.form.getRawValue();
-    this.clinicalService.createPatient({
+
+    return {
       ownerId: value.ownerId!,
       name: value.name!,
       species: value.species!,
@@ -112,16 +163,11 @@ export class Patients implements OnInit {
       vaccinationStatus: value.vaccinationStatus,
       dewormingStatus: value.dewormingStatus,
       status: value.status!,
-    }).subscribe({
-      next: () => {
-        this.form.reset({ species: 'Perro', sex: 'Hembra', status: 'Activo' });
-        this.isSaving.set(false);
-        this.loadPatients();
-      },
-      error: () => {
-        this.errorMessage.set('No se pudo guardar el paciente.');
-        this.isSaving.set(false);
-      },
-    });
+    };
+  }
+
+  private resetForm(): void {
+    this.editingPatient.set(null);
+    this.form.reset({ species: 'Perro', sex: 'Hembra', status: 'Activo' });
   }
 }

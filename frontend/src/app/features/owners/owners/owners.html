@@ -16,7 +16,12 @@
 
   <div class="workspace">
     <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
-      <h2>Nuevo propietario</h2>
+      <div class="form-heading">
+        <h2>{{ formTitle() }}</h2>
+        @if (editingOwner()) {
+          <button class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+        }
+      </div>
 
       <label>
         <span>Nombre completo</span>
@@ -54,7 +59,7 @@
         <textarea formControlName="consentNotes" rows="3"></textarea>
       </label>
 
-      <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : 'Guardar propietario' }}</button>
+      <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : submitLabel() }}</button>
     </form>
 
     <div class="panel list-panel">
@@ -69,7 +74,10 @@
                 <strong>{{ owner.fullName }}</strong>
                 <span>{{ owner.phone }} @if (owner.email) { - {{ owner.email }} }</span>
               </div>
-              <small>{{ owner.patientCount }} paciente(s)</small>
+              <div class="row-actions">
+                <small>{{ owner.patientCount }} paciente(s)</small>
+                <button class="ghost-button" type="button" (click)="editOwner(owner)">Editar</button>
+              </div>
             </article>
           }
         </div>
