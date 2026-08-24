@@ -176,3 +176,43 @@ export interface AppointmentRequest {
   reminderChannel?: string | null;
   reminderNotes?: string | null;
 }
+
+export type PrescriptionStatus = 'Draft' | 'Finalized';
+
+export interface PrescriptionSummary {
+  id: string;
+  consultationId: string;
+  patientId: string;
+  issuedAtUtc: string;
+  veterinarianName: string;
+  status: PrescriptionStatus | string;
+  productNames: string[];
+}
+
+export interface PrescriptionItem {
+  id: string;
+  productName: string;
+  concentration?: string | null;
+  presentation?: string | null;
+  quantity: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  instructions?: string | null;
+}
+
+export interface PrescriptionDetail {
+  id: string;
+  consultationId: string;
+  patientId: string;
+  patientName: string;
+  veterinarianName: string;
+  issuedAtUtc: string;
+  weightKgAtPrescription?: number | null;
+  generalInstructions?: string | null;
+  warnings?: string | null;
+  status: PrescriptionStatus | string;
+  finalizedAtUtc?: string | null;
+  finalizedByName?: string | null;
+  items: PrescriptionItem[];
+}

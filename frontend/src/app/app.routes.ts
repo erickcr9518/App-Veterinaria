@@ -29,6 +29,12 @@ export const routes: Routes = [
         data: { permission: 'patients.read' },
       },
       {
+        path: 'patients/:patientId/record',
+        loadComponent: () => import('./features/patients/patient-record/patient-record').then((m) => m.PatientRecord),
+        canActivate: [permissionGuard],
+        data: { permission: 'records.read.full' },
+      },
+      {
         path: 'appointments',
         loadComponent: () => import('./features/appointments/appointments/appointments').then((m) => m.Appointments),
         canActivate: [permissionGuard],

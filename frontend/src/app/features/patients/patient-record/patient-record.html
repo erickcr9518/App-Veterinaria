@@ -1,0 +1,166 @@
+<section class="page">
+  @if (patient(); as p) {
+    <header class="page-header">
+      <div>
+        <a class="back-link" routerLink="/patients">&larr; Pacientes</a>
+        <h1>Expediente de {{ p.name }}</h1>
+        <p>{{ p.species }} @if (p.breed) { - {{ p.breed }} } - {{ p.ownerName }}</p>
+      </div>
+      <div class="header-actions">
+        @if (canSchedule()) {
+          <a class="ghost-button" routerLink="/appointments" [queryParams]="{ patientId: p.id }">Agendar</a>
+        }
+        @if (canWriteConsultations()) {
+          <a class="button-link" [routerLink]="['/patients', p.id, 'consultations', 'new']">Nueva consulta</a>
+        }
+      </div>
+    </header>
+
+    @if (errorMessage(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+
+    <div class="summary-grid">
+      <section class="panel">
+        <h2>Datos del paciente</h2>
+        <dl class="facts">
+          <div><dt>Estado</dt><dd>{{ p.status }}</dd></div>
+          <div><dt>Sexo</dt><dd>{{ p.sex }}</dd></div>
+          <div><dt>Peso actual</dt><dd>@if (p.currentWeightKg) { {{ p.currentWeightKg }} kg } @else { Sin registro }</dd></div>
+          <div><dt>Edad</dt><dd>{{ p.estimatedAge || 'Sin registro' }}</dd></div>
+          <div><dt>Microchip</dt><dd>{{ p.microchipNumber || 'Sin registro' }}</dd></div>
+          <div><dt>Color</dt><dd>{{ p.color || 'Sin registro' }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel">
+        <h2>Alertas clinicas</h2>
+        @if (hasClinicalAlerts()) {
+          <div class="alert-list">
+            @if (p.allergies) {
+              <article><strong>Alergias</strong><span>{{ p.allergies }}</span></article>
+            }
+            @if (p.chronicDiseases) {
+              <article><strong>Cronicas</strong><span>{{ p.chronicDiseases }}</span></article>
+            }
+            @if (p.currentMedications) {
+              <article><strong>Medicacion actual</strong><span>{{ p.currentMedications }}</span></article>
+            }
+          </div>
+        } @else {
+          <p class="empty compact">Sin alertas registradas.</p>
+        }
+      </section>
+
+      <section class="panel">
+        <h2>Propietario</h2>
+        <dl class="facts">
+          <div><dt>Nombre</dt><dd>{{ p.ownerName }}</dd></div>
+          <div><dt>Vacunacion</dt><dd>{{ p.vaccinationStatus || 'Sin registro' }}</dd></div>
+          <div><dt>Desparasitacion</dt><dd>{{ p.dewormingStatus || 'Sin registro' }}</dd></div>
+        </dl>
+      </section>
+    </div>
+
+    <div class="timeline-grid">
+      <section class="panel timeline-panel">
+        <div class="section-heading">
+          <h2>Consultas recientes</h2>
+          <a [routerLink]="['/patients', p.id, 'consultations']">Ver todas</a>
+        </div>
+        @if (isLoading()) {
+          <p class="empty">Cargando expediente...</p>
+        } @else if (latestConsultations().length > 0) {
+          <div class="list">
+            @for (consultation of latestConsultations(); track consultation.id) {
+              <a class="row" [routerLink]="['/consultations', consultation.id]">
+                <div>
+                  <strong>{{ consultation.reasonForVisit }}</strong>
+                  <span>{{ consultation.consultationDateUtc | date: 'medium' }} - {{ consultation.veterinarianName }}</span>
+                  @if (consultation.followUpDate) {
+                    <small>Seguimiento: {{ consultation.followUpDate | date: 'mediumDate' }}</small>
+                  }
+                </div>
+                <span class="status" [class.status-draft]="consultation.status === 'Draft'" [class.status-finalized]="consultation.status === 'Finalized'">
+                  {{ consultationStatusLabel(consultation.status) }}
+                </span>
+              </a>
+            }
+          </div>
+        } @else {
+          <p class="empty">Todavia no hay consultas registradas.</p>
+        }
+      </section>
+
+      <section class="panel timeline-panel">
+        <div class="section-heading">
+          <h2>Proximas citas</h2>
+          @if (canReadAppointments()) {
+            <a routerLink="/appointments" [queryParams]="{ patientId: p.id }">Abrir agenda</a>
+          }
+        </div>
+        @if (!canReadAppointments()) {
+          <p class="empty">No tienes permiso para ver agenda.</p>
+        } @else if (isLoading()) {
+          <p class="empty">Cargando agenda...</p>
+        } @else if (nextAppointments().length > 0) {
+          <div class="list">
+            @for (appointment of nextAppointments(); track appointment.id) {
+              <article class="row">
+                <div>
+                  <strong>{{ appointment.visitType }}</strong>
+                  <span>{{ appointment.startsAtUtc | date: 'medium' }} - {{ appointment.reason }}</span>
+                  @if (appointment.assignedVeterinarianName) {
+                    <small>{{ appointment.assignedVeterinarianName }}</small>
+                  }
+                </div>
+                <span class="status appointment-status">{{ appointmentStatusLabel(appointment.status) }}</span>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="empty">No hay citas proximas en los siguientes 90 dias.</p>
+        }
+      </section>
+
+      <section class="panel timeline-panel wide">
+        <div class="section-heading">
+          <h2>Recetas</h2>
+        </div>
+        @if (isLoading()) {
+          <p class="empty">Cargando recetas...</p>
+        } @else if (latestPrescriptions().length > 0) {
+          <div class="list">
+            @for (prescription of latestPrescriptions(); track prescription.id) {
+              <article class="row">
+                <div>
+                  <strong>
+                    @if (prescription.productNames.length > 0) {
+                      {{ prescription.productNames.join(', ') }}
+                    } @else {
+                      Receta sin items
+                    }
+                  </strong>
+                  <span>{{ prescription.issuedAtUtc | date: 'medium' }} - {{ prescription.veterinarianName }}</span>
+                  <small>Consulta asociada</small>
+                </div>
+                <div class="row-actions">
+                  <a class="ghost-button" [routerLink]="['/consultations', prescription.consultationId]">Ver consulta</a>
+                  <span class="status" [class.status-draft]="prescription.status === 'Draft'" [class.status-finalized]="prescription.status === 'Finalized'">
+                    {{ prescriptionStatusLabel(prescription.status) }}
+                  </span>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="empty">Todavia no hay recetas asociadas a este paciente.</p>
+        }
+      </section>
+    </div>
+  } @else if (isLoading()) {
+    <p class="empty">Cargando expediente...</p>
+  } @else {
+    <p class="error">No se pudo abrir el expediente.</p>
+  }
+</section>

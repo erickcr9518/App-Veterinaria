@@ -14,6 +14,8 @@ import {
   CreatePatientRequest,
   Owner,
   Patient,
+  PrescriptionDetail,
+  PrescriptionSummary,
   UpdateConsultationRequest,
 } from '../models/clinical.models';
 
@@ -127,5 +129,13 @@ export class ClinicalService {
 
   changeAppointmentStatus(id: string, status: AppointmentStatus, reason?: string | null): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/appointments/${id}/status`, { status, reason });
+  }
+
+  getPrescriptionsByPatient(patientId: string): Observable<PrescriptionSummary[]> {
+    return this.http.get<PrescriptionSummary[]>(`${environment.apiUrl}/patients/${patientId}/prescriptions`);
+  }
+
+  getPrescriptionById(id: string): Observable<PrescriptionDetail> {
+    return this.http.get<PrescriptionDetail>(`${environment.apiUrl}/prescriptions/${id}`);
   }
 }
