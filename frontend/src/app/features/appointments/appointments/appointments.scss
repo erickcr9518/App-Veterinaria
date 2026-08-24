@@ -116,6 +116,10 @@ label {
   grid-template-columns: 1fr 1fr;
 }
 
+.form-panel .field-row {
+  grid-template-columns: 1fr;
+}
+
 .list-heading {
   align-items: end;
 }
