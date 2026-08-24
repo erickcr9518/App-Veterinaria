@@ -114,6 +114,7 @@ public class ConsultationsTests : IClassFixture<VetPlatformApiFactory>
             temperatureCelsius = 38.5,
             heartRateBpm = 100,
             respiratoryRateRpm = 24,
+            weightKg = 13.1,
             diagnosticPlan = "Panel gastrointestinal completo",
             treatment = "Fluidoterapia y antiemetico",
             recommendations = "Dieta blanda por 5 dias",
@@ -127,9 +128,32 @@ public class ConsultationsTests : IClassFixture<VetPlatformApiFactory>
 
         var amended = await GetAsAuthenticatedAsync<ConsultationDetailDto>(vetAuth.AccessToken, $"/api/consultations/{consultationId}");
         Assert.Equal("Gastroenteritis aguda confirmada por laboratorio", amended.Assessment);
+        Assert.Equal(13.1m, amended.WeightKg);
         Assert.Single(amended.Amendments);
         Assert.Contains("laboratorio", amended.Amendments[0].Reason);
         Assert.Contains("Gastroenteritis aguda sospechada", amended.Amendments[0].PreviousValuesJson);
+        Assert.Contains("\"WeightKg\":12.8", amended.Amendments[0].PreviousValuesJson);
+
+        var invalidAmendResponse = await PostAsAuthenticatedJsonAsync(vetAuth.AccessToken, $"/api/consultations/{consultationId}/amend", new
+        {
+            reason = "Intento de borrar evaluacion clinica",
+            reasonForVisit = "Vomito desde ayer",
+            historyOfPresentIllness = "Comenzo con vomito hace 24 horas",
+            physicalExamFindings = "Abdomen blando",
+            temperatureCelsius = 38.5,
+            heartRateBpm = 100,
+            respiratoryRateRpm = 24,
+            weightKg = 13.1,
+            diagnosticPlan = "Panel gastrointestinal completo",
+            treatment = "Fluidoterapia y antiemetico",
+            recommendations = "Dieta blanda por 5 dias",
+            followUpDate = (DateOnly?)null,
+            subjective = "Dueno reporta vomito",
+            objective = "Abdomen blando, sin dolor",
+            assessment = (string?)null,
+            plan = "Control en 5 dias",
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidAmendResponse.StatusCode);
     }
 
     [Fact]

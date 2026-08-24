@@ -32,6 +32,14 @@ public class AmendConsultationCommandHandler : IRequestHandler<AmendConsultation
             });
         }
 
+        if (string.IsNullOrWhiteSpace(request.Assessment) || string.IsNullOrWhiteSpace(request.Plan))
+        {
+            throw new ValidationException(new[]
+            {
+                new ValidationFailure(nameof(SoapNote.Assessment), "La evaluacion y el plan siguen siendo obligatorios en una consulta finalizada."),
+            });
+        }
+
         var previousValues = new
         {
             consultation.ReasonForVisit,
@@ -40,6 +48,7 @@ public class AmendConsultationCommandHandler : IRequestHandler<AmendConsultation
             consultation.TemperatureCelsius,
             consultation.HeartRateBpm,
             consultation.RespiratoryRateRpm,
+            consultation.WeightKg,
             consultation.DiagnosticPlan,
             consultation.Treatment,
             consultation.Recommendations,
@@ -58,12 +67,15 @@ public class AmendConsultationCommandHandler : IRequestHandler<AmendConsultation
             PreviousValuesJson = JsonSerializer.Serialize(previousValues),
         });
 
+        var previousWeight = consultation.WeightKg;
+
         consultation.ReasonForVisit = request.ReasonForVisit.Trim();
         consultation.HistoryOfPresentIllness = request.HistoryOfPresentIllness?.Trim();
         consultation.PhysicalExamFindings = request.PhysicalExamFindings?.Trim();
         consultation.TemperatureCelsius = request.TemperatureCelsius;
         consultation.HeartRateBpm = request.HeartRateBpm;
         consultation.RespiratoryRateRpm = request.RespiratoryRateRpm;
+        consultation.WeightKg = request.WeightKg ?? consultation.WeightKg;
         consultation.DiagnosticPlan = request.DiagnosticPlan?.Trim();
         consultation.Treatment = request.Treatment?.Trim();
         consultation.Recommendations = request.Recommendations?.Trim();
@@ -75,6 +87,20 @@ public class AmendConsultationCommandHandler : IRequestHandler<AmendConsultation
             consultation.SoapNote.Objective = request.Objective?.Trim();
             consultation.SoapNote.Assessment = request.Assessment?.Trim();
             consultation.SoapNote.Plan = request.Plan?.Trim();
+        }
+
+        if (request.WeightKg is { } newWeight && previousWeight != newWeight)
+        {
+            var patient = await _dbContext.Patients.SingleAsync(p => p.Id == consultation.PatientId, cancellationToken);
+            patient.CurrentWeightKg = newWeight;
+            _dbContext.PatientWeights.Add(new PatientWeight
+            {
+                ClinicId = consultation.ClinicId,
+                PatientId = patient.Id,
+                WeightKg = newWeight,
+                RecordedAtUtc = DateTime.UtcNow,
+                Notes = "Corregido mediante enmienda de consulta",
+            });
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);

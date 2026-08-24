@@ -11,6 +11,7 @@ public record AmendConsultationCommand(
     decimal? TemperatureCelsius,
     int? HeartRateBpm,
     int? RespiratoryRateRpm,
+    decimal? WeightKg,
     string? DiagnosticPlan,
     string? Treatment,
     string? Recommendations,
