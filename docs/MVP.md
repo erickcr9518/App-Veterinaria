@@ -88,7 +88,7 @@ Implemented:
 - Owners and patients, with weight history and progressive-disclosure forms, including a frontend for both.
 - Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records, with a frontend covering the whole lifecycle including the amendment history.
 - Appointments backend and frontend with day/week range views, status changes, and role-aware write rules.
-- Prescriptions backend tied to a consultation: draft with one or more items (product, concentration, presentation, quantity, route, frequency, duration, instructions), finalize (locks the record; corrections are issued as a new prescription rather than edited in place), and a per-patient prescription history.
+- Prescriptions backend and frontend tied to a consultation: draft with one or more items (product, concentration, presentation, quantity, route, frequency, duration, instructions), finalize (locks the record; corrections are issued as a new prescription rather than edited in place), and a per-patient prescription history.
 - SQL Server EF Core migrations.
 - Audit timestamps, soft delete, and optimistic concurrency.
 - Global tenant filter for `ITenantEntity`, reconciled on every startup (stale role permissions are removed, not just added to).
@@ -96,7 +96,7 @@ Implemented:
 
 ## Current Clinical Modules
 
-Owners, Patients, Consultations/SOAP, and Appointments are implemented end to end (backend and frontend). Prescriptions has a backend; its frontend is next.
+Owners, Patients, Consultations/SOAP, Appointments, and Prescriptions are implemented end to end (backend and frontend).
 
 Delivered backend capabilities:
 
@@ -125,19 +125,14 @@ Delivered frontend capabilities:
 - Patients list with owner and species filters, edit mode, and progressive-disclosure form.
 - Consultations: patient timeline, a shared create/edit-draft form (vitals and SOAP visible up front, plan/treatment/follow-up behind a `<details>`), a detail view with a two-step finalize confirmation, and an amend flow whose history renders the stored previous values in readable Spanish labels.
 - Appointments day/week view, create/edit form from the calendar, quick appointment start from the patient list, and status changes with a required reason for cancellation/no-show.
+- Prescriptions: created from the consultation that generated them (not as a standalone flow), a dynamic add/remove product list, the weight used for dosing pre-filled from the consultation or patient, a two-step finalize confirmation, and a per-patient history. No amend flow by design — correcting a dispensed prescription means creating a new one.
 - Navigation entries visible according to permissions throughout.
 
 ## Next Module
 
-Prescriptions frontend (backend is done):
+The patient record (Expediente del Paciente): a single per-patient screen tying together patient/owner data, consultation history, upcoming appointments, prescriptions issued, and the weight history that today only lives inside patient/consultation detail views. This is the module that makes the app read as one product instead of a set of separate screens.
 
-- Create a prescription from a consultation, with one or more product rows (add/remove) and the weight used for dosing pre-filled from the consultation or patient.
-- Per-patient prescription history, and prescriptions linked to the consultation that generated them.
-- Finalize with the same explicit confirmation pattern used for consultations; once finalized the record is read-only (correcting a dispensed prescription means creating a new one, not editing the old one).
-- Print/PDF-ready layout once document generation is in scope (currently deferred).
-- Navigation entries visible according to `prescriptions.write` / `records.read.full`.
-
-After that, the patient record (Expediente del Paciente): a single per-patient screen tying together patient/owner data, consultation history, upcoming appointments, prescriptions issued, and the weight history that today only lives inside patient/consultation detail views. This is the module that makes the app read as one product instead of a set of separate screens.
+Deferred once prescriptions have real usage data: print/PDF-ready layout for a finalized prescription.
 
 ## UX Direction
 

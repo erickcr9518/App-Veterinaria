@@ -1,0 +1,78 @@
+<section class="page">
+  <header class="page-header">
+    @if (patientId()) {
+      <a class="back-link" [routerLink]="['/patients', patientId(), 'prescriptions']">&larr; Recetas</a>
+    }
+    <h1>{{ title() }}</h1>
+    @if (patient(); as p) {
+      <p>{{ p.name }} &middot; {{ p.species }} @if (p.currentWeightKg) { &middot; ultimo peso {{ p.currentWeightKg }} kg }</p>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="empty">Cargando...</p>
+  } @else {
+    <form class="panel" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field-row two">
+        <label>
+          <span>Peso usado para el calculo (kg)</span>
+          <input formControlName="weightKgAtPrescription" type="number" step="0.01" min="0" />
+        </label>
+      </div>
+
+      <label class="full">
+        <span>Indicaciones generales</span>
+        <textarea formControlName="generalInstructions" rows="2" placeholder="Ej. administrar con alimento"></textarea>
+      </label>
+
+      <label class="full">
+        <span>Advertencias</span>
+        <textarea formControlName="warnings" rows="2" placeholder="Ej. no usar en pacientes con insuficiencia renal"></textarea>
+      </label>
+
+      <h2>Productos</h2>
+      <div class="items" formArrayName="items">
+        @for (item of items.controls; track $index; let i = $index) {
+          <div class="item-card" [formGroupName]="i">
+            <div class="item-header">
+              <strong>Producto {{ i + 1 }}</strong>
+              @if (items.length > 1) {
+                <button class="ghost-button" type="button" (click)="removeItem(i)">Quitar</button>
+              }
+            </div>
+
+            <div class="field-row two">
+              <label><span>Nombre del producto</span><input formControlName="productName" placeholder="Ej. Meloxicam" /></label>
+              <label><span>Concentracion</span><input formControlName="concentration" placeholder="Ej. 1.5 mg/ml" /></label>
+            </div>
+
+            <div class="field-row two">
+              <label><span>Presentacion</span><input formControlName="presentation" placeholder="Ej. suspension oral 10 ml" /></label>
+              <label><span>Cantidad</span><input formControlName="quantity" placeholder="Ej. 1 frasco" /></label>
+            </div>
+
+            <div class="field-row three">
+              <label><span>Via</span><input formControlName="route" placeholder="Ej. Oral" /></label>
+              <label><span>Frecuencia</span><input formControlName="frequency" placeholder="Ej. cada 24 horas" /></label>
+              <label><span>Duracion</span><input formControlName="duration" placeholder="Ej. 5 dias" /></label>
+            </div>
+
+            <label class="full"><span>Indicaciones del producto</span><input formControlName="instructions" /></label>
+          </div>
+        }
+      </div>
+
+      <div class="add-row">
+        <button class="ghost-button" type="button" (click)="addItem()">Agregar producto</button>
+      </div>
+
+      <div class="actions">
+        <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : 'Guardar borrador' }}</button>
+      </div>
+    </form>
+  }
+</section>

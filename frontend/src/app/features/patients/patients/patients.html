@@ -119,6 +119,7 @@
                   <a class="ghost-button" [routerLink]="['/appointments']" [queryParams]="{ patientId: patient.id }">Agendar</a>
                 }
                 <a class="ghost-button" [routerLink]="['/patients', patient.id, 'consultations']">Consultas</a>
+                <a class="ghost-button" [routerLink]="['/patients', patient.id, 'prescriptions']">Recetas</a>
                 <button class="ghost-button" type="button" (click)="editPatient(patient)">Editar</button>
               </div>
             </article>

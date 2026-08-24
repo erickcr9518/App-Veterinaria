@@ -1,0 +1,80 @@
+<section class="page">
+  @if (isLoading()) {
+    <p class="empty">Cargando receta...</p>
+  } @else if (prescription(); as p) {
+    <header class="page-header">
+      <a class="back-link" [routerLink]="['/patients', p.patientId, 'prescriptions']">&larr; Recetas de {{ p.patientName }}</a>
+      <div class="title-row">
+        <h1>Receta</h1>
+        <span class="status" [class.status-draft]="p.status === 'Draft'" [class.status-finalized]="p.status === 'Finalized'">
+          {{ p.status === 'Draft' ? 'Borrador' : 'Finalizada' }}
+        </span>
+      </div>
+      <p>{{ p.issuedAtUtc | date: 'medium' }} &middot; {{ p.veterinarianName }}</p>
+    </header>
+
+    @if (errorMessage(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+
+    <div class="panel">
+      <section class="block">
+        <h2>Datos generales</h2>
+        <div class="vitals">
+          <div><span>Peso usado</span><strong>{{ p.weightKgAtPrescription ? p.weightKgAtPrescription + ' kg' : '-' }}</strong></div>
+        </div>
+        @if (p.generalInstructions) {
+          <p class="value">{{ p.generalInstructions }}</p>
+        }
+        @if (p.warnings) {
+          <p class="warning">{{ p.warnings }}</p>
+        }
+      </section>
+
+      <section class="block">
+        <h2>Productos</h2>
+        <div class="item-list">
+          @for (item of p.items; track item.id) {
+            <article class="item">
+              <strong>{{ item.productName }}</strong>
+              <span>{{ item.concentration }} @if (item.presentation) { &middot; {{ item.presentation }} }</span>
+              <span>{{ item.quantity }} &middot; {{ item.route }} &middot; {{ item.frequency }} &middot; {{ item.duration }}</span>
+              @if (item.instructions) {
+                <span class="instructions">{{ item.instructions }}</span>
+              }
+            </article>
+          } @empty {
+            <p class="empty">Sin productos agregados todavia.</p>
+          }
+        </div>
+      </section>
+
+      @if (p.status === 'Finalized') {
+        <section class="block finalized-note">
+          <span>Finalizada el {{ p.finalizedAtUtc | date: 'medium' }} por {{ p.finalizedByName }}</span>
+        </section>
+      }
+
+      <div class="actions">
+        @if (p.status === 'Draft' && canWrite()) {
+          <a class="ghost-button" [routerLink]="['/prescriptions', p.id, 'edit']">Editar borrador</a>
+          @if (!isConfirmingFinalize()) {
+            <button type="button" (click)="confirmFinalize()">Finalizar receta</button>
+          } @else {
+            <div class="confirm-strip">
+              <span>Una vez finalizada no se puede editar. Para corregirla, crea una receta nueva.</span>
+              <div class="confirm-actions">
+                <button class="ghost-button" type="button" (click)="cancelFinalize()">Cancelar</button>
+                <button type="button" [disabled]="isFinalizing()" (click)="finalize()">
+                  {{ isFinalizing() ? 'Finalizando...' : 'Si, finalizar' }}
+                </button>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  } @else {
+    <p class="error">{{ errorMessage() || 'Receta no encontrada.' }}</p>
+  }
+</section>

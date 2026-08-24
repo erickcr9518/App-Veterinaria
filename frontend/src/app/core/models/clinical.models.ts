@@ -176,3 +176,63 @@ export interface AppointmentRequest {
   reminderChannel?: string | null;
   reminderNotes?: string | null;
 }
+
+export interface PrescriptionItem {
+  id: string;
+  productName: string;
+  concentration?: string | null;
+  presentation?: string | null;
+  quantity: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  instructions?: string | null;
+}
+
+export interface PrescriptionItemInput {
+  productName: string;
+  concentration?: string | null;
+  presentation?: string | null;
+  quantity: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  instructions?: string | null;
+}
+
+export interface PrescriptionSummary {
+  id: string;
+  consultationId: string;
+  patientId: string;
+  issuedAtUtc: string;
+  veterinarianName: string;
+  status: 'Draft' | 'Finalized';
+  productNames: string[];
+}
+
+export interface PrescriptionDetail {
+  id: string;
+  consultationId: string;
+  patientId: string;
+  patientName: string;
+  veterinarianName: string;
+  issuedAtUtc: string;
+  weightKgAtPrescription?: number | null;
+  generalInstructions?: string | null;
+  warnings?: string | null;
+  status: 'Draft' | 'Finalized';
+  finalizedAtUtc?: string | null;
+  finalizedByName?: string | null;
+  items: PrescriptionItem[];
+}
+
+export interface PrescriptionFormValue {
+  weightKgAtPrescription?: number | null;
+  generalInstructions?: string | null;
+  warnings?: string | null;
+  items: PrescriptionItemInput[];
+}
+
+export type CreatePrescriptionRequest = PrescriptionFormValue & { consultationId: string };
+
+export type UpdatePrescriptionRequest = PrescriptionFormValue;

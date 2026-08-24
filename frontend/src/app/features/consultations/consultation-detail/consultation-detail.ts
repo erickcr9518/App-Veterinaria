@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ClinicalService } from '../../../core/services/clinical.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { ConsultationDetail as ConsultationDetailModel } from '../../../core/models/clinical.models';
+import { ConsultationDetail as ConsultationDetailModel, PrescriptionSummary } from '../../../core/models/clinical.models';
 
 const FIELD_LABELS: Record<string, string> = {
   ReasonForVisit: 'Motivo de consulta',
@@ -44,6 +44,7 @@ export class ConsultationDetail implements OnInit {
   private readonly id = this.route.snapshot.paramMap.get('id')!;
 
   readonly consultation = signal<ConsultationDetailModel | null>(null);
+  readonly prescriptions = signal<PrescriptionSummary[]>([]);
   readonly isLoading = signal(true);
   readonly errorMessage = signal<string | null>(null);
 
@@ -85,6 +86,10 @@ export class ConsultationDetail implements OnInit {
     return this.authService.hasPermission('consultations.sign');
   }
 
+  canPrescribe(): boolean {
+    return this.authService.hasPermission('prescriptions.write');
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.clinicalService.getConsultationById(this.id).subscribe({
@@ -96,6 +101,11 @@ export class ConsultationDetail implements OnInit {
         this.errorMessage.set('No se pudo cargar la consulta.');
         this.isLoading.set(false);
       },
+    });
+
+    this.clinicalService.getPrescriptionsByConsultation(this.id).subscribe({
+      next: (prescriptions) => this.prescriptions.set(prescriptions),
+      error: () => undefined,
     });
   }
 
