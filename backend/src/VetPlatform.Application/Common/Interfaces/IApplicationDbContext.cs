@@ -17,6 +17,8 @@ public interface IApplicationDbContext
     DbSet<ConsultationAmendment> ConsultationAmendments { get; }
     DbSet<Appointment> Appointments { get; }
     DbSet<AppointmentStatusChange> AppointmentStatusChanges { get; }
+    DbSet<Prescription> Prescriptions { get; }
+    DbSet<PrescriptionItem> PrescriptionItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
