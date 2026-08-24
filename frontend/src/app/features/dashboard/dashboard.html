@@ -20,8 +20,123 @@
     @if (hasPermission('appointments.read')) {
       <a routerLink="/appointments">
         <strong>Agenda</strong>
-        <span>Citas del dia o semana, estados y seguimiento operativo.</span>
+        @if (summary(); as s) {
+          <span>{{ s.todaysAppointmentsCount }} cita(s) hoy.</span>
+        } @else {
+          <span>Citas del dia o semana, estados y seguimiento operativo.</span>
+        }
       </a>
     }
   </div>
+
+  @if (isLoading()) {
+    <p class="empty">Cargando resumen...</p>
+  } @else if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  } @else if (summary(); as s) {
+    <div class="panel-grid">
+      @if (hasPermission('appointments.read')) {
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Proximas citas</h2>
+            <a class="ghost-link" routerLink="/appointments">Ver agenda</a>
+          </div>
+          @if (s.upcomingAppointments.length > 0) {
+            <ul class="summary-list">
+              @for (appointment of s.upcomingAppointments; track appointment.id) {
+                <li>
+                  <div>
+                    <strong>{{ appointment.patientName }}</strong>
+                    <span>{{ appointment.reason }}</span>
+                  </div>
+                  <div class="meta">
+                    <span>{{ appointment.startsAtUtc | date: 'EEE d, HH:mm' }}</span>
+                    <span class="tag">{{ statusLabel(appointment.status) }}</span>
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty">Sin citas programadas en los proximos dias.</p>
+          }
+        </section>
+      }
+
+      @if (hasPermission('consultations.write')) {
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Consultas en borrador</h2>
+          </div>
+          @if (s.draftConsultations.length > 0) {
+            <ul class="summary-list">
+              @for (item of s.draftConsultations; track item.id) {
+                <li>
+                  <a class="summary-link" [routerLink]="['/consultations', item.id]">
+                    <div>
+                      <strong>{{ item.patientName }}</strong>
+                      <span>{{ item.summary }}</span>
+                    </div>
+                    <span class="meta">{{ item.dateUtc | date: 'medium' }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty">No tienes consultas pendientes de finalizar.</p>
+          }
+        </section>
+      }
+
+      @if (hasPermission('prescriptions.write')) {
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Recetas en borrador</h2>
+          </div>
+          @if (s.draftPrescriptions.length > 0) {
+            <ul class="summary-list">
+              @for (item of s.draftPrescriptions; track item.id) {
+                <li>
+                  <a class="summary-link" [routerLink]="['/prescriptions', item.id]">
+                    <div>
+                      <strong>{{ item.patientName }}</strong>
+                      <span>{{ item.summary }}</span>
+                    </div>
+                    <span class="meta">{{ item.dateUtc | date: 'medium' }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty">No tienes recetas pendientes de finalizar.</p>
+          }
+        </section>
+      }
+
+      @if (hasPermission('patients.read')) {
+        <section class="panel">
+          <div class="panel-heading">
+            <h2>Pacientes recientes</h2>
+            <a class="ghost-link" routerLink="/patients">Ver todos</a>
+          </div>
+          @if (s.recentPatients.length > 0) {
+            <ul class="summary-list">
+              @for (patient of s.recentPatients; track patient.id) {
+                <li>
+                  <a class="summary-link" [routerLink]="['/patients', patient.id, 'record']">
+                    <div>
+                      <strong>{{ patient.name }}</strong>
+                      <span>{{ patient.species }} &middot; {{ patient.ownerName }}</span>
+                    </div>
+                    <span class="meta">{{ patient.createdAtUtc | date }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="empty">Todavia no se han registrado pacientes.</p>
+          }
+        </section>
+      }
+    </div>
+  }
 </section>

@@ -2,12 +2,13 @@
   --ink: #16211e;
   --ink-soft: #3d4c47;
   --line: rgba(22, 33, 30, 0.14);
+  --accent: #0e6e5e;
 
   display: block;
 }
 
 .dashboard {
-  max-width: 720px;
+  max-width: 1080px;
 }
 
 h1 {
@@ -43,8 +44,121 @@ h1 {
   color: var(--ink);
 }
 
+.empty,
+.error {
+  margin: 24px 0 0;
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.empty {
+  background: #f6f8f7;
+  color: var(--ink-soft);
+}
+
+.error {
+  background: #fff0ed;
+  color: #9b2c1f;
+}
+
+.panel-grid {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-heading h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.ghost-link {
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.ghost-link:hover {
+  text-decoration: underline;
+}
+
+.summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.summary-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-list li:last-child {
+  border-bottom: none;
+}
+
+.summary-list li > div,
+.summary-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.summary-list strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.summary-list span {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: #e6f3f0;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
 @media (max-width: 700px) {
-  .action-grid {
+  .action-grid,
+  .panel-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -96,7 +96,7 @@ Implemented:
 
 ## Current Clinical Modules
 
-Owners, Patients, Consultations/SOAP, Appointments, and Prescriptions are implemented end to end (backend and frontend).
+Owners, Patients, Consultations/SOAP, Appointments, Prescriptions, the Patient Record (Expediente del Paciente), and the Dashboard are implemented end to end (backend and frontend).
 
 Delivered backend capabilities:
 
@@ -118,6 +118,7 @@ Delivered backend capabilities:
 - Draft prescriptions are fully editable (items are replaced wholesale on update); finalize requires at least one item and then locks the record for direct edits (only `prescriptions.write`, held only by Veterinario).
 - Prescription history endpoints scoped by patient and by consultation.
 - Integration tests proving tenant isolation, role restrictions, blocked direct edits after finalization, and the finalize-requires-an-item rule.
+- Dashboard summary endpoint (`GET /api/dashboard/summary`) aggregating today's/upcoming appointments, the current user's own draft consultations and prescriptions pending finalization, and recently added patients, each section gated by the caller's own permissions rather than a dedicated dashboard permission.
 
 Delivered frontend capabilities:
 
@@ -126,13 +127,13 @@ Delivered frontend capabilities:
 - Consultations: patient timeline, a shared create/edit-draft form (vitals and SOAP visible up front, plan/treatment/follow-up behind a `<details>`), a detail view with a two-step finalize confirmation, and an amend flow whose history renders the stored previous values in readable Spanish labels.
 - Appointments day/week view, create/edit form from the calendar, quick appointment start from the patient list, and status changes with a required reason for cancellation/no-show.
 - Prescriptions: created from the consultation that generated them (not as a standalone flow), a dynamic add/remove product list, the weight used for dosing pre-filled from the consultation or patient, a two-step finalize confirmation, and a per-patient history. No amend flow by design — correcting a dispensed prescription means creating a new one.
+- Patient Record (Expediente del Paciente): a single per-patient screen tying together patient/owner data, consultation history, prescriptions issued, and appointments, filterable by patient from the Agenda; consultations and prescriptions link back into their own detail screens rather than duplicating that logic.
+- Dashboard: replaces the static launcher with live clinic data — today's appointment count, the upcoming-appointments list, the signed-in veterinarian's own draft consultations and prescriptions pending finalization, and recently added patients, each card only shown when the user holds the matching permission.
 - Navigation entries visible according to permissions throughout.
 
 ## Next Module
 
-The patient record (Expediente del Paciente): a single per-patient screen tying together patient/owner data, consultation history, upcoming appointments, prescriptions issued, and the weight history that today only lives inside patient/consultation detail views. This is the module that makes the app read as one product instead of a set of separate screens.
-
-Deferred once prescriptions have real usage data: print/PDF-ready layout for a finalized prescription.
+V1 scope as defined above is now complete end to end. Candidates for what comes next: hardening/QA pass across all modules (edge cases, responsive layout, accessibility), or moving into deferred scope with explicit product sign-off (print/PDF-ready prescriptions, advanced scheduling/reminders, AI-assisted features).
 
 ## UX Direction
 
