@@ -28,6 +28,34 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: 'patients.read' },
       },
+      {
+        path: 'patients/:patientId/consultations',
+        loadComponent: () =>
+          import('./features/consultations/patient-consultations/patient-consultations').then((m) => m.PatientConsultations),
+        canActivate: [permissionGuard],
+        data: { permission: 'records.read.full' },
+      },
+      {
+        path: 'patients/:patientId/consultations/new',
+        loadComponent: () =>
+          import('./features/consultations/consultation-form/consultation-form').then((m) => m.ConsultationForm),
+        canActivate: [permissionGuard],
+        data: { permission: 'consultations.write' },
+      },
+      {
+        path: 'consultations/:id/edit',
+        loadComponent: () =>
+          import('./features/consultations/consultation-form/consultation-form').then((m) => m.ConsultationForm),
+        canActivate: [permissionGuard],
+        data: { permission: 'consultations.write' },
+      },
+      {
+        path: 'consultations/:id',
+        loadComponent: () =>
+          import('./features/consultations/consultation-detail/consultation-detail').then((m) => m.ConsultationDetail),
+        canActivate: [permissionGuard],
+        data: { permission: 'records.read.full' },
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

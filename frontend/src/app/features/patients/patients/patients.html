@@ -115,6 +115,7 @@
               </div>
               <div class="row-actions">
                 <small>@if (patient.currentWeightKg) { {{ patient.currentWeightKg }} kg } @else { Sin peso }</small>
+                <a class="ghost-button" [routerLink]="['/patients', patient.id, 'consultations']">Consultas</a>
                 <button class="ghost-button" type="button" (click)="editPatient(patient)">Editar</button>
               </div>
             </article>
