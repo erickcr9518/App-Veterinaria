@@ -1,0 +1,170 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Agenda</h1>
+      <p>Citas por dia o semana, con estado operativo y seguimiento rapido.</p>
+    </div>
+    <div class="toolbar">
+      <div class="segmented" aria-label="Vista de agenda">
+        <button type="button" [class.active]="viewMode() === 'day'" (click)="setViewMode('day')">Dia</button>
+        <button type="button" [class.active]="viewMode() === 'week'" (click)="setViewMode('week')">Semana</button>
+      </div>
+      <button class="icon-button" type="button" (click)="move(-1)" aria-label="Anterior">‹</button>
+      <button class="ghost-button" type="button" (click)="goToday()">Hoy</button>
+      <button class="icon-button" type="button" (click)="move(1)" aria-label="Siguiente">›</button>
+    </div>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="workspace">
+    @if (canWrite()) {
+      <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-heading">
+          <h2>{{ formTitle() }}</h2>
+          @if (editingAppointment()) {
+            <button class="ghost-button" type="button" (click)="cancelEdit()">Cancelar</button>
+          }
+        </div>
+
+        <label>
+          <span>Paciente</span>
+          <select formControlName="patientId">
+            <option value="">Seleccionar</option>
+            @for (patient of patients(); track patient.id) {
+              <option [value]="patient.id">{{ patient.name }} - {{ patient.ownerName }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="field-row">
+          <label>
+            <span>Inicio</span>
+            <input type="datetime-local" formControlName="startsAtLocal" />
+          </label>
+          <label>
+            <span>Fin</span>
+            <input type="datetime-local" formControlName="endsAtLocal" />
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>
+            <span>Tipo</span>
+            <input formControlName="visitType" />
+          </label>
+          <label>
+            <span>Recordatorio</span>
+            <select formControlName="reminderChannel">
+              <option value="">Sin canal</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Telefono">Telefono</option>
+              <option value="Correo">Correo</option>
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span>Motivo</span>
+          <input formControlName="reason" />
+        </label>
+
+        <label>
+          <span>Notas</span>
+          <textarea formControlName="notes" rows="3"></textarea>
+        </label>
+
+        <label>
+          <span>Notas de recordatorio</span>
+          <input formControlName="reminderNotes" />
+        </label>
+
+        <button type="submit" [disabled]="isSaving() || form.invalid || patients().length === 0">
+          {{ isSaving() ? 'Guardando...' : submitLabel() }}
+        </button>
+      </form>
+    }
+
+    <div class="panel list-panel">
+      <div class="list-heading">
+        <div>
+          <h2>{{ rangeLabel() }}</h2>
+          <span>{{ appointments().length }} cita(s)</span>
+        </div>
+        <label>
+          <span>Estado</span>
+          <select #statusFilter (change)="updateStatusFilter(statusFilter.value)">
+            <option value="">Todos</option>
+            <option value="Scheduled">Programada</option>
+            <option value="Confirmed">Confirmada</option>
+            <option value="Completed">Completada</option>
+            <option value="Cancelled">Cancelada</option>
+            <option value="NoShow">No asistio</option>
+          </select>
+        </label>
+      </div>
+
+      @if (statusTarget(); as target) {
+        <form class="status-panel" [formGroup]="statusForm" (ngSubmit)="submitStatusChange()">
+          <div>
+            <strong>{{ statusLabel(target.status) }}</strong>
+            <span>{{ target.appointment.patientName }} · {{ target.appointment.reason }}</span>
+          </div>
+          <label>
+            <span>Razon</span>
+            <input formControlName="reason" />
+          </label>
+          <div class="status-actions">
+            <button class="ghost-button" type="button" (click)="cancelStatusChange()">Cancelar</button>
+            <button type="submit" [disabled]="isChangingStatus()">{{ isChangingStatus() ? 'Guardando...' : 'Aplicar' }}</button>
+          </div>
+        </form>
+      }
+
+      @if (isLoading()) {
+        <p class="empty">Cargando agenda...</p>
+      } @else if (hasAppointments()) {
+        <div class="list">
+          @for (appointment of appointments(); track appointment.id) {
+            <article class="appointment-row" [class.cancelled]="appointment.status === 'Cancelled'">
+              <time>
+                <strong>{{ appointment.startsAtUtc | date: 'HH:mm' }}</strong>
+                <span>{{ appointment.endsAtUtc | date: 'HH:mm' }}</span>
+              </time>
+              <div class="appointment-main">
+                <div class="appointment-title">
+                  <strong>{{ appointment.patientName }}</strong>
+                  <span class="status-chip" [class]="appointment.status">{{ statusLabel(appointment.status) }}</span>
+                </div>
+                <span>{{ appointment.ownerName }} · {{ appointment.visitType }}</span>
+                <p>{{ appointment.reason }}</p>
+                @if (appointment.assignedVeterinarianName) {
+                  <small>{{ appointment.assignedVeterinarianName }}</small>
+                } @else {
+                  <small>Sin veterinario asignado</small>
+                }
+              </div>
+              @if (canWrite()) {
+                <div class="row-actions">
+                  <button class="ghost-button" type="button" (click)="editAppointment(appointment)">Editar</button>
+                  @if (appointment.status === 'Scheduled') {
+                    <button class="ghost-button" type="button" (click)="prepareStatusChange(appointment, 'Confirmed')">Confirmar</button>
+                  }
+                  @if (appointment.status !== 'Completed' && appointment.status !== 'Cancelled') {
+                    <button class="ghost-button" type="button" (click)="prepareStatusChange(appointment, 'Completed')">Completar</button>
+                    <button class="ghost-button danger" type="button" (click)="prepareStatusChange(appointment, 'Cancelled')">Cancelar</button>
+                    <button class="ghost-button" type="button" (click)="prepareStatusChange(appointment, 'NoShow')">No asistio</button>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="empty">No hay citas en este rango.</p>
+      }
+    </div>
+  </div>
+</section>

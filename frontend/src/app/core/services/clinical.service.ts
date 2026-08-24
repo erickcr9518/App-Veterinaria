@@ -4,6 +4,9 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   AmendConsultationRequest,
+  Appointment,
+  AppointmentRequest,
+  AppointmentStatus,
   ConsultationDetail,
   ConsultationSummary,
   CreateConsultationRequest,
@@ -84,5 +87,45 @@ export class ClinicalService {
 
   amendConsultation(id: string, request: AmendConsultationRequest): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/consultations/${id}/amend`, request);
+  }
+
+  getAppointments(filters: {
+    fromUtc: string;
+    toUtc: string;
+    patientId?: string;
+    assignedVeterinarianUserId?: string;
+    status?: AppointmentStatus | '';
+  }): Observable<Appointment[]> {
+    let params = new HttpParams()
+      .set('fromUtc', filters.fromUtc)
+      .set('toUtc', filters.toUtc);
+
+    if (filters.patientId) {
+      params = params.set('patientId', filters.patientId);
+    }
+    if (filters.assignedVeterinarianUserId) {
+      params = params.set('assignedVeterinarianUserId', filters.assignedVeterinarianUserId);
+    }
+    if (filters.status) {
+      params = params.set('status', filters.status);
+    }
+
+    return this.http.get<Appointment[]>(`${environment.apiUrl}/appointments`, { params });
+  }
+
+  getAppointmentById(id: string): Observable<Appointment> {
+    return this.http.get<Appointment>(`${environment.apiUrl}/appointments/${id}`);
+  }
+
+  createAppointment(request: AppointmentRequest): Observable<string> {
+    return this.http.post<string>(`${environment.apiUrl}/appointments`, request);
+  }
+
+  updateAppointment(id: string, request: AppointmentRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/appointments/${id}`, request);
+  }
+
+  changeAppointmentStatus(id: string, status: AppointmentStatus, reason?: string | null): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/appointments/${id}/status`, { status, reason });
   }
 }

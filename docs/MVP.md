@@ -87,7 +87,7 @@ Implemented:
 - User list/create endpoints scoped by clinic, plus platform-admin provisioning of clinic admins for a clinic they choose.
 - Owners and patients, with weight history and progressive-disclosure forms.
 - Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records.
-- Appointments backend with day/week range queries, status changes, and role-aware write rules.
+- Appointments backend and frontend with day/week range views, status changes, and role-aware write rules.
 - SQL Server EF Core migrations.
 - Audit timestamps, soft delete, and optimistic concurrency.
 - Global tenant filter for `ITenantEntity`, reconciled on every startup (stale role permissions are removed, not just added to).
@@ -95,7 +95,7 @@ Implemented:
 
 ## Current Clinical Modules
 
-Owners, Patients, Consultations/SOAP, and the Appointments backend are implemented as the first clinical-administrative modules.
+Owners, Patients, Consultations/SOAP, and Appointments are implemented as the first clinical-administrative modules.
 
 Delivered backend capabilities:
 
@@ -124,15 +124,19 @@ Delivered frontend capabilities:
 - Navigation entries visible according to permissions.
 - Route guards for owner and patient permissions.
 - Debounced search inputs.
+- Appointments day/week view.
+- Appointment create/edit form from the calendar.
+- Quick appointment start from the patient list.
+- Appointment status changes with required reason for cancellation/no-show.
 
 ## Next Module
 
-The next module is Appointments (Agenda) frontend:
+The next module is Prescriptions frontend after the backend is merged:
 
-- Day and week calendar views.
-- Quick-create appointment from the patient record and from the calendar itself.
-- Status changes and cancellation with a required reason.
-- Navigation entries visible according to permissions (recepcion needs this front and center; a veterinarian mid-consultation should not).
+- Prescription list/detail tied to finalized consultations.
+- Prescription creation and editing according to `prescriptions.write`.
+- Clear finalized/signed prescription workflow.
+- Print/PDF-ready layout once document generation is available.
 
 ## UX Direction
 

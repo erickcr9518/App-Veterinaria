@@ -13,6 +13,9 @@
       @if (hasPermission('patients.read')) {
         <a routerLink="/patients">Pacientes</a>
       }
+      @if (hasPermission('appointments.read')) {
+        <a routerLink="/appointments">Agenda</a>
+      }
     </nav>
 
     @if (currentUser(); as user) {

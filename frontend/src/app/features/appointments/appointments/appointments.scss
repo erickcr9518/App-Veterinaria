@@ -1,0 +1,280 @@
+:host {
+  display: block;
+}
+
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.page-header,
+.workspace,
+.field-row,
+.toolbar,
+.list-heading,
+.appointment-row,
+.row-actions,
+.status-actions {
+  display: grid;
+  gap: 14px;
+}
+
+.page-header {
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+strong {
+  color: #16211e;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 18px;
+}
+
+p,
+span,
+small,
+time {
+  color: #52615c;
+}
+
+.toolbar {
+  grid-auto-flow: column;
+  align-items: end;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid rgba(22, 33, 30, 0.16);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented button {
+  border-radius: 0;
+  background: #fff;
+  color: #52615c;
+}
+
+.segmented .active {
+  background: #0e6e5e;
+  color: #fff;
+}
+
+.workspace {
+  grid-template-columns: minmax(340px, 420px) 1fr;
+  align-items: start;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid rgba(22, 33, 30, 0.12);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.form-panel,
+.list-panel,
+label {
+  display: grid;
+  gap: 12px;
+}
+
+.form-heading,
+.appointment-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-row,
+.list-heading {
+  grid-template-columns: 1fr 1fr;
+}
+
+.list-heading {
+  align-items: end;
+}
+
+label span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(22, 33, 30, 0.18);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  color: #16211e;
+  background: #fff;
+}
+
+button,
+.ghost-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #0e6e5e;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ghost-button,
+.icon-button {
+  border: 1px solid rgba(22, 33, 30, 0.16);
+  background: #fff;
+  color: #0e6e5e;
+}
+
+.icon-button {
+  min-width: 42px;
+  padding: 10px;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.danger {
+  color: #9b2c1f;
+}
+
+.status-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(14, 110, 94, 0.22);
+  border-radius: 8px;
+  background: #f2fbf8;
+}
+
+.status-panel div,
+.appointment-main {
+  display: grid;
+  gap: 5px;
+}
+
+.status-actions,
+.row-actions {
+  grid-auto-flow: column;
+  justify-content: end;
+  align-items: center;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+}
+
+.appointment-row {
+  grid-template-columns: 74px 1fr auto;
+  align-items: start;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(22, 33, 30, 0.1);
+}
+
+.appointment-row time {
+  display: grid;
+  gap: 4px;
+}
+
+.appointment-row time strong {
+  font-size: 20px;
+}
+
+.appointment-main p {
+  color: #16211e;
+}
+
+.status-chip {
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef3f1;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-chip.Confirmed {
+  background: #e5f4ed;
+  color: #0e6e5e;
+}
+
+.status-chip.Completed {
+  background: #e9f0ff;
+  color: #264f9e;
+}
+
+.status-chip.Cancelled,
+.appointment-row.cancelled .appointment-main {
+  opacity: 0.68;
+}
+
+.status-chip.Cancelled,
+.status-chip.NoShow {
+  background: #fff0ed;
+  color: #9b2c1f;
+}
+
+.empty,
+.error {
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.empty {
+  background: #f6f8f7;
+}
+
+.error {
+  margin-bottom: 16px;
+  background: #fff0ed;
+  color: #9b2c1f;
+}
+
+@media (max-width: 980px) {
+  .page-header,
+  .workspace,
+  .field-row,
+  .list-heading,
+  .appointment-row {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+  }
+
+  .row-actions {
+    grid-auto-flow: row;
+    justify-content: stretch;
+  }
+}

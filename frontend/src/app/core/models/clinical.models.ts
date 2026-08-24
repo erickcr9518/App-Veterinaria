@@ -133,3 +133,46 @@ export type CreateConsultationRequest = ConsultationFormValue & { patientId: str
 export type UpdateConsultationRequest = ConsultationFormValue;
 
 export type AmendConsultationRequest = Omit<ConsultationFormValue, 'weightKg'> & { reason: string };
+
+export type AppointmentStatus = 'Scheduled' | 'Confirmed' | 'Cancelled' | 'Completed' | 'NoShow';
+
+export interface AppointmentStatusChange {
+  id: string;
+  fromStatus?: AppointmentStatus | null;
+  toStatus: AppointmentStatus;
+  reason?: string | null;
+  changedAtUtc: string;
+  changedByName: string;
+}
+
+export interface Appointment {
+  id: string;
+  patientId: string;
+  patientName: string;
+  ownerId: string;
+  ownerName: string;
+  assignedVeterinarianUserId?: string | null;
+  assignedVeterinarianName?: string | null;
+  startsAtUtc: string;
+  endsAtUtc: string;
+  visitType: string;
+  status: AppointmentStatus;
+  reason: string;
+  notes?: string | null;
+  reminderSentAtUtc?: string | null;
+  reminderChannel?: string | null;
+  reminderNotes?: string | null;
+  statusChanges: AppointmentStatusChange[];
+}
+
+export interface AppointmentRequest {
+  patientId: string;
+  assignedVeterinarianUserId?: string | null;
+  startsAtUtc: string;
+  endsAtUtc: string;
+  visitType: string;
+  reason: string;
+  notes?: string | null;
+  reminderChannel?: string | null;
+  reminderNotes?: string | null;
+}

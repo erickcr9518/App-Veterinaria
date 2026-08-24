@@ -17,5 +17,11 @@
         <span>Perros y gatos con datos clinicos iniciales y peso actual.</span>
       </a>
     }
+    @if (hasPermission('appointments.read')) {
+      <a routerLink="/appointments">
+        <strong>Agenda</strong>
+        <span>Citas del dia o semana, estados y seguimiento operativo.</span>
+      </a>
+    }
   </div>
 </section>

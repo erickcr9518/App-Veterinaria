@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Owner, Patient } from '../../../core/models/clinical.models';
+import { AuthService } from '../../../core/services/auth.service';
 import { ClinicalService } from '../../../core/services/clinical.service';
 
 @Component({
@@ -17,6 +18,7 @@ import { ClinicalService } from '../../../core/services/clinical.service';
 export class Patients implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly clinicalService = inject(ClinicalService);
+  private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchChanged = new Subject<string>();
 
@@ -31,6 +33,7 @@ export class Patients implements OnInit {
   readonly formTitle = computed(() => this.editingPatient() ? 'Editar paciente' : 'Nuevo paciente');
   readonly submitLabel = computed(() => this.editingPatient() ? 'Guardar cambios' : 'Guardar paciente');
   readonly hasPatients = computed(() => this.patients().length > 0);
+  readonly canSchedule = computed(() => this.authService.hasPermission('appointments.read'));
 
   readonly form = this.fb.group({
     ownerId: ['', [Validators.required]],

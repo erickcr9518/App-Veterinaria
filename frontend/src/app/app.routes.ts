@@ -29,6 +29,12 @@ export const routes: Routes = [
         data: { permission: 'patients.read' },
       },
       {
+        path: 'appointments',
+        loadComponent: () => import('./features/appointments/appointments/appointments').then((m) => m.Appointments),
+        canActivate: [permissionGuard],
+        data: { permission: 'appointments.read' },
+      },
+      {
         path: 'patients/:patientId/consultations',
         loadComponent: () =>
           import('./features/consultations/patient-consultations/patient-consultations').then((m) => m.PatientConsultations),
