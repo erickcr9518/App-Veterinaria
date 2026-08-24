@@ -11,6 +11,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 12px;
 }
@@ -79,6 +80,10 @@ p {
   border-bottom: none;
 }
 
+.row > * {
+  min-width: 0;
+}
+
 .row div {
   display: grid;
   gap: 4px;
@@ -127,4 +132,15 @@ p {
   margin-bottom: 16px;
   background: #fff0ed;
   color: #9b2c1f;
+}
+
+@media (max-width: 640px) {
+  .page-header,
+  .row {
+    align-items: flex-start;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
 }

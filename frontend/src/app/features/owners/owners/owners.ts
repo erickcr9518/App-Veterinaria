@@ -5,6 +5,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ClinicalService } from '../../../core/services/clinical.service';
 import { Owner } from '../../../core/models/clinical.models';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-owners',
@@ -16,6 +17,7 @@ import { Owner } from '../../../core/models/clinical.models';
 export class Owners implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly clinicalService = inject(ClinicalService);
+  private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchChanged = new Subject<string>();
 
@@ -28,6 +30,7 @@ export class Owners implements OnInit {
   readonly formTitle = computed(() => this.editingOwner() ? 'Editar propietario' : 'Nuevo propietario');
   readonly submitLabel = computed(() => this.editingOwner() ? 'Guardar cambios' : 'Guardar propietario');
   readonly hasOwners = computed(() => this.owners().length > 0);
+  readonly canWrite = computed(() => this.authService.hasPermission('owners.write'));
 
   readonly form = this.fb.group({
     fullName: ['', [Validators.required, Validators.maxLength(200)]],
@@ -119,6 +122,10 @@ export class Owners implements OnInit {
   }
 
   editOwner(owner: Owner): void {
+    if (!this.canWrite()) {
+      return;
+    }
+
     this.editingOwner.set(owner);
     this.form.reset({
       fullName: owner.fullName,

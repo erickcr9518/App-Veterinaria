@@ -33,7 +33,9 @@ export class Patients implements OnInit {
   readonly formTitle = computed(() => this.editingPatient() ? 'Editar paciente' : 'Nuevo paciente');
   readonly submitLabel = computed(() => this.editingPatient() ? 'Guardar cambios' : 'Guardar paciente');
   readonly hasPatients = computed(() => this.patients().length > 0);
+  readonly canWrite = computed(() => this.authService.hasPermission('patients.write'));
   readonly canSchedule = computed(() => this.authService.hasPermission('appointments.read'));
+  readonly canReadRecords = computed(() => this.authService.hasPermission('records.read.full'));
 
   readonly form = this.fb.group({
     ownerId: ['', [Validators.required]],
@@ -64,7 +66,9 @@ export class Patients implements OnInit {
       this.loadPatients();
     });
 
-    this.loadOwners();
+    if (this.canWrite()) {
+      this.loadOwners();
+    }
     this.loadPatients();
   }
 
@@ -144,6 +148,10 @@ export class Patients implements OnInit {
   }
 
   editPatient(patient: Patient): void {
+    if (!this.canWrite()) {
+      return;
+    }
+
     this.editingPatient.set(patient);
     this.form.reset({
       ownerId: patient.ownerId,

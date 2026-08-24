@@ -14,7 +14,8 @@
     <p class="error">{{ message }}</p>
   }
 
-  <div class="workspace">
+  <div class="workspace" [class.readonly]="!canWrite()">
+    @if (canWrite()) {
     <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
       <div class="form-heading">
         <h2>{{ formTitle() }}</h2>
@@ -61,6 +62,7 @@
 
       <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : submitLabel() }}</button>
     </form>
+    }
 
     <div class="panel list-panel">
       <h2>Directorio</h2>
@@ -76,7 +78,9 @@
               </div>
               <div class="row-actions">
                 <small>{{ owner.patientCount }} paciente(s)</small>
-                <button class="ghost-button" type="button" (click)="editOwner(owner)">Editar</button>
+                @if (canWrite()) {
+                  <button class="ghost-button" type="button" (click)="editOwner(owner)">Editar</button>
+                }
               </div>
             </article>
           }

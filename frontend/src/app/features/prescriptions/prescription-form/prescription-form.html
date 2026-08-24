@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-header">
     @if (patientId()) {
-      <a class="back-link" [routerLink]="['/patients', patientId(), 'prescriptions']">&larr; Recetas</a>
+      <a class="back-link" [routerLink]="['/patients', patientId(), 'record']">&larr; Expediente</a>
     }
     <h1>{{ title() }}</h1>
     @if (patient(); as p) {

@@ -48,7 +48,19 @@ small {
   align-items: start;
 }
 
+.workspace.readonly {
+  grid-template-columns: 1fr;
+}
+
+.workspace > *,
+.field-row > *,
+.row > * {
+  min-width: 0;
+}
+
 .panel {
+  box-sizing: border-box;
+  min-width: 0;
   background: #fff;
   border: 1px solid rgba(22, 33, 30, 0.12);
   border-radius: 8px;
@@ -134,6 +146,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: end;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -160,7 +173,12 @@ button:disabled {
 @media (max-width: 840px) {
   .page-header,
   .workspace,
-  .field-row {
+  .field-row,
+  .row {
     grid-template-columns: 1fr;
+  }
+
+  .row .row-actions {
+    justify-content: start;
   }
 }

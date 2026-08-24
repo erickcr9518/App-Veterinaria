@@ -24,7 +24,8 @@
     <p class="error">{{ message }}</p>
   }
 
-  <div class="workspace">
+  <div class="workspace" [class.readonly]="!canWrite()">
+    @if (canWrite()) {
     <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
       <div class="form-heading">
         <h2>{{ formTitle() }}</h2>
@@ -100,6 +101,7 @@
 
       <button type="submit" [disabled]="isSaving() || owners().length === 0">{{ isSaving() ? 'Guardando...' : submitLabel() }}</button>
     </form>
+    }
 
     <div class="panel list-panel">
       <h2>Pacientes registrados</h2>
@@ -118,10 +120,14 @@
                 @if (canSchedule()) {
                   <a class="ghost-button" [routerLink]="['/appointments']" [queryParams]="{ patientId: patient.id }">Agendar</a>
                 }
-                <a class="ghost-button" [routerLink]="['/patients', patient.id, 'record']">Expediente</a>
-                <a class="ghost-button" [routerLink]="['/patients', patient.id, 'consultations']">Consultas</a>
-                <a class="ghost-button" [routerLink]="['/patients', patient.id, 'prescriptions']">Recetas</a>
-                <button class="ghost-button" type="button" (click)="editPatient(patient)">Editar</button>
+                @if (canReadRecords()) {
+                  <a class="ghost-button" [routerLink]="['/patients', patient.id, 'record']">Expediente</a>
+                  <a class="ghost-button" [routerLink]="['/patients', patient.id, 'consultations']">Consultas</a>
+                  <a class="ghost-button" [routerLink]="['/patients', patient.id, 'prescriptions']">Recetas</a>
+                }
+                @if (canWrite()) {
+                  <button class="ghost-button" type="button" (click)="editPatient(patient)">Editar</button>
+                }
               </div>
             </article>
           }

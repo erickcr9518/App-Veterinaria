@@ -82,6 +82,12 @@ textarea {
   gap: 12px;
 }
 
+.field-row > *,
+.item-card,
+.panel {
+  min-width: 0;
+}
+
 .field-row.two {
   grid-template-columns: 1fr 1fr;
 }
@@ -108,6 +114,8 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .item-header strong {
@@ -169,5 +177,15 @@ button:disabled {
   .field-row.two,
   .field-row.three {
     grid-template-columns: 1fr;
+  }
+
+  .actions,
+  .add-row {
+    justify-content: stretch;
+  }
+
+  .actions button,
+  .add-row button {
+    width: 100%;
   }
 }
