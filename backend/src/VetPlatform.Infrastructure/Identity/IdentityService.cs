@@ -128,6 +128,12 @@ public class IdentityService : IIdentityService
             .ToDictionaryAsync(u => u.Id, u => u.FullName);
     }
 
+    public async Task<bool> UserBelongsToClinicAsync(Guid userId, Guid clinicId)
+    {
+        return await _userManager.Users
+            .AnyAsync(u => u.Id == userId && u.ClinicId == clinicId && u.IsActive);
+    }
+
     private async Task<AuthenticatedUser> BuildAuthenticatedUserAsync(ApplicationUser user)
     {
         var roles = await _userManager.GetRolesAsync(user);

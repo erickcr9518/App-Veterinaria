@@ -97,6 +97,34 @@ public sealed class VetPlatformApiFactory : WebApplicationFactory<Program>
         return (clinic.Id, user.Id);
     }
 
+    public async Task<Guid> CreateClinicUserInClinicAsync(
+        Guid clinicId,
+        string email,
+        string role,
+        string password = "Password123!")
+    {
+        using var scope = Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            FullName = email,
+            ClinicId = clinicId,
+            IsActive = true,
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        Assert.True(createResult.Succeeded, string.Join(", ", createResult.Errors.Select(e => e.Description)));
+
+        var roleResult = await userManager.AddToRoleAsync(user, role);
+        Assert.True(roleResult.Succeeded, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+
+        return user.Id;
+    }
+
     public async Task<Guid> CreatePlatformAdministratorAsync(
         string email,
         string password = "Password123!")

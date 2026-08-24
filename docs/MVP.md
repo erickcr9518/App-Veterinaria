@@ -87,6 +87,7 @@ Implemented:
 - User list/create endpoints scoped by clinic, plus platform-admin provisioning of clinic admins for a clinic they choose.
 - Owners and patients, with weight history and progressive-disclosure forms.
 - Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records.
+- Appointments backend with day/week range queries, status changes, and role-aware write rules.
 - SQL Server EF Core migrations.
 - Audit timestamps, soft delete, and optimistic concurrency.
 - Global tenant filter for `ITenantEntity`, reconciled on every startup (stale role permissions are removed, not just added to).
@@ -94,7 +95,7 @@ Implemented:
 
 ## Current Clinical Modules
 
-Owners, Patients, and Consultations/SOAP are implemented as the first clinical-administrative modules.
+Owners, Patients, Consultations/SOAP, and the Appointments backend are implemented as the first clinical-administrative modules.
 
 Delivered backend capabilities:
 
@@ -108,6 +109,10 @@ Delivered backend capabilities:
 - SOAP fields for subjective, objective, assessment, and plan.
 - Draft and finalized consultation states.
 - Amendments for corrections to finalized consultations.
+- Appointment entity scoped by clinic: patient, owner, assigned veterinarian, date/time, type of visit, status (scheduled, confirmed, cancelled, completed, no-show), reason, and reminder metadata.
+- Appointment range queries for day/week calendar views.
+- Appointment status transitions with change history.
+- Recepcion can create/edit/cancel any appointment in the clinic (`appointments.write`); veterinarians can only manage their own (`appointments.write.own`).
 - Integration tests proving tenant isolation, role restrictions, and blocked direct edits after finalization.
 
 Delivered frontend capabilities:
@@ -122,17 +127,12 @@ Delivered frontend capabilities:
 
 ## Next Module
 
-The next module is Appointments (Agenda):
+The next module is Appointments (Agenda) frontend:
 
 - Day and week calendar views.
 - Quick-create appointment from the patient record and from the calendar itself.
 - Status changes and cancellation with a required reason.
 - Navigation entries visible according to permissions (recepcion needs this front and center; a veterinarian mid-consultation should not).
-- Appointment entity scoped by clinic: patient, owner, assigned veterinarian, date/time, type of visit, status (scheduled, confirmed, cancelled, completed, no-show), reason, reminders metadata.
-- Day/week range queries.
-- Recepcion can create/edit/cancel any appointment in the clinic (`appointments.write`); a veterinarian can only manage their own (`appointments.write.own`, already defined in `PermissionCodes`).
-- Status transitions with a change history (who changed what and when), consistent with the audit approach already used for consultations.
-- Integration tests proving tenant isolation and the veterinarian-can-only-touch-their-own-appointments rule.
 
 ## UX Direction
 

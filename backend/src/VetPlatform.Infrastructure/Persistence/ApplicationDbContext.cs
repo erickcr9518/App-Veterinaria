@@ -36,6 +36,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Consultation> Consultations => Set<Consultation>();
     public DbSet<SoapNote> SoapNotes => Set<SoapNote>();
     public DbSet<ConsultationAmendment> ConsultationAmendments => Set<ConsultationAmendment>();
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<AppointmentStatusChange> AppointmentStatusChanges => Set<AppointmentStatusChange>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
