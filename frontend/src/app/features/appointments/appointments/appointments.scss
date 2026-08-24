@@ -81,7 +81,15 @@ time {
   align-items: start;
 }
 
+.workspace > *,
+.field-row > *,
+.list-heading > * {
+  min-width: 0;
+}
+
 .panel {
+  box-sizing: border-box;
+  min-width: 0;
   background: #fff;
   border: 1px solid rgba(22, 33, 30, 0.12);
   border-radius: 8px;
