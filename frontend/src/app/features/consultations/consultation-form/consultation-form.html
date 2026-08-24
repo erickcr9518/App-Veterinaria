@@ -1,0 +1,67 @@
+<section class="page">
+  <header class="page-header">
+    @if (patientId()) {
+      <a class="back-link" [routerLink]="['/patients', patientId(), 'consultations']">&larr; Consultas</a>
+    }
+    <h1>{{ title() }}</h1>
+    @if (patient(); as p) {
+      <p>{{ p.name }} &middot; {{ p.species }} @if (p.currentWeightKg) { &middot; ultimo peso {{ p.currentWeightKg }} kg }</p>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="empty">Cargando...</p>
+  } @else {
+    <form class="panel" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="full">
+        <span>Motivo de consulta</span>
+        <textarea formControlName="reasonForVisit" rows="2" placeholder="Ej. vomito y decaimiento desde ayer"></textarea>
+      </label>
+
+      <label class="full">
+        <span>Historia del problema actual</span>
+        <textarea formControlName="historyOfPresentIllness" rows="2"></textarea>
+      </label>
+
+      <h2>Signos vitales</h2>
+      <div class="field-row four">
+        <label><span>Temperatura (&deg;C)</span><input formControlName="temperatureCelsius" type="number" step="0.1" /></label>
+        <label><span>Frec. cardiaca (lpm)</span><input formControlName="heartRateBpm" type="number" /></label>
+        <label><span>Frec. respiratoria (rpm)</span><input formControlName="respiratoryRateRpm" type="number" /></label>
+        <label><span>Peso (kg)</span><input formControlName="weightKg" type="number" step="0.01" min="0" /></label>
+      </div>
+
+      <label class="full">
+        <span>Examen fisico</span>
+        <textarea formControlName="physicalExamFindings" rows="2" placeholder="Hallazgos por sistemas"></textarea>
+      </label>
+
+      <h2>Formato SOAP</h2>
+      <div class="field-row two">
+        <label><span>S &mdash; Subjetivo</span><textarea formControlName="subjective" rows="3"></textarea></label>
+        <label><span>O &mdash; Objetivo</span><textarea formControlName="objective" rows="3"></textarea></label>
+        <label><span>A &mdash; Evaluacion</span><textarea formControlName="assessment" rows="3"></textarea></label>
+        <label><span>P &mdash; Plan</span><textarea formControlName="plan" rows="3"></textarea></label>
+      </div>
+      <p class="hint">La evaluacion y el plan son obligatorios antes de poder finalizar la consulta.</p>
+
+      <details>
+        <summary>Plan diagnostico, tratamiento y seguimiento</summary>
+        <div class="details-grid">
+          <label><span>Plan diagnostico</span><textarea formControlName="diagnosticPlan" rows="2"></textarea></label>
+          <label><span>Tratamiento</span><textarea formControlName="treatment" rows="2"></textarea></label>
+          <label><span>Recomendaciones</span><textarea formControlName="recommendations" rows="2"></textarea></label>
+          <label><span>Fecha de seguimiento</span><input formControlName="followUpDate" type="date" /></label>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : 'Guardar borrador' }}</button>
+      </div>
+    </form>
+  }
+</section>

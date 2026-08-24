@@ -1,0 +1,167 @@
+<section class="page">
+  @if (isLoading()) {
+    <p class="empty">Cargando consulta...</p>
+  } @else if (consultation(); as c) {
+    <header class="page-header">
+      <a class="back-link" [routerLink]="['/patients', c.patientId, 'consultations']">&larr; Consultas de {{ c.patientName }}</a>
+      <div class="title-row">
+        <h1>{{ c.reasonForVisit }}</h1>
+        <span class="status" [class.status-draft]="c.status === 'Draft'" [class.status-finalized]="c.status === 'Finalized'">
+          {{ c.status === 'Draft' ? 'Borrador' : 'Finalizada' }}
+        </span>
+      </div>
+      <p>{{ c.consultationDateUtc | date: 'medium' }} &middot; {{ c.veterinarianName }}</p>
+    </header>
+
+    @if (errorMessage(); as message) {
+      <p class="error">{{ message }}</p>
+    }
+
+    <div class="panel">
+      <section class="block">
+        <h2>Anamnesis</h2>
+        <p class="value">{{ c.historyOfPresentIllness || 'Sin informacion registrada.' }}</p>
+      </section>
+
+      <section class="block">
+        <h2>Signos vitales</h2>
+        <div class="vitals">
+          <div><span>Temperatura</span><strong>{{ c.temperatureCelsius ? c.temperatureCelsius + ' C' : '-' }}</strong></div>
+          <div><span>Fr. cardiaca</span><strong>{{ c.heartRateBpm ? c.heartRateBpm + ' lpm' : '-' }}</strong></div>
+          <div><span>Fr. respiratoria</span><strong>{{ c.respiratoryRateRpm ? c.respiratoryRateRpm + ' rpm' : '-' }}</strong></div>
+          <div><span>Peso</span><strong>{{ c.weightKg ? c.weightKg + ' kg' : '-' }}</strong></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Examen fisico</h2>
+        <p class="value">{{ c.physicalExamFindings || 'Sin hallazgos registrados.' }}</p>
+      </section>
+
+      <section class="block">
+        <h2>Formato SOAP</h2>
+        <div class="soap-grid">
+          <div><span>S &mdash; Subjetivo</span><p>{{ c.subjective || '-' }}</p></div>
+          <div><span>O &mdash; Objetivo</span><p>{{ c.objective || '-' }}</p></div>
+          <div><span>A &mdash; Evaluacion</span><p>{{ c.assessment || '-' }}</p></div>
+          <div><span>P &mdash; Plan</span><p>{{ c.plan || '-' }}</p></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Plan diagnostico y seguimiento</h2>
+        <div class="soap-grid">
+          <div><span>Plan diagnostico</span><p>{{ c.diagnosticPlan || '-' }}</p></div>
+          <div><span>Tratamiento</span><p>{{ c.treatment || '-' }}</p></div>
+          <div><span>Recomendaciones</span><p>{{ c.recommendations || '-' }}</p></div>
+          <div><span>Fecha de seguimiento</span><p>{{ c.followUpDate ? (c.followUpDate | date) : 'No indicada' }}</p></div>
+        </div>
+      </section>
+
+      @if (c.status === 'Finalized') {
+        <section class="block finalized-note">
+          <span>Finalizada el {{ c.finalizedAtUtc | date: 'medium' }} por {{ c.finalizedByName }}</span>
+        </section>
+      }
+
+      <div class="actions">
+        @if (c.status === 'Draft') {
+          @if (canWrite()) {
+            <a class="ghost-button" [routerLink]="['/consultations', c.id, 'edit']">Editar borrador</a>
+          }
+          @if (canSign()) {
+            @if (!isConfirmingFinalize()) {
+              <button type="button" (click)="confirmFinalize()">Finalizar consulta</button>
+            } @else {
+              <div class="confirm-strip">
+                <span>Una vez finalizada, no podras editarla directamente. Solo enmiendas con motivo.</span>
+                <div class="confirm-actions">
+                  <button class="ghost-button" type="button" (click)="cancelFinalize()">Cancelar</button>
+                  <button type="button" [disabled]="isFinalizing()" (click)="finalize()">
+                    {{ isFinalizing() ? 'Finalizando...' : 'Si, finalizar' }}
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        } @else if (canSign() && !isAmending()) {
+          <button type="button" (click)="startAmend()">Enmendar consulta</button>
+        }
+      </div>
+    </div>
+
+    @if (isAmending()) {
+      <form class="panel amend-form" [formGroup]="amendForm" (ngSubmit)="submitAmendment()">
+        <h2>Enmienda</h2>
+        @if (amendmentError(); as message) {
+          <p class="error">{{ message }}</p>
+        }
+        <label class="full">
+          <span>Motivo de la enmienda (obligatorio)</span>
+          <textarea formControlName="reason" rows="2" placeholder="Ej. se ajusta el diagnostico tras resultados de laboratorio"></textarea>
+        </label>
+
+        <label class="full"><span>Motivo de consulta</span><textarea formControlName="reasonForVisit" rows="2"></textarea></label>
+        <label class="full"><span>Historia del problema actual</span><textarea formControlName="historyOfPresentIllness" rows="2"></textarea></label>
+
+        <div class="field-row three">
+          <label><span>Temperatura (C)</span><input formControlName="temperatureCelsius" type="number" step="0.1" /></label>
+          <label><span>Fr. cardiaca</span><input formControlName="heartRateBpm" type="number" /></label>
+          <label><span>Fr. respiratoria</span><input formControlName="respiratoryRateRpm" type="number" /></label>
+        </div>
+
+        <label class="full"><span>Examen fisico</span><textarea formControlName="physicalExamFindings" rows="2"></textarea></label>
+
+        <div class="field-row two">
+          <label><span>S &mdash; Subjetivo</span><textarea formControlName="subjective" rows="2"></textarea></label>
+          <label><span>O &mdash; Objetivo</span><textarea formControlName="objective" rows="2"></textarea></label>
+          <label><span>A &mdash; Evaluacion</span><textarea formControlName="assessment" rows="2"></textarea></label>
+          <label><span>P &mdash; Plan</span><textarea formControlName="plan" rows="2"></textarea></label>
+        </div>
+
+        <div class="field-row two">
+          <label><span>Plan diagnostico</span><textarea formControlName="diagnosticPlan" rows="2"></textarea></label>
+          <label><span>Tratamiento</span><textarea formControlName="treatment" rows="2"></textarea></label>
+          <label><span>Recomendaciones</span><textarea formControlName="recommendations" rows="2"></textarea></label>
+          <label><span>Fecha de seguimiento</span><input formControlName="followUpDate" type="date" /></label>
+        </div>
+
+        <div class="actions">
+          <button class="ghost-button" type="button" (click)="cancelAmend()">Cancelar</button>
+          <button type="submit" [disabled]="isSavingAmendment()">{{ isSavingAmendment() ? 'Guardando...' : 'Guardar enmienda' }}</button>
+        </div>
+      </form>
+    }
+
+    @if (c.amendments.length > 0) {
+      <div class="panel">
+        <h2>Historial de enmiendas</h2>
+        <div class="amendment-list">
+          @for (amendment of c.amendments; track amendment.id) {
+            <article class="amendment">
+              <div class="amendment-header">
+                <div>
+                  <strong>{{ amendment.reason }}</strong>
+                  <span>{{ amendment.createdAtUtc | date: 'medium' }} &middot; {{ amendment.createdByName }}</span>
+                </div>
+                <button class="ghost-button" type="button" (click)="toggleAmendment(amendment.id)">
+                  {{ isAmendmentExpanded(amendment.id) ? 'Ocultar valores anteriores' : 'Ver valores anteriores' }}
+                </button>
+              </div>
+              @if (isAmendmentExpanded(amendment.id)) {
+                <dl class="previous-values">
+                  @for (entry of parsePreviousValues(amendment.previousValuesJson); track entry.label) {
+                    <dt>{{ entry.label }}</dt>
+                    <dd>{{ entry.value }}</dd>
+                  }
+                </dl>
+              }
+            </article>
+          }
+        </div>
+      </div>
+    }
+  } @else {
+    <p class="error">{{ errorMessage() || 'Consulta no encontrada.' }}</p>
+  }
+</section>

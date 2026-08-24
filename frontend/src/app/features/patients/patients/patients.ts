@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Observable, Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Owner, Patient } from '../../../core/models/clinical.models';
 import { ClinicalService } from '../../../core/services/clinical.service';
@@ -9,7 +10,7 @@ import { ClinicalService } from '../../../core/services/clinical.service';
 @Component({
   selector: 'app-patients',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './patients.html',
   styleUrl: './patients.scss',
 })

@@ -1,0 +1,42 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <a class="back-link" routerLink="/patients">&larr; Pacientes</a>
+      @if (patient(); as p) {
+        <h1>Consultas de {{ p.name }}</h1>
+        <p>{{ p.species }} @if (p.breed) { &middot; {{ p.breed }} } &middot; {{ p.ownerName }}</p>
+      } @else {
+        <h1>Consultas</h1>
+      }
+    </div>
+    @if (canWrite()) {
+      <a class="button-link" [routerLink]="['/patients', patientId, 'consultations', 'new']">Nueva consulta</a>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="panel">
+    @if (isLoading()) {
+      <p class="empty">Cargando consultas...</p>
+    } @else if (consultations().length > 0) {
+      <div class="list">
+        @for (consultation of consultations(); track consultation.id) {
+          <a class="row" [routerLink]="['/consultations', consultation.id]">
+            <div>
+              <strong>{{ consultation.reasonForVisit }}</strong>
+              <span>{{ consultation.consultationDateUtc | date: 'medium' }} &middot; {{ consultation.veterinarianName }}</span>
+            </div>
+            <span class="status" [class.status-draft]="consultation.status === 'Draft'" [class.status-finalized]="consultation.status === 'Finalized'">
+              {{ consultation.status === 'Draft' ? 'Borrador' : 'Finalizada' }}
+            </span>
+          </a>
+        }
+      </div>
+    } @else {
+      <p class="empty">Este paciente todavia no tiene consultas registradas.</p>
+    }
+  </div>
+</section>

@@ -2,7 +2,17 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CreateOwnerRequest, CreatePatientRequest, Owner, Patient } from '../models/clinical.models';
+import {
+  AmendConsultationRequest,
+  ConsultationDetail,
+  ConsultationSummary,
+  CreateConsultationRequest,
+  CreateOwnerRequest,
+  CreatePatientRequest,
+  Owner,
+  Patient,
+  UpdateConsultationRequest,
+} from '../models/clinical.models';
 
 @Injectable({ providedIn: 'root' })
 export class ClinicalService {
@@ -46,5 +56,33 @@ export class ClinicalService {
 
   updatePatient(id: string, request: CreatePatientRequest): Observable<void> {
     return this.http.put<void>(`${environment.apiUrl}/patients/${id}`, request);
+  }
+
+  getPatientById(id: string): Observable<Patient> {
+    return this.http.get<Patient>(`${environment.apiUrl}/patients/${id}`);
+  }
+
+  getConsultationsByPatient(patientId: string): Observable<ConsultationSummary[]> {
+    return this.http.get<ConsultationSummary[]>(`${environment.apiUrl}/patients/${patientId}/consultations`);
+  }
+
+  getConsultationById(id: string): Observable<ConsultationDetail> {
+    return this.http.get<ConsultationDetail>(`${environment.apiUrl}/consultations/${id}`);
+  }
+
+  createConsultation(request: CreateConsultationRequest): Observable<string> {
+    return this.http.post<string>(`${environment.apiUrl}/consultations`, request);
+  }
+
+  updateConsultation(id: string, request: UpdateConsultationRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/consultations/${id}`, request);
+  }
+
+  finalizeConsultation(id: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/consultations/${id}/finalize`, {});
+  }
+
+  amendConsultation(id: string, request: AmendConsultationRequest): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/consultations/${id}/amend`, request);
   }
 }
