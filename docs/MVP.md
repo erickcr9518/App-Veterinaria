@@ -85,9 +85,10 @@ Implemented:
 - Roles, permissions, and policy-based authorization, including a platform-level `SuperAdministrador` separate from clinic-level `Administrador`.
 - Clinic list/create endpoints.
 - User list/create endpoints scoped by clinic, plus platform-admin provisioning of clinic admins for a clinic they choose.
-- Owners and patients, with weight history and progressive-disclosure forms.
-- Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records.
+- Owners and patients, with weight history and progressive-disclosure forms, including a frontend for both.
+- Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records, with a frontend covering the whole lifecycle including the amendment history.
 - Appointments backend with day/week range queries, status changes, and role-aware write rules.
+- Prescriptions backend tied to a consultation: draft with one or more items (product, concentration, presentation, quantity, route, frequency, duration, instructions), finalize (locks the record; corrections are issued as a new prescription rather than edited in place), and a per-patient prescription history.
 - SQL Server EF Core migrations.
 - Audit timestamps, soft delete, and optimistic concurrency.
 - Global tenant filter for `ITenantEntity`, reconciled on every startup (stale role permissions are removed, not just added to).
@@ -95,7 +96,7 @@ Implemented:
 
 ## Current Clinical Modules
 
-Owners, Patients, Consultations/SOAP, and the Appointments backend are implemented as the first clinical-administrative modules.
+Owners, Patients, Consultations/SOAP (backend and frontend), the Appointments backend, and the Prescriptions backend are implemented.
 
 Delivered backend capabilities:
 
@@ -113,26 +114,35 @@ Delivered backend capabilities:
 - Appointment range queries for day/week calendar views.
 - Appointment status transitions with change history.
 - Recepcion can create/edit/cancel any appointment in the clinic (`appointments.write`); veterinarians can only manage their own (`appointments.write.own`).
-- Integration tests proving tenant isolation, role restrictions, and blocked direct edits after finalization.
+- Prescription and PrescriptionItem entities tied to a consultation and its patient, with the weight used for dosing captured on the record.
+- Draft prescriptions are fully editable (items are replaced wholesale on update); finalize requires at least one item and then locks the record for direct edits (only `prescriptions.write`, held only by Veterinario).
+- Prescription history endpoints scoped by patient and by consultation.
+- Integration tests proving tenant isolation, role restrictions, blocked direct edits after finalization, and the finalize-requires-an-item rule.
 
 Delivered frontend capabilities:
 
-- Owners list with search.
-- Owner detail or compact form.
-- Patients list with owner and species filters.
-- Patient form with progressive sections, keeping essential fields visible first.
-- Navigation entries visible according to permissions.
-- Route guards for owner and patient permissions.
-- Debounced search inputs.
+- Owners list with search, edit mode, route guards, and debounced search.
+- Patients list with owner and species filters, edit mode, and progressive-disclosure form.
+- Consultations: patient timeline, a shared create/edit-draft form (vitals and SOAP visible up front, plan/treatment/follow-up behind a `<details>`), a detail view with a two-step finalize confirmation, and an amend flow whose history renders the stored previous values in readable Spanish labels.
+- Navigation entries visible according to permissions throughout.
 
 ## Next Module
 
-The next module is Appointments (Agenda) frontend:
+Two frontends are pending, backends are ready for both:
+
+Appointments (Agenda) frontend:
 
 - Day and week calendar views.
 - Quick-create appointment from the patient record and from the calendar itself.
 - Status changes and cancellation with a required reason.
 - Navigation entries visible according to permissions (recepcion needs this front and center; a veterinarian mid-consultation should not).
+
+Prescriptions frontend:
+
+- Create a prescription from a consultation, with one or more product rows (add/remove) and the weight used for dosing pre-filled from the consultation or patient.
+- Per-patient prescription history, and prescriptions linked to the consultation that generated them.
+- Finalize with the same explicit confirmation pattern used for consultations; once finalized the record is read-only (correcting a dispensed prescription means creating a new one, not editing the old one).
+- Navigation entries visible according to `prescriptions.write` / `records.read.full`.
 
 ## UX Direction
 

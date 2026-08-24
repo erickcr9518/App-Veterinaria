@@ -38,6 +38,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<ConsultationAmendment> ConsultationAmendments => Set<ConsultationAmendment>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<AppointmentStatusChange> AppointmentStatusChanges => Set<AppointmentStatusChange>();
+    public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
