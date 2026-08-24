@@ -3,7 +3,7 @@
     <p class="empty">Cargando consulta...</p>
   } @else if (consultation(); as c) {
     <header class="page-header">
-      <a class="back-link" [routerLink]="['/patients', c.patientId, 'consultations']">&larr; Consultas de {{ c.patientName }}</a>
+      <a class="back-link" [routerLink]="['/patients', c.patientId, 'record']">&larr; Expediente de {{ c.patientName }}</a>
       <div class="title-row">
         <h1>{{ c.reasonForVisit }}</h1>
         <span class="status" [class.status-draft]="c.status === 'Draft'" [class.status-finalized]="c.status === 'Finalized'">
@@ -88,6 +88,32 @@
           <button type="button" (click)="startAmend()">Enmendar consulta</button>
         }
       </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-heading">
+        <h2>Recetas de esta consulta</h2>
+        @if (canPrescribe()) {
+          <a class="ghost-button" [routerLink]="['/consultations', c.id, 'prescriptions', 'new']">Nueva receta</a>
+        }
+      </div>
+      @if (prescriptions().length > 0) {
+        <div class="prescription-list">
+          @for (prescription of prescriptions(); track prescription.id) {
+            <a class="prescription-row" [routerLink]="['/prescriptions', prescription.id]">
+              <div>
+                <strong>{{ prescription.productNames.join(', ') || 'Sin productos' }}</strong>
+                <span>{{ prescription.issuedAtUtc | date: 'medium' }}</span>
+              </div>
+              <span class="status" [class.status-draft]="prescription.status === 'Draft'" [class.status-finalized]="prescription.status === 'Finalized'">
+                {{ prescription.status === 'Draft' ? 'Borrador' : 'Finalizada' }}
+              </span>
+            </a>
+          }
+        </div>
+      } @else {
+        <p class="empty">Todavia no se han emitido recetas para esta consulta.</p>
+      }
     </div>
 
     @if (isAmending()) {

@@ -68,6 +68,34 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: 'records.read.full' },
       },
+      {
+        path: 'patients/:patientId/prescriptions',
+        loadComponent: () =>
+          import('./features/prescriptions/patient-prescriptions/patient-prescriptions').then((m) => m.PatientPrescriptions),
+        canActivate: [permissionGuard],
+        data: { permission: 'records.read.full' },
+      },
+      {
+        path: 'consultations/:consultationId/prescriptions/new',
+        loadComponent: () =>
+          import('./features/prescriptions/prescription-form/prescription-form').then((m) => m.PrescriptionForm),
+        canActivate: [permissionGuard],
+        data: { permission: 'prescriptions.write' },
+      },
+      {
+        path: 'prescriptions/:id/edit',
+        loadComponent: () =>
+          import('./features/prescriptions/prescription-form/prescription-form').then((m) => m.PrescriptionForm),
+        canActivate: [permissionGuard],
+        data: { permission: 'prescriptions.write' },
+      },
+      {
+        path: 'prescriptions/:id',
+        loadComponent: () =>
+          import('./features/prescriptions/prescription-detail/prescription-detail').then((m) => m.PrescriptionDetail),
+        canActivate: [permissionGuard],
+        data: { permission: 'records.read.full' },
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

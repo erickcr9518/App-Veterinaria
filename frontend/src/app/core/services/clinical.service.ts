@@ -12,11 +12,13 @@ import {
   CreateConsultationRequest,
   CreateOwnerRequest,
   CreatePatientRequest,
+  CreatePrescriptionRequest,
   Owner,
   Patient,
   PrescriptionDetail,
   PrescriptionSummary,
   UpdateConsultationRequest,
+  UpdatePrescriptionRequest,
 } from '../models/clinical.models';
 
 @Injectable({ providedIn: 'root' })
@@ -135,7 +137,23 @@ export class ClinicalService {
     return this.http.get<PrescriptionSummary[]>(`${environment.apiUrl}/patients/${patientId}/prescriptions`);
   }
 
+  getPrescriptionsByConsultation(consultationId: string): Observable<PrescriptionSummary[]> {
+    return this.http.get<PrescriptionSummary[]>(`${environment.apiUrl}/consultations/${consultationId}/prescriptions`);
+  }
+
   getPrescriptionById(id: string): Observable<PrescriptionDetail> {
     return this.http.get<PrescriptionDetail>(`${environment.apiUrl}/prescriptions/${id}`);
+  }
+
+  createPrescription(request: CreatePrescriptionRequest): Observable<string> {
+    return this.http.post<string>(`${environment.apiUrl}/prescriptions`, request);
+  }
+
+  updatePrescription(id: string, request: UpdatePrescriptionRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/prescriptions/${id}`, request);
+  }
+
+  finalizePrescription(id: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/prescriptions/${id}/finalize`, {});
   }
 }

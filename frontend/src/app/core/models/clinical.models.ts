@@ -185,12 +185,23 @@ export interface PrescriptionSummary {
   patientId: string;
   issuedAtUtc: string;
   veterinarianName: string;
-  status: PrescriptionStatus | string;
+  status: PrescriptionStatus;
   productNames: string[];
 }
 
 export interface PrescriptionItem {
   id: string;
+  productName: string;
+  concentration?: string | null;
+  presentation?: string | null;
+  quantity: string;
+  route: string;
+  frequency: string;
+  duration: string;
+  instructions?: string | null;
+}
+
+export interface PrescriptionItemInput {
   productName: string;
   concentration?: string | null;
   presentation?: string | null;
@@ -211,8 +222,19 @@ export interface PrescriptionDetail {
   weightKgAtPrescription?: number | null;
   generalInstructions?: string | null;
   warnings?: string | null;
-  status: PrescriptionStatus | string;
+  status: PrescriptionStatus;
   finalizedAtUtc?: string | null;
   finalizedByName?: string | null;
   items: PrescriptionItem[];
 }
+
+export interface PrescriptionFormValue {
+  weightKgAtPrescription?: number | null;
+  generalInstructions?: string | null;
+  warnings?: string | null;
+  items: PrescriptionItemInput[];
+}
+
+export type CreatePrescriptionRequest = PrescriptionFormValue & { consultationId: string };
+
+export type UpdatePrescriptionRequest = PrescriptionFormValue;

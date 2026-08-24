@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { Appointment, AppointmentRequest, AppointmentStatus, Patient } from '../../../core/models/clinical.models';
 import { AuthService } from '../../../core/services/auth.service';
@@ -12,7 +12,7 @@ type ViewMode = 'day' | 'week';
 @Component({
   selector: 'app-appointments',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe, RouterLink],
   templateUrl: './appointments.html',
   styleUrl: './appointments.scss',
 })
@@ -24,6 +24,7 @@ export class Appointments implements OnInit {
 
   readonly appointments = signal<Appointment[]>([]);
   readonly patients = signal<Patient[]>([]);
+  readonly filteredPatientId = signal<string | null>(null);
   readonly viewMode = signal<ViewMode>('day');
   readonly anchorDate = signal(this.startOfDay(new Date()));
   readonly selectedStatus = signal<AppointmentStatus | ''>('');
@@ -37,6 +38,7 @@ export class Appointments implements OnInit {
   readonly canWrite = computed(() =>
     this.authService.hasPermission('appointments.write') || this.authService.hasPermission('appointments.write.own'));
   readonly hasAppointments = computed(() => this.appointments().length > 0);
+  readonly selectedPatient = computed(() => this.patients().find((patient) => patient.id === this.filteredPatientId()) ?? null);
   readonly formTitle = computed(() => this.editingAppointment() ? 'Editar cita' : 'Nueva cita');
   readonly submitLabel = computed(() => this.editingAppointment() ? 'Guardar cambios' : 'Crear cita');
   readonly rangeLabel = computed(() => {
@@ -66,12 +68,9 @@ export class Appointments implements OnInit {
   });
 
   ngOnInit(): void {
+    this.filteredPatientId.set(this.route.snapshot.queryParamMap.get('patientId'));
     this.loadPatients();
     this.resetForm();
-    const patientId = this.route.snapshot.queryParamMap.get('patientId');
-    if (patientId) {
-      this.form.patchValue({ patientId });
-    }
     this.loadAppointments();
   }
 
@@ -90,6 +89,7 @@ export class Appointments implements OnInit {
     this.clinicalService.getAppointments({
       fromUtc: from.toISOString(),
       toUtc: to.toISOString(),
+      patientId: this.filteredPatientId() ?? undefined,
       status: this.selectedStatus(),
     }).subscribe({
       next: (appointments) => {
@@ -242,6 +242,7 @@ export class Appointments implements OnInit {
 
     this.editingAppointment.set(null);
     this.form.reset({
+      patientId: this.filteredPatientId() ?? '',
       startsAtLocal: this.toLocalInputValue(start.toISOString()),
       endsAtLocal: this.toLocalInputValue(end.toISOString()),
       visitType: 'Consulta',

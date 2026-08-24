@@ -1,10 +1,19 @@
 <section class="page">
   <header class="page-header">
     <div>
-      <h1>Agenda</h1>
-      <p>Citas por dia o semana, con estado operativo y seguimiento rapido.</p>
+      @if (selectedPatient(); as patient) {
+        <h1>Agenda de {{ patient.name }}</h1>
+        <p>{{ patient.species }} @if (patient.breed) { - {{ patient.breed }} } - {{ patient.ownerName }}</p>
+      } @else {
+        <h1>Agenda</h1>
+        <p>Citas por dia o semana, con estado operativo y seguimiento rapido.</p>
+      }
     </div>
     <div class="toolbar">
+      @if (selectedPatient(); as patient) {
+        <a class="ghost-button" [routerLink]="['/patients', patient.id, 'record']">Expediente</a>
+        <a class="ghost-button" routerLink="/appointments">Ver todos</a>
+      }
       <div class="segmented" aria-label="Vista de agenda">
         <button type="button" [class.active]="viewMode() === 'day'" (click)="setViewMode('day')">Dia</button>
         <button type="button" [class.active]="viewMode() === 'week'" (click)="setViewMode('week')">Semana</button>

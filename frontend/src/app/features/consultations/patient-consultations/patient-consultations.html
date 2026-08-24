@@ -1,7 +1,7 @@
 <section class="page">
   <header class="page-header">
     <div>
-      <a class="back-link" routerLink="/patients">&larr; Pacientes</a>
+      <a class="back-link" [routerLink]="['/patients', patientId, 'record']">&larr; Expediente</a>
       @if (patient(); as p) {
         <h1>Consultas de {{ p.name }}</h1>
         <p>{{ p.species }} @if (p.breed) { &middot; {{ p.breed }} } &middot; {{ p.ownerName }}</p>

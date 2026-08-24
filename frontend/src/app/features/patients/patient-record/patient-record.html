@@ -126,6 +126,7 @@
       <section class="panel timeline-panel wide">
         <div class="section-heading">
           <h2>Recetas</h2>
+          <a [routerLink]="['/patients', p.id, 'prescriptions']">Ver todas</a>
         </div>
         @if (isLoading()) {
           <p class="empty">Cargando recetas...</p>
@@ -145,7 +146,7 @@
                   <small>Consulta asociada</small>
                 </div>
                 <div class="row-actions">
-                  <a class="ghost-button" [routerLink]="['/consultations', prescription.consultationId]">Ver consulta</a>
+                  <a class="ghost-button" [routerLink]="['/prescriptions', prescription.id]">Ver receta</a>
                   <span class="status" [class.status-draft]="prescription.status === 'Draft'" [class.status-finalized]="prescription.status === 'Finalized'">
                     {{ prescriptionStatusLabel(prescription.status) }}
                   </span>
