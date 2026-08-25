@@ -30,20 +30,22 @@ redirect behavior. Planning to touch only new spec files under
 Avoiding Users, `app.routes.ts`, and shell nav while Code owns the Usuarios module.
 
 ### 2026-08-25 — Code
-Status: starting.
-Building the User Management (Usuarios) module — new frontend screen for
-listing/creating/deactivating clinic users, gated by `users.manage`
-(Administrador/SuperAdministrador only). Backend already has create/list
-endpoints; I'm adding a small gap I found: `GetUsersQuery` currently throws
-if the caller has no `ClinicId`, which means PlatformAdministrator can never
-list users at all — fixing that plus adding an activate/deactivate endpoint
-(`SetUserActiveAsync` exists in `IIdentityService` but nothing calls it).
-Files: new `Application/Users/Commands/SetUserActive/*`, `Users/Queries/GetUsers/*`
-(adding optional ClinicId), `IIdentityService`/`IdentityService`,
-`Api/Controllers/UsersController.cs`, new `frontend/src/app/features/users/*`.
-**Will touch `app.routes.ts` (new `/users` route) and the shell nav
-(`frontend/src/app/layout/shell/*`)** to add a "Usuarios" link — flagging per
-the shared-files rule. Not touching Owners/Appointments/Dashboard.
+Status: done.
+Built the User Management (Usuarios) module end to end, gated by
+`users.manage` (Administrador/SuperAdministrador only).
+Backend: fixed `GetUsersQuery` so PlatformAdministrator can list a clinic's
+users (previously threw — that role has no `ClinicId`), added
+`POST /api/users/{id}/status` (activate/deactivate) with tenant checks and
+self-lockout prevention. 4 new integration tests, backend suite 31/31.
+Frontend: new `/users` route + "Usuarios" shell nav link (touched
+`app.routes.ts` and `layout/shell/shell.html` per the shared-files rule —
+just the one nav `<a>`, no other shell changes). New `features/users/*`,
+`core/models/user.models.ts` + `clinic.models.ts`, `core/services/users.service.ts`
++ `clinics.service.ts`. 3 new specs, frontend suite 35/35.
+Verified live in browser: Administrador create/list/deactivate own clinic
+(self-row has no deactivate button), PlatformAdministrator clinic-picker
+across clinics, Recepcion/Veterinario correctly redirected away from `/users`.
+Committing and pushing now.
 
 ### 2026-08-25 — Codex
 Status: done.

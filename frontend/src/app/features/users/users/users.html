@@ -1,0 +1,93 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Usuarios</h1>
+      <p>Crea cuentas de personal y controla quien puede acceder a la clinica.</p>
+    </div>
+    @if (isPlatformAdmin()) {
+      <label class="search">
+        <span>Clinica</span>
+        <select #clinicSelect (change)="selectClinic(clinicSelect.value)">
+          <option value="">Selecciona una clinica</option>
+          @for (clinic of clinics(); track clinic.id) {
+            <option [value]="clinic.id">{{ clinic.name }}</option>
+          }
+        </select>
+      </label>
+    }
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="workspace">
+    <form class="panel form-panel" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-heading">
+        <h2>Nuevo usuario</h2>
+      </div>
+
+      <label>
+        <span>Nombre completo</span>
+        <input formControlName="fullName" autocomplete="name" />
+      </label>
+
+      <label>
+        <span>Correo</span>
+        <input formControlName="email" type="email" autocomplete="email" />
+      </label>
+
+      <label>
+        <span>Contrasena</span>
+        <input formControlName="password" type="password" autocomplete="new-password" />
+      </label>
+
+      <label>
+        <span>Rol</span>
+        <select formControlName="role">
+          @for (role of roleOptions(); track role.value) {
+            <option [value]="role.value">{{ role.label }}</option>
+          }
+        </select>
+      </label>
+
+      @if (isPlatformAdmin()) {
+        <p class="hint">La clinica seleccionada arriba se usara para el nuevo usuario, salvo que sea Superadministrador.</p>
+      }
+
+      <button type="submit" [disabled]="isSaving()">{{ isSaving() ? 'Creando...' : 'Crear usuario' }}</button>
+    </form>
+
+    <div class="panel list-panel">
+      <h2>Personal de la clinica</h2>
+      @if (!canLoadUsers()) {
+        <p class="empty">Selecciona una clinica para ver su personal.</p>
+      } @else if (isLoading()) {
+        <p class="empty">Cargando usuarios...</p>
+      } @else if (hasUsers()) {
+        <div class="list">
+          @for (user of users(); track user.userId) {
+            <article class="row">
+              <div>
+                <strong>{{ user.fullName }} @if (isSelf(user)) { (tu) }</strong>
+                <span>{{ user.email }} &middot; {{ user.role }}</span>
+              </div>
+              <div class="row-actions">
+                <span class="status" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive">
+                  {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+                @if (!isSelf(user)) {
+                  <button class="ghost-button" type="button" (click)="toggleActive(user)">
+                    {{ user.isActive ? 'Desactivar' : 'Activar' }}
+                  </button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="empty">No hay usuarios registrados todavia.</p>
+      }
+    </div>
+  </div>
+</section>

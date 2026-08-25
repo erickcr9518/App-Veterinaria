@@ -1,7 +1,9 @@
+using FluentValidation.Results;
 using MediatR;
 using VetPlatform.Application.Common.Exceptions;
 using VetPlatform.Application.Common.Interfaces;
 using VetPlatform.Application.Common.Models;
+using VetPlatform.Domain.Constants;
 
 namespace VetPlatform.Application.Users.Queries.GetUsers;
 
@@ -18,9 +20,20 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadOnlyList
 
     public Task<IReadOnlyList<UserSummary>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
-        var clinicId = _currentUserService.ClinicId
+        if (_currentUserService.Role == RoleNames.PlatformAdministrator)
+        {
+            var clinicId = request.ClinicId
+                ?? throw new ValidationException(new[]
+                {
+                    new ValidationFailure(nameof(request.ClinicId), "Selecciona una clinica para ver sus usuarios."),
+                });
+
+            return _identityService.GetUsersByClinicAsync(clinicId);
+        }
+
+        var ownClinicId = _currentUserService.ClinicId
             ?? throw new ForbiddenAccessException("El usuario actual no está asociado a ninguna clínica.");
 
-        return _identityService.GetUsersByClinicAsync(clinicId);
+        return _identityService.GetUsersByClinicAsync(ownClinicId);
     }
 }

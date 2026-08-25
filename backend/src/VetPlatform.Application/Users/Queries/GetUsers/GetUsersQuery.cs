@@ -3,4 +3,4 @@ using VetPlatform.Application.Common.Models;
 
 namespace VetPlatform.Application.Users.Queries.GetUsers;
 
-public record GetUsersQuery : IRequest<IReadOnlyList<UserSummary>>;
+public record GetUsersQuery(Guid? ClinicId = null) : IRequest<IReadOnlyList<UserSummary>>;

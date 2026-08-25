@@ -96,6 +96,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: 'records.read.full' },
       },
+      {
+        path: 'users',
+        loadComponent: () => import('./features/users/users/users').then((m) => m.Users),
+        canActivate: [permissionGuard],
+        data: { permission: 'users.manage' },
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

@@ -84,7 +84,7 @@ Implemented:
 - Auth endpoints: login, refresh, current user.
 - Roles, permissions, and policy-based authorization, including a platform-level `SuperAdministrador` separate from clinic-level `Administrador`.
 - Clinic list/create endpoints.
-- User list/create endpoints scoped by clinic, plus platform-admin provisioning of clinic admins for a clinic they choose.
+- User list/create/activate-deactivate endpoints scoped by clinic, plus platform-admin provisioning of clinic admins for a clinic they choose, and a frontend "Usuarios" screen (list, create, deactivate) gated by `users.manage`, with a clinic picker for platform administrators.
 - Owners and patients, with weight history and progressive-disclosure forms, including a frontend for both.
 - Consultations with SOAP notes: draft entry, finalize (sign), and amendments for corrections to finalized records, with a frontend covering the whole lifecycle including the amendment history.
 - Appointments backend and frontend with day/week range views, status changes, and role-aware write rules.

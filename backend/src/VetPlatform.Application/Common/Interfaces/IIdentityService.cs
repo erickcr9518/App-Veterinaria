@@ -14,6 +14,8 @@ public interface IIdentityService
 
     Task<bool> SetUserActiveAsync(Guid userId, bool isActive);
 
+    Task<Guid?> GetUserClinicIdAsync(Guid userId);
+
     Task<IReadOnlyDictionary<Guid, string>> GetUserFullNamesAsync(IEnumerable<Guid> userIds);
 
     Task<bool> UserBelongsToClinicAsync(Guid userId, Guid clinicId);

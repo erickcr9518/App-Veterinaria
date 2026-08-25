@@ -102,6 +102,12 @@ public class IdentityService : IIdentityService
         return summaries;
     }
 
+    public async Task<Guid?> GetUserClinicIdAsync(Guid userId)
+    {
+        var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        return user?.ClinicId;
+    }
+
     public async Task<bool> SetUserActiveAsync(Guid userId, bool isActive)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());

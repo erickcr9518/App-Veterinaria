@@ -16,6 +16,9 @@
       @if (hasPermission('appointments.read')) {
         <a routerLink="/appointments">Agenda</a>
       }
+      @if (hasPermission('users.manage')) {
+        <a routerLink="/users">Usuarios</a>
+      }
     </nav>
 
     @if (currentUser(); as user) {
