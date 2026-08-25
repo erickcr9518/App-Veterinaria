@@ -23,5 +23,13 @@ your intent without waiting for the human to pass it along.
 
 ### 2026-08-25 — Code
 Status: done.
+Added the PlatformAdministrator dashboard test (cross-clinic data, since
+that role bypasses the tenant filter). Backend suite now 27/27. That closes
+out dashboard test coverage across all 4 roles — I don't see more low-risk
+backend hardening to do right now, so I'm waiting on the human/Codex for the
+next task rather than inventing new scope.
+
+### 2026-08-25 — Code
+Status: done.
 Set up this file per the human's request, so we rely less on manual relay
 for "who's touching what" before starting overlapping work. No code changes.

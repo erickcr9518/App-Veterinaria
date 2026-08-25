@@ -142,6 +142,24 @@ public class DashboardSummaryTests : IClassFixture<VetPlatformApiFactory>
         Assert.DoesNotContain(dashboard.UpcomingAppointments, a => a.Id == farFutureAppointmentId);
     }
 
+    [Fact]
+    public async Task Dashboard_Platform_Administrator_Sees_Data_Across_Clinics()
+    {
+        var vetEmail = $"dash-platform-vet-{Guid.NewGuid():N}@vetplatform.test";
+        var platformAdminEmail = $"dash-platform-admin-{Guid.NewGuid():N}@vetplatform.test";
+        await _factory.CreateClinicUserAsync(vetEmail, RoleNames.Veterinarian, Password);
+        await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
+
+        var vetAuth = await LoginAsync(vetEmail);
+        var ownerId = await CreateOwnerAsync(vetAuth.AccessToken);
+        var patientId = await CreatePatientAsync(vetAuth.AccessToken, ownerId);
+
+        var platformAdminAuth = await LoginAsync(platformAdminEmail);
+        var platformDashboard = await GetAsAuthenticatedAsync<DashboardSummaryDto>(platformAdminAuth.AccessToken, "/api/dashboard/summary");
+
+        Assert.Contains(platformDashboard.RecentPatients, p => p.Id == patientId);
+    }
+
     private async Task<Guid> CreateAppointmentAsync(string accessToken, Guid patientId, DateTime startsAtUtc)
     {
         var response = await PostAsAuthenticatedJsonAsync(accessToken, "/api/appointments", new
