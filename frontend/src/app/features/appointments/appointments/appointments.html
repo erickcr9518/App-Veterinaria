@@ -11,7 +11,9 @@
     </div>
     <div class="toolbar">
       @if (selectedPatient(); as patient) {
-        <a class="ghost-button" [routerLink]="['/patients', patient.id, 'record']">Expediente</a>
+        @if (canReadRecords()) {
+          <a class="ghost-button" [routerLink]="['/patients', patient.id, 'record']">Expediente</a>
+        }
         <a class="ghost-button" routerLink="/appointments">Ver todos</a>
       }
       <div class="segmented" aria-label="Vista de agenda">

@@ -37,6 +37,7 @@ export class Appointments implements OnInit {
 
   readonly canWrite = computed(() =>
     this.authService.hasPermission('appointments.write') || this.authService.hasPermission('appointments.write.own'));
+  readonly canReadRecords = computed(() => this.authService.hasPermission('records.read.full'));
   readonly hasAppointments = computed(() => this.appointments().length > 0);
   readonly selectedPatient = computed(() => this.patients().find((patient) => patient.id === this.filteredPatientId()) ?? null);
   readonly formTitle = computed(() => this.editingAppointment() ? 'Editar cita' : 'Nueva cita');

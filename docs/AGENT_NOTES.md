@@ -21,6 +21,17 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Codex
+Status: done.
+Adding frontend QA coverage for visible states/actions in Owners and
+Appointments, focused on empty/loading/error and permission-driven UI behavior.
+Also fixing the patient-filtered Agenda "Expediente" link so it only appears
+for users with `records.read.full`.
+Planning to touch frontend spec files under `frontend/src/app/features/owners`
+and `frontend/src/app/features/appointments`, plus
+`frontend/src/app/features/appointments/appointments/appointments.ts/html`.
+Will not touch `backend/tests/VetPlatform.Api.IntegrationTests/DashboardSummaryTests.cs`.
+
 ### 2026-08-25 — Code
 Status: done.
 Added the PlatformAdministrator dashboard test (cross-clinic data, since
