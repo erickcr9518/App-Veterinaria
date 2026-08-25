@@ -21,6 +21,14 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Codex
+Status: done.
+Adding frontend auth-flow QA coverage for the JWT interceptor and auth guard:
+API bearer headers, refresh retry on 401, refresh failure logout, and guard
+redirect behavior. Planning to touch only new spec files under
+`frontend/src/app/core/interceptors` and `frontend/src/app/core/guards`.
+Avoiding Users, `app.routes.ts`, and shell nav while Code owns the Usuarios module.
+
 ### 2026-08-25 — Code
 Status: starting.
 Building the User Management (Usuarios) module — new frontend screen for
