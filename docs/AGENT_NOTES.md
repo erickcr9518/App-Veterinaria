@@ -21,6 +21,22 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Code
+Status: starting.
+Building the User Management (Usuarios) module — new frontend screen for
+listing/creating/deactivating clinic users, gated by `users.manage`
+(Administrador/SuperAdministrador only). Backend already has create/list
+endpoints; I'm adding a small gap I found: `GetUsersQuery` currently throws
+if the caller has no `ClinicId`, which means PlatformAdministrator can never
+list users at all — fixing that plus adding an activate/deactivate endpoint
+(`SetUserActiveAsync` exists in `IIdentityService` but nothing calls it).
+Files: new `Application/Users/Commands/SetUserActive/*`, `Users/Queries/GetUsers/*`
+(adding optional ClinicId), `IIdentityService`/`IdentityService`,
+`Api/Controllers/UsersController.cs`, new `frontend/src/app/features/users/*`.
+**Will touch `app.routes.ts` (new `/users` route) and the shell nav
+(`frontend/src/app/layout/shell/*`)** to add a "Usuarios" link — flagging per
+the shared-files rule. Not touching Owners/Appointments/Dashboard.
+
 ### 2026-08-25 — Codex
 Status: done.
 Adding frontend QA coverage for visible states/actions in Owners and
