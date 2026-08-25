@@ -1,7 +1,11 @@
 <section class="dashboard">
   @if (currentUser(); as user) {
     <h1>Hola, {{ user.fullName.split(' ')[0] }}</h1>
-    <p class="subtitle">Este es el panel de {{ user.clinicName }}. Empieza registrando propietarios y pacientes para abrir el expediente clinico.</p>
+    @if (user.clinicName) {
+      <p class="subtitle">Este es el panel de {{ user.clinicName }}. Empieza registrando propietarios y pacientes para abrir el expediente clinico.</p>
+    } @else {
+      <p class="subtitle">Este es el panel de plataforma. Revisa la actividad operativa disponible segun tus permisos.</p>
+    }
   }
 
   <div class="action-grid">
@@ -122,13 +126,21 @@
             <ul class="summary-list">
               @for (patient of s.recentPatients; track patient.id) {
                 <li>
-                  <a class="summary-link" [routerLink]="['/patients', patient.id, 'record']">
+                  @if (hasPermission('records.read.full')) {
+                    <a class="summary-link" [routerLink]="['/patients', patient.id, 'record']">
+                      <div>
+                        <strong>{{ patient.name }}</strong>
+                        <span>{{ patient.species }} &middot; {{ patient.ownerName }}</span>
+                      </div>
+                      <span class="meta">{{ patient.createdAtUtc | date }}</span>
+                    </a>
+                  } @else {
                     <div>
                       <strong>{{ patient.name }}</strong>
                       <span>{{ patient.species }} &middot; {{ patient.ownerName }}</span>
                     </div>
                     <span class="meta">{{ patient.createdAtUtc | date }}</span>
-                  </a>
+                  }
                 </li>
               }
             </ul>
