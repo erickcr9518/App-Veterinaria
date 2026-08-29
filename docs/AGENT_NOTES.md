@@ -21,6 +21,15 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Code
+Status: starting.
+Writing a pilot release checklist (`docs/RELEASE_CHECKLIST.md`): auditing
+security config (password/lockout policy, secrets, CORS), demo/test data
+that needs cleanup before a real clinic onboards, deployment gaps, and
+known functional limitations. Doc-only, no app code changes expected. Not
+touching Users, Owners, Appointments, Dashboard, or anything Codex's
+verification pass might be running against.
+
 ### 2026-08-25 — Codex
 Status: done.
 Adding frontend auth-flow QA coverage for the JWT interceptor and auth guard:
