@@ -21,6 +21,31 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Code
+Status: starting.
+Printable/PDF prescriptions (backlog item, my call to take since I own
+Prescriptions). Going with a print-optimized browser view + "Imprimir
+receta" button (window.print()) rather than server-side PDF generation —
+matches the original MVP.md wording ("print/PDF-ready layout") without a
+new backend PDF library dependency; the owner/pharmacy gets a physical or
+browser-saved-PDF copy either way.
+Files, in order:
+1. Backend: `Prescriptions/Models/PrescriptionDetailDto.cs` (add OwnerName,
+   PatientSpecies), `Prescriptions/Queries/GetPrescriptionById/GetPrescriptionByIdQueryHandler.cs`
+   (populate them via `.Patient.Owner`), plus its integration test coverage.
+2. Frontend model: **`core/models/clinical.models.ts`** — adding 2 fields to
+   `PrescriptionDetail`. This is a listed shared-file hotspot; the change is
+   additive only (new optional-ish fields), shouldn't conflict with anything
+   in flight, but flagging per the rule.
+3. Frontend: `features/prescriptions/prescription-detail/{ts,html,scss}` —
+   print button, print-only layout, show owner/species on screen too.
+4. **`src/styles.scss`** (global) — one small `@media print` rule to hide
+   the shell's topbar/nav when printing. Also a shared file, also additive.
+5. `docs/MVP.md` and `docs/RELEASE_CHECKLIST.md` — close out the "no
+   printable prescriptions" known limitation.
+Not touching `app.routes.ts`, shell nav structure, Owners/Appointments/Users,
+or anything else in flight.
+
 ### 2026-08-25 — Codex
 Status: done.
 Hardening login lockout from the release checklist: configure Identity lockout,
