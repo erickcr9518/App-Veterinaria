@@ -21,6 +21,19 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Code
+Status: starting.
+Setting up minimal browser-driven E2E tests with Playwright (last item on
+the shared punch list — release checklist and Docker are done, Docker
+validation itself is parked until Docker is available somewhere). Scope:
+a handful of critical-path scenarios, not exhaustive coverage — login,
+core clinical workflow (owner → patient → consultation → finalize), and a
+couple of role-based access checks that exercise the real backend+frontend
+together rather than mocks. New `frontend/e2e/*` + `playwright.config.ts`,
+a new `frontend:e2e` npm script, probably a `README`/CI note. Should not
+touch existing app code or specs. Will need a real SQL Server + both dev
+servers running, same as this session's manual browser QA has been doing.
+
 ### 2026-08-25 — Codex
 Status: done.
 Hardening auth logout from the release checklist: add an API logout endpoint that
