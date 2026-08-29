@@ -22,6 +22,17 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-29 — Code
+Status: starting.
+Still solo (Codex out). Continuing with the last "should do soon" item:
+database backups. Plan: `scripts/backup-db.sh` and `scripts/restore-db.sh`
+using sqlcmd BACKUP/RESTORE DATABASE inside the `sqlserver` container, a
+bind-mounted `./backups` host directory (gitignored) in `docker-compose.yml`
+so backups actually land somewhere retrievable rather than an ephemeral
+container filesystem, and docs. Backend/frontend app code untouched —
+this is infra/ops only. Not touching Prescriptions, Users, Dashboard,
+frontend routes/shell, or E2E.
+
+### 2026-08-29 — Code
 Status: done.
 Health check + structured logging shipped (Codex out for now, did this solo).
 `GET /health` (anonymous) via `AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`
