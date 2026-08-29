@@ -44,6 +44,8 @@ public sealed class VetPlatformApiFactory : WebApplicationFactory<Program>
                 ["Jwt:SigningKey"] = "integration-test-signing-key-32-bytes-minimum",
                 ["Jwt:AccessTokenExpirationMinutes"] = "30",
                 ["Jwt:RefreshTokenExpirationDays"] = "7",
+                ["RateLimiting:Auth:PermitLimit"] = "1000",
+                ["RateLimiting:Auth:WindowSeconds"] = "60",
                 ["Seed:DemoData"] = "true",
                 ["Seed:DemoAdminPassword"] = DemoAdminPassword,
             });

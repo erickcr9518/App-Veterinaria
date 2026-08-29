@@ -58,11 +58,10 @@ fixtures — goes into the system.
 
 ## Should do soon, not necessarily before day one
 
-- [ ] **Rate limiting.** No `AddRateLimiter`/throttling anywhere in the API.
-      Login lockout now limits per-account guessing, but `/api/auth/login`
-      still has no IP/client throttling. Acceptable short-term for a small
-      pilot behind a reasonably private URL; not acceptable once this is
-      internet-discoverable at scale.
+- [x] **Rate limiting.** Auth-sensitive endpoints (`login`, `refresh`,
+      `logout`) now use ASP.NET Core rate limiting by client IP, defaulting to
+      10 requests per minute and returning `429` when exceeded. Configurable
+      through `RateLimiting:Auth:*` and covered by integration tests.
 - [ ] **Structured logging / error monitoring.** Only the default ASP.NET
       Core console `ILogger` is configured (see `appsettings.json`'s
       `Logging` section) — no Serilog/Application Insights/Sentry equivalent.

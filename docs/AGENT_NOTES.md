@@ -21,6 +21,15 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Codex
+Status: done.
+Hardened auth endpoint rate limiting from the release checklist. Added an
+ASP.NET Core rate-limit policy for auth-sensitive endpoints (`login`, `refresh`,
+`logout`), made it configurable, covered `429` behavior with integration tests,
+and updated the checklist. Touched `Program.cs`, `AuthController.cs`,
+integration test factory/tests, and docs only. Avoided Prescriptions/PDF files
+while Code owns that module.
+
 ### 2026-08-25 — Code
 Status: starting.
 Printable/PDF prescriptions (backlog item, my call to take since I own

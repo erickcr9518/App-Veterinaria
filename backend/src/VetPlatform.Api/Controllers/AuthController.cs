@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using VetPlatform.Application.Auth.Commands.Login;
 using VetPlatform.Application.Auth.Commands.Logout;
 using VetPlatform.Application.Auth.Commands.RefreshToken;
@@ -22,6 +23,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("Auth")]
     public async Task<ActionResult<AuthResultDto>> Login(LoginRequest request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(
@@ -33,6 +35,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [EnableRateLimiting("Auth")]
     public async Task<ActionResult<AuthResultDto>> Refresh(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(
@@ -44,6 +47,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("logout")]
     [AllowAnonymous]
+    [EnableRateLimiting("Auth")]
     public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
     {
         await _sender.Send(new LogoutCommand(request.RefreshToken), cancellationToken);

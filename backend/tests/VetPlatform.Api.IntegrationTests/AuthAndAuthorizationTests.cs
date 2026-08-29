@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using VetPlatform.Application.Auth.Models;
@@ -115,6 +116,38 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
         });
 
         Assert.Equal(HttpStatusCode.Unauthorized, lockedResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Auth_Endpoints_Return_TooManyRequests_When_Rate_Limit_Is_Exceeded()
+    {
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureAppConfiguration((_, config) =>
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["RateLimiting:Auth:PermitLimit"] = "2",
+                    ["RateLimiting:Auth:WindowSeconds"] = "60",
+                })));
+        using var client = factory.CreateClient();
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var failedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+            {
+                email = $"missing-{Guid.NewGuid():N}@vetplatform.test",
+                password = "WrongPassword123!",
+            });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
+        }
+
+        var rateLimitedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = $"missing-{Guid.NewGuid():N}@vetplatform.test",
+            password = "WrongPassword123!",
+        });
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rateLimitedResponse.StatusCode);
     }
 
     [Fact]

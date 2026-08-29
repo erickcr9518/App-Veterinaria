@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using VetPlatform.Api.Middleware;
@@ -35,6 +37,27 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("Auth", httpContext =>
+    {
+        var configuration = httpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var authRateLimitPermitLimit = configuration.GetValue("RateLimiting:Auth:PermitLimit", 10);
+        var authRateLimitWindowSeconds = configuration.GetValue("RateLimiting:Auth:WindowSeconds", 60);
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            GetRateLimitPartitionKey(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = authRateLimitPermitLimit,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(authRateLimitWindowSeconds),
+            });
+    });
+});
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
@@ -85,7 +108,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.UseRouting();
 app.UseCors("Frontend");
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -93,6 +118,17 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static string GetRateLimitPartitionKey(HttpContext context)
+{
+    var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+    if (!string.IsNullOrWhiteSpace(forwardedFor))
+    {
+        return forwardedFor.Split(',')[0].Trim();
+    }
+
+    return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+}
 
 public partial class Program
 {
