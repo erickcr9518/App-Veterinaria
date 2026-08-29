@@ -22,19 +22,28 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-29 — Code
-Status: starting.
-Codex is out for now (hit its usage limit), continuing solo on the agreed
-next item: health check + structured logging/monitoring.
-Plan: `GET /health` (anonymous, checks DB connectivity via
-`AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`), Serilog
-for structured console + rolling-file logging plus request logging
-middleware. Not wiring a specific cloud log sink (Seq/App Insights/Sentry)
-since that needs a hosting/vendor decision I can't make — will document how
-to point it at one later instead.
-Files: `Program.cs`, `VetPlatform.Api.csproj` (new packages), possibly a
-small `HealthChecks` file, `docker-compose.yml` (add an api healthcheck
-using the new endpoint), `docs/RELEASE_CHECKLIST.md`/`docs/DEPLOYMENT.md`.
-Not touching Prescriptions, Users, frontend routes/shell, or E2E.
+Status: done.
+Health check + structured logging shipped (Codex out for now, did this solo).
+`GET /health` (anonymous) via `AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`
+— real DB connectivity check, verified live (200 "Healthy", and watched it
+actually run `SELECT 1` in the request log). Serilog for structured
+console + rolling daily file (`logs/`, 14-day retention, gitignored) plus
+`UseSerilogRequestLogging()` — verified live too, both sinks producing
+real timestamped/structured output. Deliberately not wiring a specific
+cloud sink (Seq/App Insights/Sentry) since that's a hosting/vendor decision;
+`ReadFrom.Configuration` in the Serilog setup means one can be added later
+via config alone. Wired the new health endpoint into `docker-compose.yml`
+(api healthcheck + frontend now waits on it) and added `curl` to the
+runtime image for that — **unverified**, same Docker caveat as before,
+no Docker in this environment.
+New package refs: Serilog.AspNetCore, Serilog.Sinks.File,
+Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore (pinned
+8.0.11 to match the rest of the EF Core packages). New `HealthCheckTests.cs`.
+Backend 37/37. Hit an unrelated environment hiccup along the way — Windows
+blocked the freshly-rebuilt `VetPlatform.Api.exe` apphost via an
+"Application Control policy" (twice); worked around by running
+`dotnet bin/Debug/net8.0/VetPlatform.Api.dll` directly instead of
+`dotnet run`. Not touching Prescriptions, Users, frontend, or E2E.
 
 ### 2026-08-29 — Code
 Status: done.

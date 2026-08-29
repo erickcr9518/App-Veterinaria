@@ -52,7 +52,9 @@ still matters if anything hits the API container's port directly).
 
    The API waits for SQL Server's healthcheck before starting, then runs EF
    Core migrations automatically on boot (`Database.MigrateAsync()` in
-   `Program.cs`) — no manual migration step needed.
+   `Program.cs`) — no manual migration step needed. The `frontend` container
+   in turn waits for the API's own `/health` check to pass before starting,
+   so you won't hit a half-up stack on first boot.
 
 3. **Bootstrap the first real accounts.** There's no self-registration
    endpoint, so first boot seeds two fixed accounts to get you in the door:
@@ -78,6 +80,27 @@ still matters if anything hits the API container's port directly).
 
 4. Visit `FRONTEND_ORIGIN` and confirm login works end to end.
 
+## Health checks and logs
+
+`GET /health` checks real database connectivity and is what both the
+Docker healthcheck and `frontend`'s startup gate use — hit it directly
+(`curl http://localhost:5000/health` against the `api` container's exposed
+port) if something seems down.
+
+Logs go to stdout (`docker compose logs -f api`) and to a rolling daily
+file under `logs/` *inside the `api` container*, which disappears when the
+container is removed. To keep logs across restarts/redeploys, mount a
+volume for it — add under the `api` service in `docker-compose.yml`:
+
+```yaml
+    volumes:
+      - vetplatform-api-logs:/app/logs
+```
+
+(and add `vetplatform-api-logs:` under the top-level `volumes:` key, same
+as `vetplatform-sql-data`). This isn't done by default since a fresh pilot
+doesn't have logs worth keeping yet — add it once it does.
+
 ## Redeploying after a code change
 
 ```bash
@@ -91,9 +114,10 @@ only wiped by `docker compose down -v`.
 
 ## What this does not cover yet
 
-Per `docs/RELEASE_CHECKLIST.md`: automated backups, log aggregation/alerting,
-TLS termination (put this behind a reverse proxy like Caddy/Traefik or your
-host's existing one for real HTTPS — this setup serves plain HTTP), and CI/CD
-(deploys here are a manual `git pull` + `docker compose up`). Fine for a
-small, hands-on pilot; not something to leave as-is if this grows past one
-clinic.
+Per `docs/RELEASE_CHECKLIST.md`: automated backups, shipping logs to a real
+aggregator with alerting (structured logs exist now — see above — but
+nothing watches them for you), TLS termination (put this behind a reverse
+proxy like Caddy/Traefik or your host's existing one for real HTTPS — this
+setup serves plain HTTP), and CI/CD (deploys here are a manual `git pull` +
+`docker compose up`). Fine for a small, hands-on pilot; not something to
+leave as-is if this grows past one clinic.

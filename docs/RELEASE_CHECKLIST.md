@@ -62,21 +62,28 @@ fixtures — goes into the system.
       `logout`) now use ASP.NET Core rate limiting by client IP, defaulting to
       10 requests per minute and returning `429` when exceeded. Configurable
       through `RateLimiting:Auth:*` and covered by integration tests.
-- [ ] **Structured logging / error monitoring.** Only the default ASP.NET
-      Core console `ILogger` is configured (see `appsettings.json`'s
-      `Logging` section) — no Serilog/Application Insights/Sentry equivalent.
-      `ExceptionHandlingMiddleware` does log unhandled exceptions server-side
-      and never leaks stack traces to the client (verified — this part is
-      solid), but there's nowhere for those logs to go except stdout. Decide
-      where the pilot's logs need to land before day one, since debugging a
-      remote pilot without them is painful.
+- [x] **Structured logging.** Serilog now writes structured request/response
+      logs (method, path, status, duration) plus everything the app already
+      logged (including `ExceptionHandlingMiddleware`'s unhandled-exception
+      logging, unchanged) to both the console and a rolling daily file under
+      `logs/` (14-day retention, gitignored). `builder.Host.UseSerilog(...)`
+      in `Program.cs` also calls `ReadFrom.Configuration`, so a `Serilog`
+      section can be added later to point at a real aggregator (Seq,
+      Application Insights, Sentry, etc.) without touching code — that
+      vendor choice is still a real pilot decision, just no longer blocked
+      on infrastructure. In Docker, the file sink writes inside the
+      container; mount `logs/` as a volume if you want it to survive
+      `docker compose down` or be readable from the host.
 - [ ] **Database backups.** No backup/restore process exists or is
       documented anywhere in the repo. A real clinic's records need at least
       a basic automated backup plan before they're the only copy of that
       data.
-- [ ] **Health check endpoint.** None exists (`/health` or similar). Useful
-      once anything is monitoring uptime; not urgent for a single pilot
-      clinic if someone is manually watching it.
+- [x] **Health check endpoint.** `GET /health` (anonymous) checks real
+      database connectivity via `AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`
+      — returns `200 Healthy` or a non-200 with the DB unreachable. Wired
+      into `docker-compose.yml`'s `api` service so `frontend` won't start
+      routing to it until it's actually ready. Covered by
+      `HealthCheckTests`.
 - [x] **A deploy story.** ~~There is no Dockerfile...~~ Done: `backend/Dockerfile`,
       `frontend/Dockerfile` + `frontend/nginx.conf`, root `docker-compose.yml`,
       and `docs/DEPLOYMENT.md` walk through standing this up via Docker Compose
@@ -121,9 +128,9 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist (commit `210c169`): backend 33/33 (2 unit +
-31 integration), frontend 35/35 — re-run both before relying on these
-numbers, since they move as both agents add coverage. These cover role/permission access
+As of this checklist (commit `390aa33`): backend 37/37 (2 unit +
+35 integration), frontend 36/36, E2E 6/6 — re-run all before relying on
+these numbers, since they move as both agents add coverage. These cover role/permission access
 control, tenant isolation, and the core clinical-record lifecycle
 (draft → finalize → amend) fairly thoroughly.
 
