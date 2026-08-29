@@ -56,7 +56,14 @@ export class AuthService {
   }
 
   logout(): void {
+    const refreshToken = this.refreshToken;
     this.clearSession();
+
+    if (refreshToken) {
+      this.http.post<void>(`${environment.apiUrl}/auth/logout`, { refreshToken }).subscribe({
+        error: () => undefined,
+      });
+    }
   }
 
   hasPermission(code: string): boolean {

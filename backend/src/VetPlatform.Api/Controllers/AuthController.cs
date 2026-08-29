@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VetPlatform.Application.Auth.Commands.Login;
+using VetPlatform.Application.Auth.Commands.Logout;
 using VetPlatform.Application.Auth.Commands.RefreshToken;
 using VetPlatform.Application.Auth.Models;
 using VetPlatform.Application.Auth.Queries.GetCurrentUser;
@@ -41,6 +42,14 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Logout(LogoutRequest request, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new LogoutCommand(request.RefreshToken), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<CurrentUserDto>> Me(CancellationToken cancellationToken)
@@ -52,3 +61,4 @@ public class AuthController : ControllerBase
 
 public record LoginRequest(string Email, string Password);
 public record RefreshTokenRequest(string RefreshToken);
+public record LogoutRequest(string RefreshToken);

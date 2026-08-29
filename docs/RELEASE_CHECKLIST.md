@@ -54,13 +54,10 @@ fixtures — goes into the system.
       login attempts** — nothing stops unlimited password guessing against a
       known email. Low effort to fix (wire up `AccessFailedAsync`/lockout
       options) and worth doing before any internet-facing pilot.
-- [ ] **Add logout revocation.** `AuthController` has no `/logout` endpoint —
-      the frontend's `logout()` only clears `localStorage`
-      (`frontend/src/app/core/services/auth.service.ts`). The refresh token
-      stays valid server-side for its full `Jwt:RefreshTokenExpirationDays`
-      (7 days by default) after a user "logs out." Fine for an internal pilot
-      with trusted staff and trusted devices; worth fixing before staff use
-      shared/public computers.
+- [x] **Add logout revocation.** `POST /api/auth/logout` now revokes the
+      submitted refresh token, and the frontend's `logout()` calls it before
+      leaving the user on `/login`. Covered by `Logout_Revokes_Refresh_Token`
+      in `AuthAndAuthorizationTests` plus an `AuthService` unit test.
 
 ## Should do soon, not necessarily before day one
 

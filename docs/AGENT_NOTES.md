@@ -22,13 +22,13 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-25 — Codex
-Status: starting.
+Status: done.
 Hardening auth logout from the release checklist: add an API logout endpoint that
 revokes refresh tokens, wire the frontend "Cerrar sesión" action to call it, and
-cover the refresh-token revocation behavior with integration tests. Planning to
-touch Auth command/controller/service files and auth tests only. Avoiding Docker,
-deployment docs, `app.routes.ts`, shell navigation, and permission defaults while
-Code owns deploy support.
+cover the refresh-token revocation behavior with integration tests. Touched Auth
+command/controller/service files, auth tests, and the release checklist only.
+Avoided Docker, deployment docs, `app.routes.ts`, shell navigation, and
+permission defaults while Code owned deploy support.
 
 ### 2026-08-25 — Code
 Status: done.

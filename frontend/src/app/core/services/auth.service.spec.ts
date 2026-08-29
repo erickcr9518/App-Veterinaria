@@ -44,6 +44,24 @@ describe('AuthService', () => {
     expect(service.hasPermission('clinics.manage')).toBe(false);
   });
 
+  it('clears the local session and revokes the refresh token on logout', () => {
+    service.login('vet@demo.test', 'Admin123!').subscribe();
+
+    const loginRequest = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+    loginRequest.flush(createAuthResult(['owners.read']));
+
+    service.logout();
+
+    expect(service.accessToken).toBeNull();
+    expect(service.refreshToken).toBeNull();
+    expect(service.hasPermission('owners.read')).toBe(false);
+
+    const logoutRequest = httpMock.expectOne(`${environment.apiUrl}/auth/logout`);
+    expect(logoutRequest.request.method).toBe('POST');
+    expect(logoutRequest.request.body).toEqual({ refreshToken: 'refresh-token' });
+    logoutRequest.flush(null);
+  });
+
   function createAuthResult(permissions: string[]): AuthResult {
     return {
       accessToken: 'access-token',

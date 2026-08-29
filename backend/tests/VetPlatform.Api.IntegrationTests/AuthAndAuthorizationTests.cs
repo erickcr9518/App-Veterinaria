@@ -71,6 +71,26 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Logout_Revokes_Refresh_Token()
+    {
+        var auth = await LoginAsync(VetPlatformApiFactory.DemoAdminEmail, VetPlatformApiFactory.DemoAdminPassword);
+
+        var logoutResponse = await _client.PostAsJsonAsync("/api/auth/logout", new
+        {
+            refreshToken = auth.RefreshToken,
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
+
+        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refreshToken = auth.RefreshToken,
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Clinic_Admin_Cannot_Create_Clinics()
     {
         var auth = await LoginAsync(VetPlatformApiFactory.DemoAdminEmail, VetPlatformApiFactory.DemoAdminPassword);
