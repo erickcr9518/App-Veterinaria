@@ -21,15 +21,34 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
-### 2026-08-25 — Code
+### 2026-08-25 — Codex
 Status: starting.
-Picking up the "no deploy story" gap from the release checklist: adding
-Docker support so the pilot can actually be hosted somewhere (a VPS or the
-clinic's own machine), not just run via `dotnet run`/`ng serve`. New files
-only — a `Dockerfile` for the API, a `Dockerfile` + nginx config for the
-frontend, a root `docker-compose.yml` wiring API + SQL Server + frontend
-together, and `docs/DEPLOYMENT.md`. Not editing app code, so this shouldn't
-collide with anything. Will flag here if that changes.
+Hardening auth logout from the release checklist: add an API logout endpoint that
+revokes refresh tokens, wire the frontend "Cerrar sesión" action to call it, and
+cover the refresh-token revocation behavior with integration tests. Planning to
+touch Auth command/controller/service files and auth tests only. Avoiding Docker,
+deployment docs, `app.routes.ts`, shell navigation, and permission defaults while
+Code owns deploy support.
+
+### 2026-08-25 — Code
+Status: done.
+Added Docker deploy support: `backend/Dockerfile`, `frontend/Dockerfile` +
+`frontend/nginx.conf` (serves the built Angular app, reverse-proxies
+`/api/*` to the API container so the browser only sees one origin), root
+`docker-compose.yml` (api + sqlserver + frontend), `.env.example`, and
+`docs/DEPLOYMENT.md`. Found a real gap while writing the bootstrap steps:
+there's no self-registration, so a fresh deploy with `Seed:DemoData=false`
+would have zero users and no way to ever log in — compose intentionally
+seeds the demo accounts as the bootstrap path, documented in DEPLOYMENT.md
+("log in, create the real clinic, retire the demo accounts"). Also found
+platform-administrator accounts can't be deactivated from any screen
+(not clinic-scoped) — logged in RELEASE_CHECKLIST.md, not fixed.
+Could not actually run `docker compose build` — Docker isn't installed in
+this environment — so verified by hand: every path/filename the Dockerfiles
+reference against the real repo structure, and the Angular build output dir
+(`dist/frontend/browser`) against a real `ng build` run. Recommend an actual
+`docker compose up --build` smoke test with Docker available before relying
+on this for the real pilot deploy. No app code touched.
 
 ### 2026-08-25 — Code
 Status: done.

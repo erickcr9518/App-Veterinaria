@@ -11,6 +11,9 @@ trusted staff** (a handful of accounts, one location). It does not cover
 scaling to many clinics at once, which would need more of the "operational
 readiness" section below.
 
+See `docs/DEPLOYMENT.md` for the actual how-to-stand-this-up steps (Docker
+Compose). This file is the "is it safe/ready" audit; that one is the runbook.
+
 ## Must do before any real patient data touches this
 
 These are gaps that matter the moment a real clinic's data — not test
@@ -81,10 +84,18 @@ fixtures — goes into the system.
 - [ ] **Health check endpoint.** None exists (`/health` or similar). Useful
       once anything is monitoring uptime; not urgent for a single pilot
       clinic if someone is manually watching it.
-- [ ] **A deploy story.** There is no Dockerfile, CI/CD pipeline, or
-      deployment script anywhere in the repo — today this only runs via
-      `dotnet run` / `ng serve` on a dev machine. "Real deploy" (per the
-      punch list) is a from-scratch task, not a tweak.
+- [x] **A deploy story.** ~~There is no Dockerfile...~~ Done: `backend/Dockerfile`,
+      `frontend/Dockerfile` + `frontend/nginx.conf`, root `docker-compose.yml`,
+      and `docs/DEPLOYMENT.md` walk through standing this up via Docker Compose
+      on any host. Still manual (`git pull` + `docker compose up`), no CI/CD.
+- [ ] **A way to manage platform-administrator accounts.** Found while
+      writing the deploy doc: `GetUsersQuery` scopes by clinic, and platform
+      administrators have no `ClinicId` — so they never show up in any
+      clinic's Usuarios list, and there's no "list platform admins" endpoint
+      at all. The seeded `superadmin@vetplatform.dev` bootstrap account can't
+      currently be deactivated, disabled, or even seen from any screen.
+      Low risk for a single trusted pilot; needed before more than one
+      trusted person touches platform-admin-level access.
 
 ## Data readiness
 
