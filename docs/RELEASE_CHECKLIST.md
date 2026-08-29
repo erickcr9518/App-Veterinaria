@@ -74,10 +74,13 @@ fixtures — goes into the system.
       on infrastructure. In Docker, the file sink writes inside the
       container; mount `logs/` as a volume if you want it to survive
       `docker compose down` or be readable from the host.
-- [ ] **Database backups.** No backup/restore process exists or is
-      documented anywhere in the repo. A real clinic's records need at least
-      a basic automated backup plan before they're the only copy of that
-      data.
+- [x] **Database backups.** `scripts/backup-db.sh` / `scripts/restore-db.sh`
+      wrap `BACKUP DATABASE`/`RESTORE DATABASE` against the `sqlserver`
+      container, writing to a bind-mounted `./backups/` (gitignored — real
+      patient data). Restore asks for confirmation first (destructive).
+      **Not automated yet** — nothing schedules `backup-db.sh` or copies its
+      output off the machine; see `docs/DEPLOYMENT.md`'s Backups section
+      for the cron + offsite-copy step still needed before day one.
 - [x] **Health check endpoint.** `GET /health` (anonymous) checks real
       database connectivity via `AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`
       — returns `200 Healthy` or a non-200 with the DB unreachable. Wired

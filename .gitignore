@@ -16,6 +16,9 @@ frontend/.angular/
 **/*.env
 .env
 
+# Database backups (real patient data - never commit)
+/backups/
+
 # IDE / OS
 .vs/
 .vscode/

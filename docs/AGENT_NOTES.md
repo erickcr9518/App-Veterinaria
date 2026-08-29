@@ -22,15 +22,28 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-29 — Code
-Status: starting.
-Still solo (Codex out). Continuing with the last "should do soon" item:
-database backups. Plan: `scripts/backup-db.sh` and `scripts/restore-db.sh`
-using sqlcmd BACKUP/RESTORE DATABASE inside the `sqlserver` container, a
-bind-mounted `./backups` host directory (gitignored) in `docker-compose.yml`
-so backups actually land somewhere retrievable rather than an ephemeral
-container filesystem, and docs. Backend/frontend app code untouched —
-this is infra/ops only. Not touching Prescriptions, Users, Dashboard,
-frontend routes/shell, or E2E.
+Status: done.
+Database backup/restore scripts shipped (still solo, Codex out).
+`scripts/backup-db.sh` / `scripts/restore-db.sh` wrap sqlcmd
+BACKUP/RESTORE DATABASE inside the `sqlserver` container; added a
+bind-mounted `./backups` host directory in `docker-compose.yml` (gitignored
+— real patient data) so output actually lands somewhere retrievable
+instead of the container's ephemeral filesystem. Restore requires typing
+"yes" before it touches anything (it's destructive by nature — full
+database replace).
+**Verified what's actually verifiable without Docker**: `bash -n` on both
+scripts (syntax), and manually traced the nested-quoting logic (host bash
+needs to expand the filename while leaving `$MSSQL_SA_PASSWORD` for the
+container's bash to expand at runtime) by extracting the exact string
+construction into a throwaway script and printing it — confirmed the
+final command string is exactly right. **Not verified**: actually running
+`docker compose exec` against a live sqlserver container, same Docker
+caveat as everything else Docker-related in this session.
+Explicitly documented in both `docs/RELEASE_CHECKLIST.md` and
+`docs/DEPLOYMENT.md` that scheduling + getting backups off-machine is
+still not automated — the scripts exist, nothing calls them yet.
+Only touched `docker-compose.yml`, `.gitignore`, new `scripts/`, and docs
+— no app code, so no build/test suite to re-run.
 
 ### 2026-08-29 — Code
 Status: done.

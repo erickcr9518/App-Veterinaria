@@ -101,6 +101,34 @@ volume for it — add under the `api` service in `docker-compose.yml`:
 as `vetplatform-sql-data`). This isn't done by default since a fresh pilot
 doesn't have logs worth keeping yet — add it once it does.
 
+## Backups
+
+```bash
+bash scripts/backup-db.sh
+```
+
+Runs `BACKUP DATABASE` inside the `sqlserver` container and writes the
+`.bak` file to `./backups/` on the host (bind-mounted in
+`docker-compose.yml`, gitignored — it's real patient data, never commit
+it). Needs the stack already running (`docker compose up -d`).
+
+To restore (**destructive** — replaces the current database entirely):
+
+```bash
+bash scripts/restore-db.sh vetplatform-20260829-120000.bak
+```
+
+It asks for confirmation before touching anything, then restarts the API
+container for you afterward if you follow the printed instruction
+(`docker compose restart api`) so it reconnects cleanly.
+
+Neither script schedules anything by itself — for an actual pilot, run
+`backup-db.sh` on a schedule (a host cron entry calling it daily is enough
+for a single small clinic) and copy the resulting `.bak` files somewhere
+off this machine (cloud storage, another server) — a backup that only
+exists on the same disk as the database it backs up doesn't protect
+against that disk failing.
+
 ## Redeploying after a code change
 
 ```bash
@@ -114,10 +142,12 @@ only wiped by `docker compose down -v`.
 
 ## What this does not cover yet
 
-Per `docs/RELEASE_CHECKLIST.md`: automated backups, shipping logs to a real
-aggregator with alerting (structured logs exist now — see above — but
-nothing watches them for you), TLS termination (put this behind a reverse
-proxy like Caddy/Traefik or your host's existing one for real HTTPS — this
-setup serves plain HTTP), and CI/CD (deploys here are a manual `git pull` +
-`docker compose up`). Fine for a small, hands-on pilot; not something to
-leave as-is if this grows past one clinic.
+Per `docs/RELEASE_CHECKLIST.md`: *scheduling* the backup script and getting
+its output off this machine (the script exists — see above — but nothing
+runs it for you), shipping logs to a real aggregator with alerting
+(structured logs exist now — see above — but nothing watches them for you),
+TLS termination (put this behind a reverse proxy like Caddy/Traefik or your
+host's existing one for real HTTPS — this setup serves plain HTTP), and
+CI/CD (deploys here are a manual `git pull` + `docker compose up`). Fine
+for a small, hands-on pilot; not something to leave as-is if this grows
+past one clinic.

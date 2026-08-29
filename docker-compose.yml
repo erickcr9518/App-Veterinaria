@@ -8,6 +8,9 @@ services:
       - "1433:1433"
     volumes:
       - vetplatform-sql-data:/var/opt/mssql
+      # Bind-mounted (not a named volume) so backups made by scripts/backup-db.sh
+      # land somewhere retrievable on the host, not just inside the container.
+      - ./backups:/var/opt/mssql/backup
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
       interval: 10s
