@@ -46,13 +46,33 @@ ng test
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+End-to-end tests use [Playwright](https://playwright.dev/) and drive the
+real app against a real backend + database — no mocks. First time only,
+install the browser binary:
 
 ```bash
-ng e2e
+npx playwright install chromium
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Then run the suite:
+
+```bash
+npm run e2e
+```
+
+Playwright starts the API (`dotnet run` from `../backend/src/VetPlatform.Api`)
+and the frontend dev server for you if they aren't already running (see
+`playwright.config.ts`), so you need a SQL Server instance reachable via the
+API's configured connection string, same as for local development. The
+tests log in as the seeded `admin@vetplatform.dev` account and create their
+own fresh owners/patients/staff via the API for isolation — they don't
+depend on or modify any other data.
+
+These are deliberately minimal: login (valid/invalid/logout), role-based
+access (Administrador vs. Recepcion), and one full clinical workflow smoke
+test (consultation draft → finalize → prescription draft → finalize). They
+exist to catch "the app doesn't work at all anymore," not to replace the
+unit/component specs (`ng test`) or the backend integration tests.
 
 ## Additional Resources
 

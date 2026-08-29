@@ -31,17 +31,21 @@ frontend routes, shell navigation, permissions, Docker, and E2E files while Code
 owned Playwright E2E setup.
 
 ### 2026-08-25 — Code
-Status: starting.
-Setting up minimal browser-driven E2E tests with Playwright (last item on
-the shared punch list — release checklist and Docker are done, Docker
-validation itself is parked until Docker is available somewhere). Scope:
-a handful of critical-path scenarios, not exhaustive coverage — login,
-core clinical workflow (owner → patient → consultation → finalize), and a
-couple of role-based access checks that exercise the real backend+frontend
-together rather than mocks. New `frontend/e2e/*` + `playwright.config.ts`,
-a new `frontend:e2e` npm script, probably a `README`/CI note. Should not
-touch existing app code or specs. Will need a real SQL Server + both dev
-servers running, same as this session's manual browser QA has been doing.
+Status: done.
+Set up minimal browser-driven E2E tests with Playwright — actually run and
+passing 6/6 against the real backend + a real SQL Server, not just written
+on paper (unlike the Docker setup, Playwright's Chromium installed fine
+here). New `frontend/e2e/{helpers,login,role-access,clinical-workflow}.spec.ts`
++ `frontend/playwright.config.ts` (auto-starts both dev servers if not
+already running), `npm run e2e`, README instructions, and marked the
+"minimal E2E" checklist item done in RELEASE_CHECKLIST.md. Coverage: login
+(valid/invalid/logout), Administrador-vs-Recepcion route access, and one
+full consultation-draft→finalize→prescription-draft→finalize smoke test.
+Tests create their own fresh owners/patients/staff via API for isolation —
+no shared-state dependency on other QA data sitting in the dev DB.
+Confirmed `ng test` doesn't pick up the e2e/ specs (still 36/36). Only
+touched `frontend/package.json`, `package-lock.json`, `.gitignore`, `README.md`
+— nothing in `src/`.
 
 ### 2026-08-25 — Codex
 Status: done.

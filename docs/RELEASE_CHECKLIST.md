@@ -124,10 +124,15 @@ As of this checklist (commit `210c169`): backend 33/33 (2 unit +
 31 integration), frontend 35/35 — re-run both before relying on these
 numbers, since they move as both agents add coverage. These cover role/permission access
 control, tenant isolation, and the core clinical-record lifecycle
-(draft → finalize → amend) fairly thoroughly. They do **not** include any
-browser-driven end-to-end tests — everything client-side has been verified
-by hand in this session's QA passes, not by an automated E2E suite. That's
-the next item on the punch list after this checklist.
+(draft → finalize → amend) fairly thoroughly.
+
+- [x] **Minimal browser-driven E2E.** Added with Playwright (`frontend/e2e/`,
+      `npm run e2e`) — login (valid/invalid/logout), role-based access
+      (Administrador vs. Recepcion), and one full clinical-workflow smoke
+      test (consultation draft → finalize → prescription draft → finalize),
+      run against the real backend + a real database, not mocks. 6/6 passing
+      as of this commit. Deliberately minimal — not a substitute for the
+      unit/integration suites, just a "did we break the whole app" tripwire.
 
 ## Sign-off
 
