@@ -22,13 +22,16 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-25 — Code
-Status: starting.
-Writing a pilot release checklist (`docs/RELEASE_CHECKLIST.md`): auditing
-security config (password/lockout policy, secrets, CORS), demo/test data
-that needs cleanup before a real clinic onboards, deployment gaps, and
-known functional limitations. Doc-only, no app code changes expected. Not
-touching Users, Owners, Appointments, Dashboard, or anything Codex's
-verification pass might be running against.
+Status: done.
+Wrote `docs/RELEASE_CHECKLIST.md`. Concrete findings from auditing the actual
+code (not a generic template): no login lockout (`IdentityService.ValidateCredentialsAsync`
+calls `CheckPasswordAsync` directly, no `options.Lockout` configured), no
+`/logout` endpoint so refresh tokens outlive a client-side logout, no rate
+limiting anywhere, no deploy story (no Dockerfile/CI at all), plus the usual
+secrets/CORS/connection-string items that need real values before a pilot
+env. Also listed known functional gaps to tell the pilot clinic about
+(no PDF prescriptions, no audit-log UI, no password reset). Doc-only,
+no app code touched.
 
 ### 2026-08-25 — Codex
 Status: done.

@@ -1,0 +1,133 @@
+# Pilot Release Checklist
+
+This is a working checklist for taking VetPlatform from "runs on our machines"
+to "a real clinic uses it with real patient data." It is based on an audit of
+the current code (2026-08-25), not a generic template — every item below
+points at something concrete in the repo. Check items off as they're done;
+update this file in the same PR/commit that closes an item.
+
+Scope: this covers what's needed for a **single-clinic pilot with a small,
+trusted staff** (a handful of accounts, one location). It does not cover
+scaling to many clinics at once, which would need more of the "operational
+readiness" section below.
+
+## Must do before any real patient data touches this
+
+These are gaps that matter the moment a real clinic's data — not test
+fixtures — goes into the system.
+
+- [ ] **Provision a real database.** Nothing here should point at the shared
+      dev SQL instance. `appsettings.json`'s `ConnectionStrings:DefaultConnection`
+      is a local SQLEXPRESS default — the pilot needs its own connection
+      string supplied via `appsettings.Production.json` (not committed) or
+      environment variables.
+- [ ] **Generate a real JWT signing key.** `Jwt:SigningKey` is empty in the
+      committed `appsettings.json` by design (`ValidateJwtSettings` in
+      `backend/src/VetPlatform.Infrastructure/DependencyInjection.cs` throws
+      on startup if it's missing or under 32 bytes) — good, but it means a
+      real secret has to be set for the pilot environment before the API will
+      even start. Use a secrets manager or environment variable, not a
+      committed file.
+- [ ] **Confirm demo seeding is off.** `Program.cs` seeds demo data when
+      `Seed:DemoData` is `true` *or* the environment is Development. The
+      committed `appsettings.json` has no `Seed` section, so it defaults to
+      off outside Development — verify the pilot's actual deployed config
+      doesn't set `Seed:DemoData: true` and doesn't reuse the dev
+      `DemoAdminPassword`. Provision the pilot's first Administrador account
+      deliberately instead.
+- [ ] **Set the real CORS origin.** `Cors:AllowedOrigins` in `appsettings.json`
+      only has `http://localhost:4200`. It needs the pilot's actual deployed
+      frontend origin, or login/every API call will fail with a CORS error.
+- [ ] **Set the real frontend API URL.** `frontend/src/environments/environment.ts`
+      (the production build) points at `/api` (a relative path — assumes the
+      frontend and API are served from the same origin behind a reverse
+      proxy). Decide the actual deploy topology and update this if the API
+      lives on a different host/port.
+- [ ] **Add login lockout.** Checked `IdentityService.ValidateCredentialsAsync`
+      (`backend/src/VetPlatform.Infrastructure/Identity/IdentityService.cs`) —
+      it calls `_userManager.CheckPasswordAsync` directly, and
+      `AddIdentityCore` in `DependencyInjection.cs` never configures
+      `options.Lockout`. There is currently **no account lockout after failed
+      login attempts** — nothing stops unlimited password guessing against a
+      known email. Low effort to fix (wire up `AccessFailedAsync`/lockout
+      options) and worth doing before any internet-facing pilot.
+- [ ] **Add logout revocation.** `AuthController` has no `/logout` endpoint —
+      the frontend's `logout()` only clears `localStorage`
+      (`frontend/src/app/core/services/auth.service.ts`). The refresh token
+      stays valid server-side for its full `Jwt:RefreshTokenExpirationDays`
+      (7 days by default) after a user "logs out." Fine for an internal pilot
+      with trusted staff and trusted devices; worth fixing before staff use
+      shared/public computers.
+
+## Should do soon, not necessarily before day one
+
+- [ ] **Rate limiting.** No `AddRateLimiter`/throttling anywhere in the API.
+      Combined with the lockout gap above, `/api/auth/login` has no
+      brute-force protection at all. Acceptable short-term for a small pilot
+      behind a reasonably private URL; not acceptable once this is
+      internet-discoverable at scale.
+- [ ] **Structured logging / error monitoring.** Only the default ASP.NET
+      Core console `ILogger` is configured (see `appsettings.json`'s
+      `Logging` section) — no Serilog/Application Insights/Sentry equivalent.
+      `ExceptionHandlingMiddleware` does log unhandled exceptions server-side
+      and never leaks stack traces to the client (verified — this part is
+      solid), but there's nowhere for those logs to go except stdout. Decide
+      where the pilot's logs need to land before day one, since debugging a
+      remote pilot without them is painful.
+- [ ] **Database backups.** No backup/restore process exists or is
+      documented anywhere in the repo. A real clinic's records need at least
+      a basic automated backup plan before they're the only copy of that
+      data.
+- [ ] **Health check endpoint.** None exists (`/health` or similar). Useful
+      once anything is monitoring uptime; not urgent for a single pilot
+      clinic if someone is manually watching it.
+- [ ] **A deploy story.** There is no Dockerfile, CI/CD pipeline, or
+      deployment script anywhere in the repo — today this only runs via
+      `dotnet run` / `ng serve` on a dev machine. "Real deploy" (per the
+      punch list) is a from-scratch task, not a tweak.
+
+## Data readiness
+
+- [ ] Decide who provisions the pilot clinic's first Administrador account,
+      and how the password reaches them securely (not over plain chat/email).
+- [ ] Confirm the pilot's real owners/patients/staff data is entered fresh —
+      none of the QA/demo data in the current shared dev database (test
+      accounts like `vet.test@vetplatform.dev`, `Clinica Intrusa`, etc.) is
+      meant for a real clinic; it exists purely from this project's own
+      testing.
+
+## Known functional limitations to tell the pilot clinic about
+
+Worth setting expectations rather than surprising them:
+
+- No printable/PDF layout for prescriptions yet — a finalized prescription
+  can only be viewed on-screen. If the clinic needs to hand patients a
+  physical copy, this needs manual workaround until that module ships.
+- No audit-log screen. `audit.read.all`/`audit.read.own` permissions exist
+  and audit *metadata* (`CreatedAtUtc`/`CreatedByUserId`/etc.) is captured on
+  every record, but there's no UI to browse "who did what when" yet.
+- No self-service password reset — an Administrador (or platform admin) has
+  to create/manage accounts manually via the Usuarios screen; there's no
+  "forgot password" email flow.
+- Draft consultations/prescriptions on the Dashboard are scoped to *your
+  own* records — a vet won't see a colleague's unfinished draft there (this
+  is intentional, but worth explaining so it doesn't read as a bug).
+
+## Automated test coverage snapshot
+
+As of this checklist (commit `210c169`): backend 33/33 (2 unit +
+31 integration), frontend 35/35 — re-run both before relying on these
+numbers, since they move as both agents add coverage. These cover role/permission access
+control, tenant isolation, and the core clinical-record lifecycle
+(draft → finalize → amend) fairly thoroughly. They do **not** include any
+browser-driven end-to-end tests — everything client-side has been verified
+by hand in this session's QA passes, not by an automated E2E suite. That's
+the next item on the punch list after this checklist.
+
+## Sign-off
+
+- [ ] Erick (product owner) has reviewed the "known limitations" section and
+      is comfortable piloting with those gaps open.
+- [ ] Someone has actually run through the pilot clinic's real workflows
+      end-to-end against the pilot environment (not localhost) before
+      onboarding real patients.
