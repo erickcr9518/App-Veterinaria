@@ -23,6 +23,7 @@ public static class DataSeeder
         await SeedRolesAsync(roleManager, logger);
         await SeedPermissionsAsync(dbContext, logger);
         await SeedRolePermissionsAsync(dbContext, roleManager, logger);
+        await EnableLockoutForExistingUsersAsync(userManager, logger);
 
         if (!seedDemoData)
         {
@@ -172,6 +173,7 @@ public static class DataSeeder
             FullName = "Administrador Demo",
             ClinicId = clinic.Id,
             IsActive = true,
+            LockoutEnabled = true,
         };
 
         var createResult = await userManager.CreateAsync(adminUser, demoAdminPassword);
@@ -205,6 +207,7 @@ public static class DataSeeder
             FullName = "Superadministrador Demo",
             ClinicId = null,
             IsActive = true,
+            LockoutEnabled = true,
         };
 
         var createResult = await userManager.CreateAsync(platformAdmin, demoAdminPassword);
@@ -217,5 +220,25 @@ public static class DataSeeder
 
         await userManager.AddToRoleAsync(platformAdmin, RoleNames.PlatformAdministrator);
         logger.LogInformation("Usuario superadministrador de demostración creado: {Email}", DemoPlatformAdminEmail);
+    }
+
+    private static async Task EnableLockoutForExistingUsersAsync(
+        UserManager<ApplicationUser> userManager,
+        ILogger logger)
+    {
+        var usersWithoutLockout = await userManager.Users
+            .Where(user => !user.LockoutEnabled)
+            .ToListAsync();
+
+        foreach (var user in usersWithoutLockout)
+        {
+            user.LockoutEnabled = true;
+            await userManager.UpdateAsync(user);
+        }
+
+        if (usersWithoutLockout.Count > 0)
+        {
+            logger.LogInformation("Lockout habilitado para {Count} usuarios existentes.", usersWithoutLockout.Count);
+        }
     }
 }

@@ -46,14 +46,11 @@ fixtures — goes into the system.
       frontend and API are served from the same origin behind a reverse
       proxy). Decide the actual deploy topology and update this if the API
       lives on a different host/port.
-- [ ] **Add login lockout.** Checked `IdentityService.ValidateCredentialsAsync`
-      (`backend/src/VetPlatform.Infrastructure/Identity/IdentityService.cs`) —
-      it calls `_userManager.CheckPasswordAsync` directly, and
-      `AddIdentityCore` in `DependencyInjection.cs` never configures
-      `options.Lockout`. There is currently **no account lockout after failed
-      login attempts** — nothing stops unlimited password guessing against a
-      known email. Low effort to fix (wire up `AccessFailedAsync`/lockout
-      options) and worth doing before any internet-facing pilot.
+- [x] **Add login lockout.** Identity now records failed login attempts,
+      locks accounts for 15 minutes after 5 failed attempts, resets the
+      failure counter on successful login, and enables lockout for both new
+      and existing users during seeding. Covered by
+      `Login_Locks_User_After_Repeated_Failed_Attempts`.
 - [x] **Add logout revocation.** `POST /api/auth/logout` now revokes the
       submitted refresh token, and the frontend's `logout()` calls it before
       leaving the user on `/login`. Covered by `Logout_Revokes_Refresh_Token`
@@ -62,9 +59,9 @@ fixtures — goes into the system.
 ## Should do soon, not necessarily before day one
 
 - [ ] **Rate limiting.** No `AddRateLimiter`/throttling anywhere in the API.
-      Combined with the lockout gap above, `/api/auth/login` has no
-      brute-force protection at all. Acceptable short-term for a small pilot
-      behind a reasonably private URL; not acceptable once this is
+      Login lockout now limits per-account guessing, but `/api/auth/login`
+      still has no IP/client throttling. Acceptable short-term for a small
+      pilot behind a reasonably private URL; not acceptable once this is
       internet-discoverable at scale.
 - [ ] **Structured logging / error monitoring.** Only the default ASP.NET
       Core console `ILogger` is configured (see `appsettings.json`'s

@@ -91,6 +91,33 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Login_Locks_User_After_Repeated_Failed_Attempts()
+    {
+        var email = $"lockout-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, password);
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            var failedResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+            {
+                email,
+                password = "WrongPassword123!",
+            });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
+        }
+
+        var lockedResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password,
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, lockedResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Clinic_Admin_Cannot_Create_Clinics()
     {
         var auth = await LoginAsync(VetPlatformApiFactory.DemoAdminEmail, VetPlatformApiFactory.DemoAdminPassword);

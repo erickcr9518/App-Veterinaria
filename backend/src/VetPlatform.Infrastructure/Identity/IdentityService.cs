@@ -30,10 +30,21 @@ public class IdentityService : IIdentityService
             return null;
         }
 
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            return null;
+        }
+
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, password);
         if (!isPasswordValid)
         {
+            await _userManager.AccessFailedAsync(user);
             return null;
+        }
+
+        if (await _userManager.GetAccessFailedCountAsync(user) > 0)
+        {
+            await _userManager.ResetAccessFailedCountAsync(user);
         }
 
         return await BuildAuthenticatedUserAsync(user);
@@ -60,6 +71,7 @@ public class IdentityService : IIdentityService
             FullName = fullName,
             ClinicId = clinicId,
             IsActive = true,
+            LockoutEnabled = true,
         };
 
         var createResult = await _userManager.CreateAsync(user, password);

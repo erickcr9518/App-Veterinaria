@@ -21,6 +21,15 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-25 — Codex
+Status: done.
+Hardening login lockout from the release checklist: configure Identity lockout,
+record failed password attempts in `IdentityService.ValidateCredentialsAsync`,
+enable lockout for newly seeded/created users, and add integration coverage.
+Touched backend auth/identity seed + tests and release checklist only. Avoided
+frontend routes, shell navigation, permissions, Docker, and E2E files while Code
+owned Playwright E2E setup.
+
 ### 2026-08-25 — Code
 Status: starting.
 Setting up minimal browser-driven E2E tests with Playwright (last item on

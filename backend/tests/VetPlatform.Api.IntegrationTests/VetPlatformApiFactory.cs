@@ -86,6 +86,7 @@ public sealed class VetPlatformApiFactory : WebApplicationFactory<Program>
             FullName = email,
             ClinicId = clinic.Id,
             IsActive = true,
+            LockoutEnabled = true,
         };
 
         var createResult = await userManager.CreateAsync(user, password);
@@ -114,6 +115,7 @@ public sealed class VetPlatformApiFactory : WebApplicationFactory<Program>
             FullName = email,
             ClinicId = clinicId,
             IsActive = true,
+            LockoutEnabled = true,
         };
 
         var createResult = await userManager.CreateAsync(user, password);
@@ -139,6 +141,7 @@ public sealed class VetPlatformApiFactory : WebApplicationFactory<Program>
             EmailConfirmed = true,
             FullName = "Platform Admin",
             IsActive = true,
+            LockoutEnabled = true,
         };
 
         var createResult = await userManager.CreateAsync(user, password);
