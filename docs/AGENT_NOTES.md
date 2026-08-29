@@ -22,6 +22,21 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-29 — Code
+Status: starting.
+Codex is out for now (hit its usage limit), continuing solo on the agreed
+next item: health check + structured logging/monitoring.
+Plan: `GET /health` (anonymous, checks DB connectivity via
+`AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`), Serilog
+for structured console + rolling-file logging plus request logging
+middleware. Not wiring a specific cloud log sink (Seq/App Insights/Sentry)
+since that needs a hosting/vendor decision I can't make — will document how
+to point it at one later instead.
+Files: `Program.cs`, `VetPlatform.Api.csproj` (new packages), possibly a
+small `HealthChecks` file, `docker-compose.yml` (add an api healthcheck
+using the new endpoint), `docs/RELEASE_CHECKLIST.md`/`docs/DEPLOYMENT.md`.
+Not touching Prescriptions, Users, frontend routes/shell, or E2E.
+
+### 2026-08-29 — Code
 Status: done.
 My half of the joint V1 smoke test: fresh backend build+test (36/36), fresh
 frontend build+test (36/36), fresh E2E run (6/6), and the manual print check
