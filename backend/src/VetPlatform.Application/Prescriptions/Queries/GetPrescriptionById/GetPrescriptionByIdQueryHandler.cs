@@ -23,6 +23,7 @@ public class GetPrescriptionByIdQueryHandler : IRequestHandler<GetPrescriptionBy
             .AsNoTracking()
             .Include(p => p.Items)
             .Include(p => p.Patient)
+                .ThenInclude(patient => patient!.Owner)
             .SingleOrDefaultAsync(p => p.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("Receta", request.Id);
 
@@ -40,6 +41,8 @@ public class GetPrescriptionByIdQueryHandler : IRequestHandler<GetPrescriptionBy
             ConsultationId = prescription.ConsultationId,
             PatientId = prescription.PatientId,
             PatientName = prescription.Patient?.Name ?? string.Empty,
+            PatientSpecies = prescription.Patient?.Species ?? string.Empty,
+            OwnerName = prescription.Patient?.Owner?.FullName ?? string.Empty,
             VeterinarianName = names.GetValueOrDefault(prescription.VeterinarianUserId, "Veterinario"),
             IssuedAtUtc = prescription.IssuedAtUtc,
             WeightKgAtPrescription = prescription.WeightKgAtPrescription,

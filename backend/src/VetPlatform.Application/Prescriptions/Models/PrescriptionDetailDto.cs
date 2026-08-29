@@ -6,6 +6,8 @@ public class PrescriptionDetailDto
     public Guid ConsultationId { get; init; }
     public Guid PatientId { get; init; }
     public string PatientName { get; init; } = string.Empty;
+    public string PatientSpecies { get; init; } = string.Empty;
+    public string OwnerName { get; init; } = string.Empty;
     public string VeterinarianName { get; init; } = string.Empty;
 
     public DateTime IssuedAtUtc { get; init; }

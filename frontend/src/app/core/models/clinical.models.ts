@@ -217,6 +217,8 @@ export interface PrescriptionDetail {
   consultationId: string;
   patientId: string;
   patientName: string;
+  patientSpecies: string;
+  ownerName: string;
   veterinarianName: string;
   issuedAtUtc: string;
   weightKgAtPrescription?: number | null;

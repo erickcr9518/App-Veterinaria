@@ -58,6 +58,8 @@ public class PrescriptionsTests : IClassFixture<VetPlatformApiFactory>
         Assert.Single(detail.Items);
         Assert.Equal("Meloxicam", detail.Items[0].ProductName);
         Assert.Equal(12.8m, detail.WeightKgAtPrescription);
+        Assert.Equal("Perro", detail.PatientSpecies);
+        Assert.False(string.IsNullOrWhiteSpace(detail.OwnerName));
 
         var updateResponse = await PutAsAuthenticatedJsonAsync(vetAuth.AccessToken, $"/api/prescriptions/{prescriptionId}", new
         {

@@ -224,3 +224,42 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+.print-letterhead {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-letterhead {
+    display: block;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #16211e;
+    padding-bottom: 12px;
+  }
+
+  .print-letterhead h1 {
+    font-size: 20px;
+  }
+
+  .print-letterhead p {
+    margin: 4px 0 0;
+    color: #52615c;
+  }
+
+  .page {
+    max-width: 100%;
+  }
+
+  .panel {
+    border: none;
+    padding: 0;
+  }
+
+  .item {
+    break-inside: avoid;
+  }
+}

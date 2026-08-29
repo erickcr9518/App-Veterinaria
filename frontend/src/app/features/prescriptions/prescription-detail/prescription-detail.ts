@@ -30,8 +30,14 @@ export class PrescriptionDetail implements OnInit {
     this.load();
   }
 
+  readonly clinicName = () => this.authService.currentUser()?.clinicName ?? '';
+
   canWrite(): boolean {
     return this.authService.hasPermission('prescriptions.write');
+  }
+
+  print(): void {
+    window.print();
   }
 
   private load(): void {

@@ -31,29 +31,27 @@ integration test factory/tests, and docs only. Avoided Prescriptions/PDF files
 while Code owns that module.
 
 ### 2026-08-25 — Code
-Status: starting.
-Printable/PDF prescriptions (backlog item, my call to take since I own
-Prescriptions). Going with a print-optimized browser view + "Imprimir
-receta" button (window.print()) rather than server-side PDF generation —
-matches the original MVP.md wording ("print/PDF-ready layout") without a
-new backend PDF library dependency; the owner/pharmacy gets a physical or
-browser-saved-PDF copy either way.
-Files, in order:
-1. Backend: `Prescriptions/Models/PrescriptionDetailDto.cs` (add OwnerName,
-   PatientSpecies), `Prescriptions/Queries/GetPrescriptionById/GetPrescriptionByIdQueryHandler.cs`
-   (populate them via `.Patient.Owner`), plus its integration test coverage.
-2. Frontend model: **`core/models/clinical.models.ts`** — adding 2 fields to
-   `PrescriptionDetail`. This is a listed shared-file hotspot; the change is
-   additive only (new optional-ish fields), shouldn't conflict with anything
-   in flight, but flagging per the rule.
-3. Frontend: `features/prescriptions/prescription-detail/{ts,html,scss}` —
-   print button, print-only layout, show owner/species on screen too.
-4. **`src/styles.scss`** (global) — one small `@media print` rule to hide
-   the shell's topbar/nav when printing. Also a shared file, also additive.
-5. `docs/MVP.md` and `docs/RELEASE_CHECKLIST.md` — close out the "no
-   printable prescriptions" known limitation.
-Not touching `app.routes.ts`, shell nav structure, Owners/Appointments/Users,
-or anything else in flight.
+Status: done.
+Printable prescriptions shipped: an "Imprimir receta" button on prescription
+detail (any status, gated only by being able to view the record — front
+desk covering for a vet can still print) that calls `window.print()` against
+a print-only letterhead (clinic name from the signed-in user, patient +
+species, owner, veterinarian, status, date) with the app chrome and all
+interactive controls hidden via `@media print`.
+Backend: added `OwnerName`/`PatientSpecies` to `PrescriptionDetailDto`,
+populated via a new `.Patient.Owner` include in `GetPrescriptionByIdQueryHandler`
+— extended `PrescriptionsTests` to assert them. Backend 36/36.
+Frontend: extended `PrescriptionDetail` in **`clinical.models.ts`** (2 new
+fields, additive, no conflicts) and touched **`src/styles.scss`** (global,
+one rule hiding `.topbar` on print — this is generically useful for any
+page someone prints, not prescription-specific). Frontend 36/36 (`ng test`
+untouched by this — verified the print CSS rules are correctly present and
+scoped by inspecting `document.styleSheets` live in browser, since an
+automated tool can't drive the OS print dialog itself; on-screen
+owner/species rendering verified against real data end to end).
+Closed the "no printable prescriptions" item in both `docs/MVP.md` and
+`docs/RELEASE_CHECKLIST.md`. Did not touch `app.routes.ts`, shell nav
+structure, or Owners/Appointments/Users.
 
 ### 2026-08-25 — Codex
 Status: done.

@@ -104,9 +104,11 @@ fixtures — goes into the system.
 
 Worth setting expectations rather than surprising them:
 
-- No printable/PDF layout for prescriptions yet — a finalized prescription
-  can only be viewed on-screen. If the clinic needs to hand patients a
-  physical copy, this needs manual workaround until that module ships.
+- [x] Printable prescriptions: an "Imprimir receta" button on the
+      prescription detail screen prints a clean, letterhead layout (clinic
+      name, patient/owner/veterinarian, products) with the app's own
+      navigation hidden — the browser's own print dialog handles physical
+      copies or saving to PDF, no server-side PDF generation needed.
 - No audit-log screen. `audit.read.all`/`audit.read.own` permissions exist
   and audit *metadata* (`CreatedAtUtc`/`CreatedByUserId`/etc.) is captured on
   every record, but there's no UI to browse "who did what when" yet.

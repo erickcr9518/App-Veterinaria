@@ -2,7 +2,7 @@
   @if (isLoading()) {
     <p class="empty">Cargando receta...</p>
   } @else if (prescription(); as p) {
-    <header class="page-header">
+    <header class="page-header no-print">
       <a class="back-link" [routerLink]="['/patients', p.patientId, 'prescriptions']">&larr; Recetas de {{ p.patientName }}</a>
       <div class="title-row">
         <h1>Receta</h1>
@@ -14,13 +14,21 @@
     </header>
 
     @if (errorMessage(); as message) {
-      <p class="error">{{ message }}</p>
+      <p class="error no-print">{{ message }}</p>
     }
+
+    <div class="print-letterhead">
+      <h1>{{ clinicName() }}</h1>
+      <p>Receta veterinaria &middot; {{ p.status === 'Draft' ? 'Borrador' : 'Finalizada' }} &middot; {{ p.issuedAtUtc | date: 'medium' }}</p>
+    </div>
 
     <div class="panel">
       <section class="block">
         <h2>Datos generales</h2>
         <div class="vitals">
+          <div><span>Paciente</span><strong>{{ p.patientName }} @if (p.patientSpecies) { ({{ p.patientSpecies }}) }</strong></div>
+          <div><span>Propietario</span><strong>{{ p.ownerName || '-' }}</strong></div>
+          <div><span>Veterinario</span><strong>{{ p.veterinarianName }}</strong></div>
           <div><span>Peso usado</span><strong>{{ p.weightKgAtPrescription ? p.weightKgAtPrescription + ' kg' : '-' }}</strong></div>
         </div>
         @if (p.generalInstructions) {
@@ -55,7 +63,8 @@
         </section>
       }
 
-      <div class="actions">
+      <div class="actions no-print">
+        <button class="ghost-button" type="button" (click)="print()">Imprimir receta</button>
         @if (p.status === 'Draft' && canWrite()) {
           <a class="ghost-button" [routerLink]="['/prescriptions', p.id, 'edit']">Editar borrador</a>
           @if (!isConfirmingFinalize()) {
