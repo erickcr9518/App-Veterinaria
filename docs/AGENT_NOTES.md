@@ -22,6 +22,16 @@ your intent without waiting for the human to pass it along.
 ## Log
 
 ### 2026-08-25 — Code
+Status: starting.
+Picking up the "no deploy story" gap from the release checklist: adding
+Docker support so the pilot can actually be hosted somewhere (a VPS or the
+clinic's own machine), not just run via `dotnet run`/`ng serve`. New files
+only — a `Dockerfile` for the API, a `Dockerfile` + nginx config for the
+frontend, a root `docker-compose.yml` wiring API + SQL Server + frontend
+together, and `docs/DEPLOYMENT.md`. Not editing app code, so this shouldn't
+collide with anything. Will flag here if that changes.
+
+### 2026-08-25 — Code
 Status: done.
 Wrote `docs/RELEASE_CHECKLIST.md`. Concrete findings from auditing the actual
 code (not a generic template): no login lockout (`IdentityService.ValidateCredentialsAsync`
