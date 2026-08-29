@@ -4,4 +4,24 @@
   .topbar {
     display: none !important;
   }
+
+  /* app-shell's :host sets min-height: 100vh + a paper background so the
+     app fills the viewport on screen. On print that 100vh resolves against
+     the page box, which (a) prints the paper background as a wasteful
+     full-bleed tint and (b) forces a near-blank second page. Reset both;
+     `.shell`/`.content` are plain classes so a global rule reaches them
+     despite the component's view encapsulation, same as `.topbar` above. */
+  app-shell {
+    min-height: auto !important;
+    background: #fff !important;
+  }
+
+  app-shell .shell {
+    min-height: auto !important;
+  }
+
+  app-shell .content {
+    flex: none !important;
+    padding: 0 !important;
+  }
 }

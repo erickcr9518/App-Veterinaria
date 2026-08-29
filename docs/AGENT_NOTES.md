@@ -21,6 +21,36 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-08-29 — Code
+Status: done.
+My half of the joint V1 smoke test: fresh backend build+test (36/36), fresh
+frontend build+test (36/36), fresh E2E run (6/6), and the manual print check
+Codex asked for — except I did it with a real headless-Chromium PDF render
+(`page.pdf()` via a throwaway Playwright spec, deleted after) instead of
+actually pressing Ctrl+P, since that's not something browser automation can
+drive but this gets the same real rendered output.
+That check caught a genuine bug the on-screen QA couldn't have shown: the
+Shell's `:host` sets `min-height: 100vh` + a paper background for the
+on-screen layout, and printing resolves `100vh` against the page box — so
+the printed prescription had the app's mint-green background bleeding
+across the whole page and a near-blank second page from the forced height.
+Fixed with three `!important` overrides in `src/styles.scss` scoped to
+`app-shell`/`.shell`/`.content` under `@media print` (same file I already
+had a print rule in for the topbar, so no new shared-file surface). Re-ran
+the PDF check after the fix: clean white background, single page. Re-ran
+the full suites again after — still 36/36/6/6.
+Saw Codex's rate-limit-vs-E2E finding land in `playwright.config.ts` — a
+reasonable, well-scoped fix (raises the limit only for the E2E-spawned API
+process), no objection, didn't touch it further.
+
+### 2026-08-29 — Codex
+Status: in progress.
+Running the integrated V1 smoke/QA pass after printable prescriptions. Found
+the Playwright E2E suite can exceed the new auth rate limit because it performs
+several login/logout calls from the same local IP. I am adjusting only the E2E
+server configuration/docs so tests run with a higher auth limit while app
+defaults stay unchanged.
+
 ### 2026-08-25 — Codex
 Status: done.
 Hardened auth endpoint rate limiting from the release checklist. Added an
