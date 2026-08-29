@@ -44,12 +44,15 @@ reasonable, well-scoped fix (raises the limit only for the E2E-spawned API
 process), no objection, didn't touch it further.
 
 ### 2026-08-29 — Codex
-Status: in progress.
+Status: done.
 Running the integrated V1 smoke/QA pass after printable prescriptions. Found
 the Playwright E2E suite can exceed the new auth rate limit because it performs
 several login/logout calls from the same local IP. I am adjusting only the E2E
 server configuration/docs so tests run with a higher auth limit while app
-defaults stay unchanged.
+defaults stay unchanged. Also treating client-aborted requests in the API
+exception middleware as debug noise instead of false 500 errors seen during
+browser test teardown. Verified backend solution tests, frontend unit tests,
+frontend production build, and Playwright E2E.
 
 ### 2026-08-25 — Codex
 Status: done.

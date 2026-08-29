@@ -22,6 +22,10 @@ public class ExceptionHandlingMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogDebug("Solicitud cancelada por el cliente: {Method} {Path}", context.Request.Method, context.Request.Path);
+        }
         catch (Exception exception)
         {
             await HandleExceptionAsync(context, exception);

@@ -21,6 +21,10 @@ export default defineConfig({
     {
       command: 'dotnet run --launch-profile http',
       cwd: '../backend/src/VetPlatform.Api',
+      env: {
+        RateLimiting__Auth__PermitLimit: '1000',
+        RateLimiting__Auth__WindowSeconds: '60',
+      },
       url: `${API_URL}/swagger/index.html`,
       reuseExistingServer: true,
       timeout: 120_000,

@@ -64,7 +64,11 @@ Playwright starts the API (`dotnet run` from `../backend/src/VetPlatform.Api`)
 and the frontend dev server for you if they aren't already running (see
 `playwright.config.ts`), so you need a SQL Server instance reachable via the
 API's configured connection string, same as for local development. The
-tests log in as the seeded `admin@vetplatform.dev` account and create their
+Playwright-started API raises the auth rate-limit ceiling for the test process
+so the suite can perform several login/logout calls from the same local IP. If
+you reuse an API server that was already running, make sure it has enough
+`RateLimiting:Auth:*` headroom or stop it before running `npm run e2e`.
+The tests log in as the seeded `admin@vetplatform.dev` account and create their
 own fresh owners/patients/staff via the API for isolation — they don't
 depend on or modify any other data.
 
