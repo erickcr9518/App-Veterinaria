@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
 import { Observable, catchError, of, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResult, CurrentUser } from '../models/auth.models';
+import { AuthResult, CurrentUser, PasswordResetRequestResult } from '../models/auth.models';
 
 const ACCESS_TOKEN_KEY = 'vetplatform.accessToken';
 const REFRESH_TOKEN_KEY = 'vetplatform.refreshToken';
@@ -39,6 +39,14 @@ export class AuthService {
     return this.http.post<AuthResult>(`${environment.apiUrl}/auth/refresh`, { refreshToken }).pipe(
       tap((result) => this.applyAuthResult(result)),
     );
+  }
+
+  requestPasswordReset(email: string): Observable<PasswordResetRequestResult> {
+    return this.http.post<PasswordResetRequestResult>(`${environment.apiUrl}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(email: string, token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/auth/reset-password`, { email, token, newPassword });
   }
 
   restoreSession(): Observable<CurrentUser | null> {

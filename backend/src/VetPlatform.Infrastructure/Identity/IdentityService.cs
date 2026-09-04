@@ -91,6 +91,46 @@ public class IdentityService : IIdentityService
         return UserAccountResult.Success(user.Id);
     }
 
+    public async Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null || !user.IsActive)
+        {
+            return null;
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+        return new PasswordResetToken
+        {
+            Email = user.Email ?? email,
+            FullName = user.FullName,
+            Token = token,
+        };
+    }
+
+    public async Task<UserAccountResult> ResetPasswordAsync(string email, string token, string newPassword)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null || !user.IsActive)
+        {
+            return UserAccountResult.Failure(new[] { "El enlace de restablecimiento no es valido o expiro." });
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+        {
+            return UserAccountResult.Failure(result.Errors.Select(e => e.Description));
+        }
+
+        if (await _userManager.GetAccessFailedCountAsync(user) > 0)
+        {
+            await _userManager.ResetAccessFailedCountAsync(user);
+        }
+
+        return UserAccountResult.Success(user.Id);
+    }
+
     public async Task<IReadOnlyList<UserSummary>> GetPlatformAdministratorsAsync()
     {
         var users = await _userManager.GetUsersInRoleAsync(RoleNames.PlatformAdministrator);

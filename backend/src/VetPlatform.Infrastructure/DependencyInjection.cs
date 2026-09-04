@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IPasswordResetEmailSender, PasswordResetEmailSender>();
 
         services.AddAuthentication(options =>
             {

@@ -21,3 +21,8 @@ export interface CurrentUser {
   role: string;
   permissions: string[];
 }
+
+export interface PasswordResetRequestResult {
+  message: string;
+  resetUrl: string | null;
+}

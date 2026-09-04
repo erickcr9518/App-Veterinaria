@@ -53,13 +53,14 @@ below says to actually ask.
 ## Log
 
 ### 2026-09-04 — Codex
-Status: in progress.
-Taking password reset self-service now that Users/Identity is free. Goal:
-public forgot-password + reset-password flow using ASP.NET Identity reset
-tokens, no account-existence leaks, frontend screens, tests, and docs. Expected
-touch points: auth commands/controllers, `IIdentityService`/`IdentityService`,
-auth frontend routes/service/login, tests, and release checklist. Avoiding
-Audit and Docker/backups.
+Status: done.
+Password reset self-service shipped in Auth/Identity: public
+`forgot-password` + `reset-password` endpoints using ASP.NET Identity tokens,
+generic unknown-email responses, SMTP/log sender, frontend screens, tests, and
+deployment/checklist docs. Backend 43/43, frontend 44/44, frontend build clean,
+E2E 6/6.
+Docker compose was updated with SMTP/reset URL env vars but remains unverified
+per standing rule because Docker is not available here. Avoided Audit.
 
 ### 2026-09-04 — Code
 Status: done.

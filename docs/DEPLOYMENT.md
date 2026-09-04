@@ -40,7 +40,9 @@ still matters if anything hits the API container's port directly).
 
    Edit `.env`: set a strong `SQL_SA_PASSWORD`, generate a real
    `JWT_SIGNING_KEY` (`openssl rand -base64 48`), set `FRONTEND_ORIGIN` to
-   wherever this will actually be reached, and pick a real
+   wherever this will actually be reached, set `PASSWORD_RESET_URL_BASE` to
+   that same origin plus `/reset-password`, configure the `SMTP_*` values for
+   password reset emails, and pick a real
    `DEMO_ADMIN_PASSWORD` (see step 3 — this is not a throwaway value, treat
    it like any other admin password).
 
@@ -79,6 +81,12 @@ still matters if anything hits the API container's port directly).
      secret regardless.
 
 4. Visit `FRONTEND_ORIGIN` and confirm login works end to end.
+
+5. Test password reset before onboarding users: open `/forgot-password`,
+   submit a real account email, confirm the message arrives, follow the
+   link, set a new password, and log in with it. In Production the API will
+   not expose reset links in responses; if SMTP is missing, reset requests
+   are logged but users will not receive email.
 
 ## Health checks and logs
 

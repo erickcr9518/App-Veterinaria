@@ -119,6 +119,65 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task ForgotPassword_Does_Not_Disclose_Unknown_Email()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/forgot-password", new
+        {
+            email = $"missing-{Guid.NewGuid():N}@vetplatform.test",
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<PasswordResetRequestResultDto>();
+
+        Assert.NotNull(result);
+        Assert.Equal("Si el correo existe, enviaremos instrucciones para restablecer la contraseña.", result!.Message);
+        Assert.Null(result.ResetUrl);
+    }
+
+    [Fact]
+    public async Task ResetPassword_Uses_Token_And_Allows_Login_With_New_Password()
+    {
+        var email = $"reset-{Guid.NewGuid():N}@vetplatform.test";
+        const string originalPassword = "Password123!";
+        const string newPassword = "Changed123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, originalPassword);
+
+        var forgotResponse = await _client.PostAsJsonAsync("/api/auth/forgot-password", new
+        {
+            email,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, forgotResponse.StatusCode);
+        var forgotResult = await forgotResponse.Content.ReadFromJsonAsync<PasswordResetRequestResultDto>();
+        Assert.NotNull(forgotResult);
+        Assert.False(string.IsNullOrWhiteSpace(forgotResult!.ResetUrl));
+
+        var token = GetQueryValue(forgotResult.ResetUrl!, "token");
+        var resetResponse = await _client.PostAsJsonAsync("/api/auth/reset-password", new
+        {
+            email,
+            token,
+            newPassword,
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, resetResponse.StatusCode);
+
+        var oldPasswordResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = originalPassword,
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPasswordResponse.StatusCode);
+
+        var newPasswordResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = newPassword,
+        });
+        Assert.Equal(HttpStatusCode.OK, newPasswordResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Auth_Endpoints_Return_TooManyRequests_When_Rate_Limit_Is_Exceeded()
     {
         using var factory = _factory.WithWebHostBuilder(builder =>
@@ -312,5 +371,21 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         return await _client.SendAsync(request);
+    }
+
+    private static string GetQueryValue(string url, string key)
+    {
+        var uri = new Uri(url);
+        var pairs = uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var pair in pairs)
+        {
+            var parts = pair.Split('=', 2);
+            if (parts.Length == 2 && Uri.UnescapeDataString(parts[0]) == key)
+            {
+                return Uri.UnescapeDataString(parts[1]);
+            }
+        }
+
+        throw new InvalidOperationException($"Query parameter '{key}' was not found.");
     }
 }

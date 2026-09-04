@@ -46,6 +46,8 @@ public sealed class VetPlatformApiFactory : WebApplicationFactory<Program>
                 ["Jwt:RefreshTokenExpirationDays"] = "7",
                 ["RateLimiting:Auth:PermitLimit"] = "1000",
                 ["RateLimiting:Auth:WindowSeconds"] = "60",
+                ["PasswordReset:ResetUrlBase"] = "http://localhost:4200/reset-password",
+                ["PasswordReset:ExposeResetUrlInResponse"] = "true",
                 ["Seed:DemoData"] = "true",
                 ["Seed:DemoAdminPassword"] = DemoAdminPassword,
             });

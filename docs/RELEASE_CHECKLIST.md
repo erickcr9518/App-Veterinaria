@@ -59,9 +59,10 @@ fixtures — goes into the system.
 ## Should do soon, not necessarily before day one
 
 - [x] **Rate limiting.** Auth-sensitive endpoints (`login`, `refresh`,
-      `logout`) now use ASP.NET Core rate limiting by client IP, defaulting to
-      10 requests per minute and returning `429` when exceeded. Configurable
-      through `RateLimiting:Auth:*` and covered by integration tests.
+      `logout`, `forgot-password`, `reset-password`) now use ASP.NET Core rate
+      limiting by client IP, defaulting to 10 requests per minute and
+      returning `429` when exceeded. Configurable through
+      `RateLimiting:Auth:*` and covered by integration tests.
 - [x] **Structured logging.** Serilog now writes structured request/response
       logs (method, path, status, duration) plus everything the app already
       logged (including `ExceptionHandlingMiddleware`'s unhandled-exception
@@ -91,6 +92,9 @@ fixtures — goes into the system.
       `frontend/Dockerfile` + `frontend/nginx.conf`, root `docker-compose.yml`,
       and `docs/DEPLOYMENT.md` walk through standing this up via Docker Compose
       on any host. Still manual (`git pull` + `docker compose up`), no CI/CD.
+      Password reset SMTP/reset URL env vars are now wired into Compose, but
+      Docker remains unverified in this environment because Docker is not
+      installed/available here.
 - [x] **A way to manage platform-administrator accounts.** The Usuarios
       screen now lets a SuperAdministrador switch between platform accounts
       and clinic-scoped staff. `GET /api/users` without `clinicId` returns
@@ -126,17 +130,19 @@ Worth setting expectations rather than surprising them:
       (just the caller's own actions) permissions. Covered by
       `AuditLogTests`; verified live against this project's real
       accumulated history.
-- No self-service password reset — an Administrador (or platform admin) has
-  to create/manage accounts manually via the Usuarios screen; there's no
-  "forgot password" email flow.
+- [x] Self-service password reset: `/forgot-password` and `/reset-password`
+      use ASP.NET Identity reset tokens, return a generic response so unknown
+      emails are not disclosed, and support SMTP configuration through
+      `PasswordReset:Smtp:*`. In Development/Testing the reset URL can be
+      exposed directly to keep local QA practical; production relies on email.
 - Draft consultations/prescriptions on the Dashboard are scoped to *your
   own* records — a vet won't see a colleague's unfinished draft there (this
   is intentional, but worth explaining so it doesn't read as a bug).
 
 ## Automated test coverage snapshot
 
-As of this checklist (commit `c4e8d86` + audit log on top): backend 41/41
-(2 unit + 39 integration), frontend 41/41, E2E 6/6 — re-run all before
+As of this checklist (commit `ade2f22` + password reset on top): backend 43/43
+(2 unit + 41 integration), frontend 44/44, E2E 6/6 — re-run all before
 relying on these numbers, since they move as both agents add coverage.
 These cover role/permission access
 control, tenant isolation, and the core clinical-record lifecycle

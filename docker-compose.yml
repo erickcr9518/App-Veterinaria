@@ -29,6 +29,14 @@ services:
       Jwt__AccessTokenExpirationMinutes: "30"
       Jwt__RefreshTokenExpirationDays: "7"
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN}
+      PasswordReset__ResetUrlBase: ${PASSWORD_RESET_URL_BASE}
+      PasswordReset__Smtp__Host: ${SMTP_HOST}
+      PasswordReset__Smtp__Port: ${SMTP_PORT}
+      PasswordReset__Smtp__EnableSsl: ${SMTP_ENABLE_SSL}
+      PasswordReset__Smtp__FromEmail: ${SMTP_FROM_EMAIL}
+      PasswordReset__Smtp__FromName: ${SMTP_FROM_NAME}
+      PasswordReset__Smtp__UserName: ${SMTP_USERNAME}
+      PasswordReset__Smtp__Password: ${SMTP_PASSWORD}
       # Bootstraps the first login (superadmin@vetplatform.dev / admin@vetplatform.dev)
       # since there's no self-registration. See docs/DEPLOYMENT.md for the
       # "log in, create the real clinic, retire the demo accounts" steps.

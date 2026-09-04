@@ -10,6 +10,10 @@ public interface IIdentityService
 
     Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, string role);
 
+    Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email);
+
+    Task<UserAccountResult> ResetPasswordAsync(string email, string token, string newPassword);
+
     Task<IReadOnlyList<UserSummary>> GetPlatformAdministratorsAsync();
 
     Task<IReadOnlyList<UserSummary>> GetUsersByClinicAsync(Guid clinicId);
