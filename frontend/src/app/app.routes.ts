@@ -102,6 +102,12 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: 'users.manage' },
       },
+      {
+        path: 'audit',
+        loadComponent: () => import('./features/audit/audit-log/audit-log').then((m) => m.AuditLog),
+        canActivate: [permissionGuard],
+        data: { permission: ['audit.read.all', 'audit.read.own'] },
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

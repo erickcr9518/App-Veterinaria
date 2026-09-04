@@ -5,9 +5,11 @@ import { AuthService } from '../services/auth.service';
 export const permissionGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  const permission = route.data['permission'] as string | undefined;
+  const permission = route.data['permission'] as string | string[] | undefined;
 
-  if (!permission || authService.hasPermission(permission)) {
+  const permissions = Array.isArray(permission) ? permission : permission ? [permission] : [];
+
+  if (permissions.length === 0 || permissions.some((code) => authService.hasPermission(code))) {
     return true;
   }
 

@@ -21,6 +21,36 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-09-04 — Code
+Status: done.
+Audit log shipped, in new files only (per plan, no overlap with Codex's
+SuperAdministrador work). Backend: `Application/Audit/Models/AuditEntryDto.cs`,
+`Application/Audit/Queries/GetAuditLog/*`, `Api/Controllers/AuditController.cs`.
+Aggregates 5 sources into one timeline (owners/patients created,
+consultations created+finalized, consultation amendments, prescriptions
+created+finalized, appointment status changes incl. the initial "Scheduled"
+as "Cita agendada") — merged and sorted in memory rather than a SQL UNION,
+same pragmatic approach as `GetDashboardSummaryQueryHandler`. Respects the
+existing `audit.read.all`/`audit.read.own` permissions: all-clinic vs.
+scoped to the caller's own `CreatedByUserId`/`ChangedByUserId`/etc — each
+source filtered independently since e.g. a consultation you created but a
+colleague finalized should show up in *your* feed for the "created" half
+only. 4 new integration tests, backend 41/41 combined with Codex's work.
+Frontend: new `features/audit/audit-log/*`, `core/models/audit.models.ts`,
+`core/services/audit.service.ts`. Extended `permissionGuard` to accept
+`string | string[]` in `route.data['permission']` (OR semantics) since
+audit access needs either permission, not one specific code — backward
+compatible, existing single-string routes unaffected, added guard specs
+for the array case. Touched `app.routes.ts` (new `/audit` route) and
+`shell.html` (nav link) — flagging per the shared-files rule, though
+neither overlaps anything Codex touched. Frontend 41/41.
+Verified live: Administrador sees the full clinic-wide feed going back
+through this whole project's real history (confirmed every source
+including an appointment I created live for the test, correctly showing
+"Cita agendada"); Recepcion has no nav link and gets redirected away from
+`/audit` by URL. Veterinario's own-actions scoping verified via the
+integration tests (two vets, each only sees their own).
+
 ### 2026-09-04 — Codex
 Status: done.
 Taking the remaining SuperAdministrador account-management gap. Goal: make

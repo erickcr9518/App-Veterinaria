@@ -19,6 +19,9 @@
       @if (hasPermission('users.manage')) {
         <a routerLink="/users">Usuarios</a>
       }
+      @if (hasPermission('audit.read.all') || hasPermission('audit.read.own')) {
+        <a routerLink="/audit">Auditoría</a>
+      }
     </nav>
 
     @if (currentUser(); as user) {

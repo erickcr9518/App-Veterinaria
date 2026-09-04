@@ -51,7 +51,23 @@ describe('permissionGuard', () => {
     expect(fakeAuthService.requestedPermission).toBe('patients.read');
   });
 
-  function runGuard(permission?: string): boolean | UrlTree {
+  it('allows routes when the user has any one of several required permissions', () => {
+    const grantedOnly = new Set(['audit.read.own']);
+    fakeAuthService.hasPermission = (code: string) => grantedOnly.has(code);
+
+    const result = runGuard(['audit.read.all', 'audit.read.own']);
+
+    expect(result).toBe(true);
+  });
+
+  it('redirects to the dashboard when the user has none of several required permissions', () => {
+    const result = runGuard(['audit.read.all', 'audit.read.own']);
+
+    expect(result instanceof UrlTree).toBe(true);
+    expect(router.serializeUrl(result as UrlTree)).toBe('/dashboard');
+  });
+
+  function runGuard(permission?: string | string[]): boolean | UrlTree {
     const route = { data: permission ? { permission } : {} } as ActivatedRouteSnapshot;
     const state = {} as RouterStateSnapshot;
 

@@ -1,0 +1,40 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Auditoría</h1>
+      <p>Registro de actividad clínica y administrativa de los últimos 30 días.</p>
+    </div>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  <div class="panel">
+    @if (isLoading()) {
+      <p class="empty">Cargando bitácora...</p>
+    } @else if (hasEntries()) {
+      <div class="timeline">
+        @for (group of groupedByDay(); track group.dateKey) {
+          <section class="day-group">
+            <h2>{{ group.dateKey | date: 'fullDate' }}</h2>
+            <div class="entry-list">
+              @for (entry of group.entries; track entry.id) {
+                <article class="entry">
+                  <span class="time">{{ entry.occurredAtUtc | date: 'HH:mm' }}</span>
+                  <div>
+                    <strong>{{ entry.action }}</strong>
+                    <span>{{ entry.summary }}</span>
+                  </div>
+                  <span class="performer">{{ entry.performedByName }}</span>
+                </article>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    } @else {
+      <p class="empty">No hay actividad registrada en este período.</p>
+    }
+  </div>
+</section>

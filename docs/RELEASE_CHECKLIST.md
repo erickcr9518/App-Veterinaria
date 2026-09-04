@@ -119,9 +119,13 @@ Worth setting expectations rather than surprising them:
       name, patient/owner/veterinarian, products) with the app's own
       navigation hidden — the browser's own print dialog handles physical
       copies or saving to PDF, no server-side PDF generation needed.
-- No audit-log screen. `audit.read.all`/`audit.read.own` permissions exist
-  and audit *metadata* (`CreatedAtUtc`/`CreatedByUserId`/etc.) is captured on
-  every record, but there's no UI to browse "who did what when" yet.
+- [x] Audit log: `/audit` aggregates owners/patients created, consultations
+      (created, finalized, amended), prescriptions (created, finalized), and
+      appointment status changes into one chronological feed, respecting
+      the existing `audit.read.all` (clinic-wide) vs. `audit.read.own`
+      (just the caller's own actions) permissions. Covered by
+      `AuditLogTests`; verified live against this project's real
+      accumulated history.
 - No self-service password reset — an Administrador (or platform admin) has
   to create/manage accounts manually via the Usuarios screen; there's no
   "forgot password" email flow.
@@ -131,9 +135,10 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist (commit `390aa33`): backend 37/37 (2 unit +
-35 integration), frontend 36/36, E2E 6/6 — re-run all before relying on
-these numbers, since they move as both agents add coverage. These cover role/permission access
+As of this checklist (commit `c4e8d86` + audit log on top): backend 41/41
+(2 unit + 39 integration), frontend 41/41, E2E 6/6 — re-run all before
+relying on these numbers, since they move as both agents add coverage.
+These cover role/permission access
 control, tenant isolation, and the core clinical-record lifecycle
 (draft → finalize → amend) fairly thoroughly.
 
