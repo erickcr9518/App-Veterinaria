@@ -251,6 +251,7 @@ public class IdentityService : IIdentityService
             UserId = user.Id,
             Email = user.Email ?? string.Empty,
             FullName = user.FullName,
+            SecurityStamp = await _userManager.GetSecurityStampAsync(user),
             ClinicId = user.ClinicId,
             ClinicName = clinicName,
             Role = role,

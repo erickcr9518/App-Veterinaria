@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -68,6 +69,35 @@ public static class DependencyInjection
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SigningKey)),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromSeconds(30),
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var userIdValue = context.Principal?.FindFirstValue(CurrentUserService.UserIdClaimType)
+                            ?? context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                        var securityStamp = context.Principal?.FindFirstValue(CurrentUserService.SecurityStampClaimType);
+
+                        if (!Guid.TryParse(userIdValue, out var userId) || string.IsNullOrWhiteSpace(securityStamp))
+                        {
+                            context.Fail("Token de acceso invalido.");
+                            return;
+                        }
+
+                        var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
+                        var user = await userManager.FindByIdAsync(userId.ToString());
+                        if (user is null || !user.IsActive)
+                        {
+                            context.Fail("El usuario asociado al token ya no existe o esta inactivo.");
+                            return;
+                        }
+
+                        var currentSecurityStamp = await userManager.GetSecurityStampAsync(user);
+                        if (!string.Equals(currentSecurityStamp, securityStamp, StringComparison.Ordinal))
+                        {
+                            context.Fail("El token de acceso ya no es valido para este usuario.");
+                        }
+                    },
                 };
             });
 

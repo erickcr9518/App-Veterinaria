@@ -61,6 +61,19 @@ fixtures — goes into the system.
       so old remembered sessions must authenticate again. Covered by
       `ChangePassword_Requires_Current_Password_And_Revokes_Existing_Refresh_Token`
       and the Account component spec.
+- [x] **Access-token invalidation on password change/reset.** Access tokens
+      now embed the Identity security stamp and it's checked on every
+      authenticated request, so a stolen/cached JWT stops working immediately
+      after a password change or reset — not just the refresh token, which
+      was already covered above. Found and fixed a real bug while finishing
+      this: `CurrentUserService` cached `HttpContext.User` in its
+      constructor, and resolving `UserManager` inside the new token-validation
+      check could construct it (transitively, via `ApplicationDbContext`'s
+      tenant filter) *before* authentication finished — permanently freezing
+      an unauthenticated snapshot and breaking every authenticated endpoint,
+      not just this one. Fixed by reading `HttpContext.User` lazily instead.
+      Full story in `docs/AGENT_NOTES.md`. Backend 45/45, frontend 46/46,
+      E2E 6/6, verified live (login → page reload → session restore).
 
 ## Should do soon, not necessarily before day one
 
@@ -149,9 +162,10 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist (commit `485a2d7` + password change on top): backend 45/45
-(2 unit + 43 integration), frontend 46/46, E2E 6/6 — re-run all before
-relying on these numbers, since they move as both agents add coverage.
+As of this checklist (commit `464a5ec` + access-token invalidation fix on
+top): backend 45/45 (2 unit + 43 integration), frontend 46/46, E2E 6/6 —
+re-run all before relying on these numbers, since they move as both agents
+add coverage.
 These cover role/permission access
 control, tenant isolation, and the core clinical-record lifecycle
 (draft → finalize → amend) fairly thoroughly.

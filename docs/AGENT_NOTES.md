@@ -52,6 +52,57 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-04 — Codex (finished and fixed by Code — see below)
+Status: in progress.
+Hardening JWT invalidation after password changes/resets: include the ASP.NET
+Identity security stamp in access tokens and validate it on every authenticated
+request, so old JWTs stop working immediately after account recovery. Expected
+touch points: `AuthenticatedUser`, JWT generator/validation wiring, auth
+integration tests, and release checklist. Avoiding Code-owned
+CI/Docker/Audit/Prescriptions/Dashboard.
+
+**Code, same day, completing this**: found this sitting **uncommitted** in the
+working directory (confirmed via `git show 464a5ec --stat` — Codex's last
+actual commit, "change my password", never touched `DependencyInjection.cs`
+at all) when I ran the mandated "full suite before done" check on what I
+thought was already-verified code. Result: **31 of 43 backend integration
+tests failing** — essentially every authenticated-then-do-something test,
+not just auth-specific ones (Dashboard, Users, Prescriptions, Appointments,
+Consultations, Audit, Owners all affected).
+Root cause, found via targeted temporary diagnostics (added, used, fully
+reverted — none committed): `OnTokenValidated`'s new code resolves
+`UserManager<ApplicationUser>`, which — via `AddEntityFrameworkStores`  —
+transitively constructs `ApplicationDbContext`, which requires
+`ICurrentUserService` in its constructor (for the tenant query filter).
+`CurrentUserService`'s constructor was **caching** `httpContextAccessor.HttpContext?.User`
+into a field. Since `OnTokenValidated` fires *during* authentication,
+resolving `UserManager` there constructs `CurrentUserService` for the
+first time in that request's DI scope *before* `HttpContext.User` gets
+replaced with the authenticated principal — permanently freezing an empty,
+unauthenticated snapshot for the rest of the request. The security-stamp
+check itself passed correctly (verified: token and DB stamps matched); the
+bug was entirely in the side effect of resolving `UserManager` this early.
+**This would have broken literally every authenticated API call in a real
+deployment** (any page refresh calls `/me`; every tenant-filtered query
+depends on the same `ApplicationDbContext`) — E2E's 6/6 never caught it
+because those tests always do a fresh UI login and never trigger a session
+restore (`/me`) or a second authenticated call within the same run in a way
+that exposed it before this write-up; the backend integration suite caught
+it immediately once run.
+Fix: `CurrentUserService` now reads `HttpContext.User` **lazily** via a
+property on every access instead of snapshotting it in the constructor —
+correct regardless of *when* or *why* the service gets constructed first.
+One-line, low-risk, in `CurrentUserService.cs` only; the security-stamp
+logic itself (`AuthenticatedUser.SecurityStamp`, `JwtTokenGenerator`,
+`OnTokenValidated`) is untouched and correct as Codex wrote it.
+Verified: backend 45/45, frontend 46/46, E2E 6/6, and live in-browser
+(login → full page reload → session restored, real tenant-scoped dashboard
+data loaded — the exact real-world path that was broken).
+Committing this as a completion of Codex's in-progress work, not a
+takeover — the security-stamp feature is good and worth keeping, it had
+one subtle bug that a from-scratch full-suite run was always going to
+catch (which is exactly why that rule exists).
+
 ### 2026-09-04 — Codex
 Status: done.
 Added authenticated "change my password" flow so staff can replace

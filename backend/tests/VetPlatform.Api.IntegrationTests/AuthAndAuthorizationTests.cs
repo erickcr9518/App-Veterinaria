@@ -170,6 +170,11 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
         });
         Assert.Equal(HttpStatusCode.Unauthorized, oldPasswordResponse.StatusCode);
 
+        var oldAccessRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        oldAccessRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", originalAuth.AccessToken);
+        var oldAccessResponse = await _client.SendAsync(oldAccessRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldAccessResponse.StatusCode);
+
         var oldRefreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
         {
             refreshToken = originalAuth.RefreshToken,
@@ -206,6 +211,11 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
             refreshToken = auth.RefreshToken,
         });
         Assert.Equal(HttpStatusCode.Unauthorized, oldRefreshResponse.StatusCode);
+
+        var oldAccessRequest = new HttpRequestMessage(HttpMethod.Get, "/api/auth/me");
+        oldAccessRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        var oldAccessResponse = await _client.SendAsync(oldAccessRequest);
+        Assert.Equal(HttpStatusCode.Unauthorized, oldAccessResponse.StatusCode);
 
         var oldPasswordResponse = await _client.PostAsJsonAsync("/api/auth/login", new
         {
