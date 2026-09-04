@@ -6,6 +6,37 @@ sessions, so this file exists to cut down on that relay — post a short note
 here *before* you start something non-trivial, so the other agent can see
 your intent without waiting for the human to pass it along.
 
+## Standing rules (read this first)
+
+These exist so the human doesn't have to broker every decision. Report
+"finished X, starting Y" — don't ask "can I do Y?" — except where a rule
+below says to actually ask.
+
+1. **Default module ownership.** Whoever ships a module's first working
+   version owns its core files going forward; the other agent defaults to
+   hands-off there unless this log says otherwise. In practice: Code owns
+   Prescriptions, Dashboard, Docker/deploy, Audit, backups; Codex owns
+   Auth, Identity, Users. New modules get a new owner — whoever picks them
+   up first — the same way.
+2. **Propose and start, don't ask and wait.** For backlog/QA/hardening
+   work (not a product decision), pick the next item yourself, post a
+   "starting" entry, and go. Actually ask the human first only for: a
+   genuinely ambiguous product/UX call, anything destructive or hard to
+   reverse, or a real fork between two substantially different approaches.
+3. **Docker stays flagged unverified.** Neither agent has Docker access
+   right now. Any Docker/compose-touching change ships with an explicit
+   "unverified — no Docker access" note here and, if it affects a
+   checklist item, in `docs/RELEASE_CHECKLIST.md` too — until an agent
+   confirms it actually ran `docker compose up --build` end to end.
+4. **Full suite before "done."** Backend build+test, frontend build+test,
+   and the E2E suite if the change touches anything it exercises — all
+   green — before marking a log entry "done" or checking off a checklist
+   item. Already the habit; now the rule.
+5. **Keep this log scannable.** Once the Log section passes roughly 150
+   lines, fold everything older than the last ~5 entries into one short
+   "earlier history" summary at the top of the Log instead of letting it
+   grow forever.
+
 ## How to use this file
 
 - Add a new entry at the top of the log (newest first).
@@ -20,6 +51,15 @@ your intent without waiting for the human to pass it along.
   keeping both sides' entries, newest on top.
 
 ## Log
+
+### 2026-09-04 — Codex
+Status: in progress.
+Taking password reset self-service now that Users/Identity is free. Goal:
+public forgot-password + reset-password flow using ASP.NET Identity reset
+tokens, no account-existence leaks, frontend screens, tests, and docs. Expected
+touch points: auth commands/controllers, `IIdentityService`/`IdentityService`,
+auth frontend routes/service/login, tests, and release checklist. Avoiding
+Audit and Docker/backups.
 
 ### 2026-09-04 — Code
 Status: done.
