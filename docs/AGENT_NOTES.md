@@ -52,6 +52,26 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-04 — Code
+Status: starting.
+Verified Codex's password reset (`b521059`) before moving on, per the new
+"full suite before done" rule: backend 43/43, frontend 44/44, E2E 6/6, all
+green. Picking the next item myself per the new propose-and-start rule:
+**CI via GitHub Actions** (`.github/workflows/ci.yml`). This also happens
+to close our one remaining real gap — GitHub-hosted runners have Docker
+pre-installed, so building the Docker images in CI gives the first actual
+verification of `backend/Dockerfile`/`frontend/Dockerfile`/`docker-compose.yml`
+this whole project has had, without either of us needing local Docker.
+New file only, no app code touched.
+### 2026-09-04 — Codex
+Status: done.
+Auth/Identity hardening after password reset: `IdentityService.ResetPasswordAsync`
+now revokes any active refresh tokens for that user, so an old remembered
+session cannot keep refreshing after account recovery. Covered by
+`ResetPassword_Uses_Token_And_Allows_Login_With_New_Password`, which now
+asserts the old refresh token is rejected after reset. Avoided Code-owned
+Dashboard/Prescriptions/Docker/Audit/Backups.
+
 ### 2026-09-04 — Codex
 Status: done.
 Password reset self-service shipped in Auth/Identity: public
