@@ -1,0 +1,49 @@
+<section class="page-header">
+  <div>
+    <p class="eyebrow">Cuenta</p>
+    <h1>Mi cuenta</h1>
+    @if (currentUser(); as user) {
+      <p>{{ user.fullName }} · {{ user.email }}</p>
+    }
+  </div>
+</section>
+
+<section class="account-panel">
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <h2>Cambiar contraseña</h2>
+
+    <label class="field">
+      <span>Contraseña actual</span>
+      <input type="password" formControlName="currentPassword" autocomplete="current-password" />
+      @if (form.controls.currentPassword.invalid && form.controls.currentPassword.touched) {
+        <small>Ingresa tu contraseña actual.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Nueva contraseña</span>
+      <input type="password" formControlName="newPassword" autocomplete="new-password" />
+      @if (form.controls.newPassword.invalid && form.controls.newPassword.touched) {
+        <small>Usa al menos 8 caracteres.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Confirmar nueva contraseña</span>
+      <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+    </label>
+
+    @if (successMessage()) {
+      <div class="success-banner">{{ successMessage() }}</div>
+      <a class="login-link" routerLink="/login">Ir al login</a>
+    }
+
+    @if (errorMessage()) {
+      <div class="error-banner">{{ errorMessage() }}</div>
+    }
+
+    <button type="submit" [disabled]="isSubmitting() || !!successMessage()">
+      {{ isSubmitting() ? 'Guardando…' : 'Actualizar contraseña' }}
+    </button>
+  </form>
+</section>

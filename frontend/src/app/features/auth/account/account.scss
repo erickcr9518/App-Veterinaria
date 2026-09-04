@@ -1,0 +1,139 @@
+:host {
+  display: block;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0;
+    color: #16211e;
+    font-size: 28px;
+  }
+
+  p {
+    margin: 4px 0 0;
+    color: #51615c;
+  }
+}
+
+.eyebrow {
+  color: #0e6e5e;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.account-panel {
+  max-width: 520px;
+
+  form {
+    background: #fff;
+    border: 1px solid rgba(22, 33, 30, 0.14);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(22, 33, 30, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  h2 {
+    margin: 0;
+    color: #16211e;
+    font-size: 18px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #3d4c47;
+  font-size: 13px;
+
+  input {
+    border: 1px solid rgba(22, 33, 30, 0.16);
+    border-radius: 8px;
+    color: #16211e;
+    font: inherit;
+    font-size: 15px;
+    padding: 10px 12px;
+
+    &:focus {
+      outline: 2px solid #0e6e5e;
+      outline-offset: 1px;
+    }
+  }
+
+  small {
+    color: #a8362b;
+  }
+}
+
+.error-banner,
+.success-banner {
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.error-banner {
+  background: rgba(168, 54, 43, 0.1);
+  border: 1px solid rgba(168, 54, 43, 0.3);
+  color: #a8362b;
+}
+
+.success-banner {
+  background: rgba(14, 110, 94, 0.1);
+  border: 1px solid rgba(14, 110, 94, 0.28);
+  color: #08453a;
+}
+
+button {
+  align-self: flex-start;
+  background: #0e6e5e;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 14px;
+
+  &:hover:not(:disabled) {
+    background: #08453a;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.login-link {
+  color: #08453a;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .account-panel form {
+    padding: 18px;
+  }
+}

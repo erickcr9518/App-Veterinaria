@@ -49,6 +49,10 @@ export class AuthService {
     return this.http.post<void>(`${environment.apiUrl}/auth/reset-password`, { email, token, newPassword });
   }
 
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/auth/change-password`, { currentPassword, newPassword });
+  }
+
   restoreSession(): Observable<CurrentUser | null> {
     if (!this.accessToken) {
       return of(null);

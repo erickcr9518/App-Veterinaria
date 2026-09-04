@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using VetPlatform.Application.Auth.Commands.ChangePassword;
 using VetPlatform.Application.Auth.Commands.Login;
 using VetPlatform.Application.Auth.Commands.Logout;
 using VetPlatform.Application.Auth.Commands.RefreshToken;
@@ -99,6 +100,20 @@ public class AuthController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("change-password")]
+    [Authorize]
+    [EnableRateLimiting("Auth")]
+    public async Task<IActionResult> ChangePassword(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _sender.Send(
+            new ChangePasswordCommand(request.CurrentPassword, request.NewPassword),
+            cancellationToken);
+
+        return NoContent();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<CurrentUserDto>> Me(CancellationToken cancellationToken)
@@ -131,3 +146,4 @@ public record RefreshTokenRequest(string RefreshToken);
 public record LogoutRequest(string RefreshToken);
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Email, string Token, string NewPassword);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);

@@ -55,12 +55,18 @@ fixtures — goes into the system.
       submitted refresh token, and the frontend's `logout()` calls it before
       leaving the user on `/login`. Covered by `Logout_Revokes_Refresh_Token`
       in `AuthAndAuthorizationTests` plus an `AuthService` unit test.
+- [x] **Authenticated password change.** The `/account` screen lets signed-in
+      users change their own password after entering the current password.
+      Successful changes revoke active refresh tokens and log the browser out,
+      so old remembered sessions must authenticate again. Covered by
+      `ChangePassword_Requires_Current_Password_And_Revokes_Existing_Refresh_Token`
+      and the Account component spec.
 
 ## Should do soon, not necessarily before day one
 
 - [x] **Rate limiting.** Auth-sensitive endpoints (`login`, `refresh`,
-      `logout`, `forgot-password`, `reset-password`) now use ASP.NET Core rate
-      limiting by client IP, defaulting to 10 requests per minute and
+      `logout`, `forgot-password`, `reset-password`, `change-password`) now
+      use ASP.NET Core rate limiting by client IP, defaulting to 10 requests per minute and
       returning `429` when exceeded. Configurable through
       `RateLimiting:Auth:*` and covered by integration tests.
 - [x] **Structured logging.** Serilog now writes structured request/response
@@ -143,8 +149,8 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist (commit `ade2f22` + password reset on top): backend 43/43
-(2 unit + 41 integration), frontend 44/44, E2E 6/6 — re-run all before
+As of this checklist (commit `485a2d7` + password change on top): backend 45/45
+(2 unit + 43 integration), frontend 46/46, E2E 6/6 — re-run all before
 relying on these numbers, since they move as both agents add coverage.
 These cover role/permission access
 control, tenant isolation, and the core clinical-record lifecycle

@@ -109,6 +109,25 @@ public class IdentityService : IIdentityService
         };
     }
 
+    public async Task<UserAccountResult> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null || !user.IsActive)
+        {
+            return UserAccountResult.Failure(new[] { "El usuario no existe o está inactivo." });
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            return UserAccountResult.Failure(result.Errors.Select(e => e.Description));
+        }
+
+        await RevokeActiveRefreshTokensAsync(user.Id);
+
+        return UserAccountResult.Success(user.Id);
+    }
+
     public async Task<UserAccountResult> ResetPasswordAsync(string email, string token, string newPassword)
     {
         var user = await _userManager.FindByEmailAsync(email);
@@ -123,22 +142,12 @@ public class IdentityService : IIdentityService
             return UserAccountResult.Failure(result.Errors.Select(e => e.Description));
         }
 
-        var now = DateTime.UtcNow;
-        var activeRefreshTokens = await _dbContext.RefreshTokens
-            .Where(t => t.UserId == user.Id && t.RevokedAtUtc == null && t.ExpiresAtUtc > now)
-            .ToListAsync();
-
-        foreach (var refreshToken in activeRefreshTokens)
-        {
-            refreshToken.RevokedAtUtc = now;
-        }
+        await RevokeActiveRefreshTokensAsync(user.Id);
 
         if (await _userManager.GetAccessFailedCountAsync(user) > 0)
         {
             await _userManager.ResetAccessFailedCountAsync(user);
         }
-
-        await _dbContext.SaveChangesAsync(CancellationToken.None);
 
         return UserAccountResult.Success(user.Id);
     }
@@ -261,5 +270,20 @@ public class IdentityService : IIdentityService
             Role = roles.FirstOrDefault() ?? string.Empty,
             IsActive = user.IsActive,
         };
+    }
+
+    private async Task RevokeActiveRefreshTokensAsync(Guid userId)
+    {
+        var now = DateTime.UtcNow;
+        var activeRefreshTokens = await _dbContext.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAtUtc == null && t.ExpiresAtUtc > now)
+            .ToListAsync();
+
+        foreach (var refreshToken in activeRefreshTokens)
+        {
+            refreshToken.RevokedAtUtc = now;
+        }
+
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
     }
 }

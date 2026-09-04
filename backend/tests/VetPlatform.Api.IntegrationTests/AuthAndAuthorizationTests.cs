@@ -185,6 +185,68 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task ChangePassword_Requires_Current_Password_And_Revokes_Existing_Refresh_Token()
+    {
+        var email = $"change-{Guid.NewGuid():N}@vetplatform.test";
+        const string originalPassword = "Password123!";
+        const string newPassword = "Changed123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, originalPassword);
+        var auth = await LoginAsync(email, originalPassword);
+
+        var changeResponse = await PostAsAuthenticatedJsonAsync(auth.AccessToken, "/api/auth/change-password", new
+        {
+            currentPassword = originalPassword,
+            newPassword,
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, changeResponse.StatusCode);
+
+        var oldRefreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refreshToken = auth.RefreshToken,
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldRefreshResponse.StatusCode);
+
+        var oldPasswordResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = originalPassword,
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldPasswordResponse.StatusCode);
+
+        var newPasswordResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = newPassword,
+        });
+        Assert.Equal(HttpStatusCode.OK, newPasswordResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePassword_Rejects_Wrong_Current_Password()
+    {
+        var email = $"wrong-current-{Guid.NewGuid():N}@vetplatform.test";
+        const string originalPassword = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, originalPassword);
+        var auth = await LoginAsync(email, originalPassword);
+
+        var changeResponse = await PostAsAuthenticatedJsonAsync(auth.AccessToken, "/api/auth/change-password", new
+        {
+            currentPassword = "WrongPassword123!",
+            newPassword = "Changed123!",
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, changeResponse.StatusCode);
+
+        var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", new
+        {
+            email,
+            password = originalPassword,
+        });
+        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Auth_Endpoints_Return_TooManyRequests_When_Rate_Limit_Is_Exceeded()
     {
         using var factory = _factory.WithWebHostBuilder(builder =>

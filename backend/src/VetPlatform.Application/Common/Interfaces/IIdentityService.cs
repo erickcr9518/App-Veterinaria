@@ -12,6 +12,8 @@ public interface IIdentityService
 
     Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email);
 
+    Task<UserAccountResult> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+
     Task<UserAccountResult> ResetPasswordAsync(string email, string token, string newPassword);
 
     Task<IReadOnlyList<UserSummary>> GetPlatformAdministratorsAsync();

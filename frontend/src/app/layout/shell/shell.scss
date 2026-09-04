@@ -58,6 +58,17 @@
   gap: 12px;
 }
 
+.account-link {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
 .user-info {
   display: flex;
   flex-direction: column;

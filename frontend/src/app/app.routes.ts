@@ -116,6 +116,10 @@ export const routes: Routes = [
         canActivate: [permissionGuard],
         data: { permission: ['audit.read.all', 'audit.read.own'] },
       },
+      {
+        path: 'account',
+        loadComponent: () => import('./features/auth/account/account').then((m) => m.Account),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
