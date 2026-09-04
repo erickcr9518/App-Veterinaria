@@ -91,14 +91,14 @@ fixtures — goes into the system.
       `frontend/Dockerfile` + `frontend/nginx.conf`, root `docker-compose.yml`,
       and `docs/DEPLOYMENT.md` walk through standing this up via Docker Compose
       on any host. Still manual (`git pull` + `docker compose up`), no CI/CD.
-- [ ] **A way to manage platform-administrator accounts.** Found while
-      writing the deploy doc: `GetUsersQuery` scopes by clinic, and platform
-      administrators have no `ClinicId` — so they never show up in any
-      clinic's Usuarios list, and there's no "list platform admins" endpoint
-      at all. The seeded `superadmin@vetplatform.dev` bootstrap account can't
-      currently be deactivated, disabled, or even seen from any screen.
-      Low risk for a single trusted pilot; needed before more than one
-      trusted person touches platform-admin-level access.
+- [x] **A way to manage platform-administrator accounts.** The Usuarios
+      screen now lets a SuperAdministrador switch between platform accounts
+      and clinic-scoped staff. `GET /api/users` without `clinicId` returns
+      only platform administrators for platform users; `GET /api/users?clinicId=...`
+      still returns only that clinic's staff. Platform users can activate or
+      deactivate other platform administrators, while self-lockout prevention
+      remains in place and clinic admins still cannot see or touch platform
+      accounts. Covered by `UsersTests` plus the Users component spec.
 
 ## Data readiness
 

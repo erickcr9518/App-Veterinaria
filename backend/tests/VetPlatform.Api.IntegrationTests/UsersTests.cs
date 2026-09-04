@@ -41,12 +41,14 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
-    public async Task Administrator_Cannot_Deactivate_A_User_From_Another_Clinic_Or_Themselves()
+    public async Task Administrator_Cannot_Deactivate_A_User_From_Another_Clinic_Platform_Users_Or_Themselves()
     {
         var adminAEmail = $"users-admin-a-{Guid.NewGuid():N}@vetplatform.test";
         var adminBEmail = $"users-admin-b-{Guid.NewGuid():N}@vetplatform.test";
+        var platformAdminEmail = $"users-admin-platform-{Guid.NewGuid():N}@vetplatform.test";
         var (_, adminAUserId) = await _factory.CreateClinicUserAsync(adminAEmail, RoleNames.Administrator, Password);
         await _factory.CreateClinicUserAsync(adminBEmail, RoleNames.Administrator, Password);
+        var platformAdminUserId = await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
 
         var adminAAuth = await LoginAsync(adminAEmail);
         var adminBAuth = await LoginAsync(adminBEmail);
@@ -56,23 +58,37 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
 
         var crossClinicResponse = await PostAsAuthenticatedJsonAsync(adminBAuth.AccessToken, $"/api/users/{adminAUserId}/status", new { isActive = false });
         Assert.Equal(HttpStatusCode.NotFound, crossClinicResponse.StatusCode);
+
+        var platformUserResponse = await PostAsAuthenticatedJsonAsync(adminAAuth.AccessToken, $"/api/users/{platformAdminUserId}/status", new { isActive = false });
+        Assert.Equal(HttpStatusCode.NotFound, platformUserResponse.StatusCode);
     }
 
     [Fact]
-    public async Task Platform_Administrator_Must_Choose_A_Clinic_To_List_Users_But_Can_Manage_Any_Clinic()
+    public async Task Platform_Administrator_Can_List_Platform_Users_And_Manage_Any_Clinic()
     {
         var vetEmail = $"users-platform-vet-{Guid.NewGuid():N}@vetplatform.test";
         var platformAdminEmail = $"users-platform-admin-{Guid.NewGuid():N}@vetplatform.test";
+        var otherPlatformAdminEmail = $"users-platform-other-{Guid.NewGuid():N}@vetplatform.test";
         var (clinicId, vetUserId) = await _factory.CreateClinicUserAsync(vetEmail, RoleNames.Veterinarian, Password);
-        await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
+        var platformAdminUserId = await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
+        var otherPlatformAdminUserId = await _factory.CreatePlatformAdministratorAsync(otherPlatformAdminEmail, Password);
 
         var platformAdminAuth = await LoginAsync(platformAdminEmail);
 
-        var withoutClinicResponse = await SendAuthenticatedAsync(platformAdminAuth.AccessToken, HttpMethod.Get, "/api/users");
-        Assert.Equal(HttpStatusCode.BadRequest, withoutClinicResponse.StatusCode);
+        var platformList = await GetAsAuthenticatedAsync<List<UserSummary>>(platformAdminAuth.AccessToken, "/api/users");
+        Assert.Contains(platformList, u => u.UserId == platformAdminUserId && u.Role == RoleNames.PlatformAdministrator);
+        Assert.Contains(platformList, u => u.UserId == otherPlatformAdminUserId && u.IsActive);
+        Assert.DoesNotContain(platformList, u => u.UserId == vetUserId);
+
+        var deactivatePlatformResponse = await PostAsAuthenticatedJsonAsync(platformAdminAuth.AccessToken, $"/api/users/{otherPlatformAdminUserId}/status", new { isActive = false });
+        Assert.Equal(HttpStatusCode.NoContent, deactivatePlatformResponse.StatusCode);
+
+        var platformListAfter = await GetAsAuthenticatedAsync<List<UserSummary>>(platformAdminAuth.AccessToken, "/api/users");
+        Assert.Contains(platformListAfter, u => u.UserId == otherPlatformAdminUserId && !u.IsActive);
 
         var scopedList = await GetAsAuthenticatedAsync<List<UserSummary>>(platformAdminAuth.AccessToken, $"/api/users?clinicId={clinicId}");
         Assert.Contains(scopedList, u => u.UserId == vetUserId);
+        Assert.DoesNotContain(scopedList, u => u.UserId == otherPlatformAdminUserId);
 
         var deactivateResponse = await PostAsAuthenticatedJsonAsync(platformAdminAuth.AccessToken, $"/api/users/{vetUserId}/status", new { isActive = false });
         Assert.Equal(HttpStatusCode.NoContent, deactivateResponse.StatusCode);

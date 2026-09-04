@@ -1,4 +1,3 @@
-using FluentValidation.Results;
 using MediatR;
 using VetPlatform.Application.Common.Exceptions;
 using VetPlatform.Application.Common.Interfaces;
@@ -22,13 +21,9 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadOnlyList
     {
         if (_currentUserService.Role == RoleNames.PlatformAdministrator)
         {
-            var clinicId = request.ClinicId
-                ?? throw new ValidationException(new[]
-                {
-                    new ValidationFailure(nameof(request.ClinicId), "Selecciona una clinica para ver sus usuarios."),
-                });
-
-            return _identityService.GetUsersByClinicAsync(clinicId);
+            return request.ClinicId is { } clinicId
+                ? _identityService.GetUsersByClinicAsync(clinicId)
+                : _identityService.GetPlatformAdministratorsAsync();
         }
 
         var ownClinicId = _currentUserService.ClinicId

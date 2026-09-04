@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VetPlatform.Application.Common.Interfaces;
 using VetPlatform.Application.Common.Models;
+using VetPlatform.Domain.Constants;
 using VetPlatform.Infrastructure.Persistence;
 
 namespace VetPlatform.Infrastructure.Identity;
@@ -90,6 +91,19 @@ public class IdentityService : IIdentityService
         return UserAccountResult.Success(user.Id);
     }
 
+    public async Task<IReadOnlyList<UserSummary>> GetPlatformAdministratorsAsync()
+    {
+        var users = await _userManager.GetUsersInRoleAsync(RoleNames.PlatformAdministrator);
+        var summaries = new List<UserSummary>(users.Count);
+
+        foreach (var user in users.OrderBy(u => u.FullName))
+        {
+            summaries.Add(await BuildUserSummaryAsync(user));
+        }
+
+        return summaries;
+    }
+
     public async Task<IReadOnlyList<UserSummary>> GetUsersByClinicAsync(Guid clinicId)
     {
         var users = await _userManager.Users
@@ -100,15 +114,7 @@ public class IdentityService : IIdentityService
         var summaries = new List<UserSummary>(users.Count);
         foreach (var user in users)
         {
-            var roles = await _userManager.GetRolesAsync(user);
-            summaries.Add(new UserSummary
-            {
-                UserId = user.Id,
-                Email = user.Email ?? string.Empty,
-                FullName = user.FullName,
-                Role = roles.FirstOrDefault() ?? string.Empty,
-                IsActive = user.IsActive,
-            });
+            summaries.Add(await BuildUserSummaryAsync(user));
         }
 
         return summaries;
@@ -188,6 +194,20 @@ public class IdentityService : IIdentityService
             ClinicName = clinicName,
             Role = role,
             Permissions = permissions,
+        };
+    }
+
+    private async Task<UserSummary> BuildUserSummaryAsync(ApplicationUser user)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+
+        return new UserSummary
+        {
+            UserId = user.Id,
+            Email = user.Email ?? string.Empty,
+            FullName = user.FullName,
+            Role = roles.FirstOrDefault() ?? string.Empty,
+            IsActive = user.IsActive,
         };
     }
 }

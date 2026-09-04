@@ -40,7 +40,14 @@ export class Users implements OnInit {
   readonly isSaving = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly hasUsers = computed(() => this.users().length > 0);
-  readonly canLoadUsers = computed(() => !this.isPlatformAdmin() || !!this.selectedClinicId());
+  readonly listTitle = computed(() =>
+    this.isPlatformAdmin() && !this.selectedClinicId() ? 'Cuentas de plataforma' : 'Personal de la clinica',
+  );
+  readonly emptyMessage = computed(() =>
+    this.isPlatformAdmin() && !this.selectedClinicId()
+      ? 'No hay cuentas de plataforma registradas todavia.'
+      : 'No hay usuarios registrados todavia.',
+  );
 
   readonly form = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.maxLength(200)]],
@@ -55,6 +62,7 @@ export class Users implements OnInit {
         next: (clinics) => this.clinics.set(clinics),
         error: () => this.errorMessage.set('No se pudieron cargar las clinicas.'),
       });
+      this.loadUsers();
       return;
     }
 
@@ -63,18 +71,10 @@ export class Users implements OnInit {
 
   selectClinic(clinicId: string): void {
     this.selectedClinicId.set(clinicId || null);
-    if (clinicId) {
-      this.loadUsers();
-    } else {
-      this.users.set([]);
-    }
+    this.loadUsers();
   }
 
   loadUsers(): void {
-    if (!this.canLoadUsers()) {
-      return;
-    }
-
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
@@ -98,6 +98,7 @@ export class Users implements OnInit {
 
     const value = this.form.getRawValue();
     const needsClinic = this.isPlatformAdmin() && value.role !== 'SuperAdministrador';
+    const createsPlatformUser = this.isPlatformAdmin() && value.role === 'SuperAdministrador';
     if (needsClinic && !this.selectedClinicId()) {
       this.errorMessage.set('Selecciona una clinica antes de crear el usuario.');
       return;
@@ -115,6 +116,9 @@ export class Users implements OnInit {
     }).subscribe({
       next: () => {
         this.form.reset({ fullName: '', email: '', password: '', role: 'Veterinario' });
+        if (createsPlatformUser) {
+          this.selectedClinicId.set(null);
+        }
         this.isSaving.set(false);
         this.loadUsers();
       },

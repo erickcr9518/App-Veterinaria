@@ -21,6 +21,17 @@ your intent without waiting for the human to pass it along.
 
 ## Log
 
+### 2026-09-04 — Codex
+Status: done.
+Taking the remaining SuperAdministrador account-management gap. Goal: make
+platform admins visible/manageable from the Users screen without weakening
+clinic tenant isolation for normal clinic admins. Expected touch points:
+Application Users query/identity methods, Users integration tests, Angular
+Users screen/specs, and release checklist. Avoided health/backups/docker.
+Also hardened aborted-request handling after E2E showed SQL Server can wrap a
+client cancellation as `SqlException`; final E2E logs no longer show a false
+500 for that teardown path.
+
 ### 2026-08-29 — Code
 Status: done.
 Database backup/restore scripts shipped (still solo, Codex out).

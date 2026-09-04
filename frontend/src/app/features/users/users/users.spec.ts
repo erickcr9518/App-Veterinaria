@@ -33,24 +33,35 @@ describe('Users', () => {
     expect(otherRow?.query(By.css('button'))?.nativeElement.textContent.trim()).toBe('Desactivar');
   });
 
-  it('requires selecting a clinic before showing staff for a platform administrator', async () => {
+  it('shows platform accounts by default and clinic staff after selecting a clinic for a platform administrator', async () => {
     const fixture = await createComponent(createUser({ clinicId: null, clinicName: null, role: 'SuperAdministrador' }));
 
-    const text = fixture.nativeElement.textContent;
+    let text = fixture.nativeElement.textContent;
     const roleOptions = fixture.debugElement
       .queryAll(By.css('select[formcontrolname="role"] option'))
       .map((option) => option.nativeElement.textContent.trim());
 
-    expect(text).toContain('Selecciona una clinica para ver su personal.');
+    expect(text).toContain('Cuentas de plataforma');
+    expect(text).toContain('Root Admin');
     expect(text).not.toContain('Dra. Ana Rojas');
     expect(roleOptions).toContain('Superadministrador (plataforma)');
+
+    const scopeSelect = fixture.debugElement.query(By.css('header select')).nativeElement as HTMLSelectElement;
+    scopeSelect.value = 'clinic-1';
+    scopeSelect.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    text = fixture.nativeElement.textContent;
+    expect(text).toContain('Personal de la clinica');
+    expect(text).toContain('Dra. Ana Rojas');
+    expect(text).not.toContain('Root Admin');
   });
 
   async function createComponent(user: CurrentUser): Promise<ComponentFixture<Users>> {
     const currentUser = signal<CurrentUser | null>(user);
     const authService = { currentUser: currentUser.asReadonly() };
     const usersService = {
-      getUsers: () => of(createStaff()),
+      getUsers: (clinicId?: string | null) => of(createStaffForScope(user, clinicId)),
       createUser: () => of('new-user-id'),
       setUserActive: () => of(undefined),
     };
@@ -85,7 +96,14 @@ describe('Users', () => {
     };
   }
 
-  function createStaff(): UserSummary[] {
+  function createStaffForScope(user: CurrentUser, clinicId?: string | null): UserSummary[] {
+    if (user.role === 'SuperAdministrador' && !user.clinicId && !clinicId) {
+      return [
+        { userId: 'user-1', email: 'root@vetplatform.test', fullName: 'Root Admin', role: 'SuperAdministrador', isActive: true },
+        { userId: 'user-3', email: 'platform@vetplatform.test', fullName: 'Platform Operator', role: 'SuperAdministrador', isActive: true },
+      ];
+    }
+
     return [
       { userId: 'user-1', email: 'admin@vetplatform.test', fullName: 'Admin Demo', role: 'Administrador', isActive: true },
       { userId: 'user-2', email: 'vet@vetplatform.test', fullName: 'Dra. Ana Rojas', role: 'Veterinario', isActive: true },

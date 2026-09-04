@@ -10,6 +10,8 @@ public interface IIdentityService
 
     Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, string role);
 
+    Task<IReadOnlyList<UserSummary>> GetPlatformAdministratorsAsync();
+
     Task<IReadOnlyList<UserSummary>> GetUsersByClinicAsync(Guid clinicId);
 
     Task<bool> SetUserActiveAsync(Guid userId, bool isActive);

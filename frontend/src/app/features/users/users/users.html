@@ -6,9 +6,9 @@
     </div>
     @if (isPlatformAdmin()) {
       <label class="search">
-        <span>Clinica</span>
-        <select #clinicSelect (change)="selectClinic(clinicSelect.value)">
-          <option value="">Selecciona una clinica</option>
+        <span>Vista</span>
+        <select [value]="selectedClinicId() ?? ''" #clinicSelect (change)="selectClinic(clinicSelect.value)">
+          <option value="">Cuentas de plataforma</option>
           @for (clinic of clinics(); track clinic.id) {
             <option [value]="clinic.id">{{ clinic.name }}</option>
           }
@@ -59,10 +59,8 @@
     </form>
 
     <div class="panel list-panel">
-      <h2>Personal de la clinica</h2>
-      @if (!canLoadUsers()) {
-        <p class="empty">Selecciona una clinica para ver su personal.</p>
-      } @else if (isLoading()) {
+      <h2>{{ listTitle() }}</h2>
+      @if (isLoading()) {
         <p class="empty">Cargando usuarios...</p>
       } @else if (hasUsers()) {
         <div class="list">
@@ -86,7 +84,7 @@
           }
         </div>
       } @else {
-        <p class="empty">No hay usuarios registrados todavia.</p>
+        <p class="empty">{{ emptyMessage() }}</p>
       }
     </div>
   </div>
