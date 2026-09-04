@@ -133,8 +133,10 @@ Worth setting expectations rather than surprising them:
 - [x] Self-service password reset: `/forgot-password` and `/reset-password`
       use ASP.NET Identity reset tokens, return a generic response so unknown
       emails are not disclosed, and support SMTP configuration through
-      `PasswordReset:Smtp:*`. In Development/Testing the reset URL can be
-      exposed directly to keep local QA practical; production relies on email.
+      `PasswordReset:Smtp:*`. Successful resets revoke the user's active
+      refresh tokens, forcing old remembered sessions to log in again. In
+      Development/Testing the reset URL can be exposed directly to keep local
+      QA practical; production relies on email.
 - Draft consultations/prescriptions on the Dashboard are scoped to *your
   own* records — a vet won't see a colleague's unfinished draft there (this
   is intentional, but worth explaining so it doesn't read as a bug).

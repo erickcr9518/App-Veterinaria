@@ -123,10 +123,22 @@ public class IdentityService : IIdentityService
             return UserAccountResult.Failure(result.Errors.Select(e => e.Description));
         }
 
+        var now = DateTime.UtcNow;
+        var activeRefreshTokens = await _dbContext.RefreshTokens
+            .Where(t => t.UserId == user.Id && t.RevokedAtUtc == null && t.ExpiresAtUtc > now)
+            .ToListAsync();
+
+        foreach (var refreshToken in activeRefreshTokens)
+        {
+            refreshToken.RevokedAtUtc = now;
+        }
+
         if (await _userManager.GetAccessFailedCountAsync(user) > 0)
         {
             await _userManager.ResetAccessFailedCountAsync(user);
         }
+
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
 
         return UserAccountResult.Success(user.Id);
     }

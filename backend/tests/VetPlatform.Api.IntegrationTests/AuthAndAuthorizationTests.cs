@@ -141,6 +141,7 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
         const string originalPassword = "Password123!";
         const string newPassword = "Changed123!";
         await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, originalPassword);
+        var originalAuth = await LoginAsync(email, originalPassword);
 
         var forgotResponse = await _client.PostAsJsonAsync("/api/auth/forgot-password", new
         {
@@ -168,6 +169,12 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
             password = originalPassword,
         });
         Assert.Equal(HttpStatusCode.Unauthorized, oldPasswordResponse.StatusCode);
+
+        var oldRefreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refreshToken = originalAuth.RefreshToken,
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, oldRefreshResponse.StatusCode);
 
         var newPasswordResponse = await _client.PostAsJsonAsync("/api/auth/login", new
         {
