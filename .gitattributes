@@ -1,3 +1,8 @@
 # Shell scripts run on Linux deployment hosts - CRLF would break the
 # shebang line and any embedded multi-line strings.
 *.sh text eol=lf
+
+# GitHub Actions workflows run on Linux runners and embed heredocs/shell
+# scripts inside `run:` blocks - a CRLF would leak a trailing \r into
+# anything written from those blocks (e.g. the .env file in ci.yml).
+.github/workflows/*.yml text eol=lf

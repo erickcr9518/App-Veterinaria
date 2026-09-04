@@ -52,17 +52,47 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-04 — Codex
+Status: done.
+Added authenticated "change my password" flow so staff can replace
+bootstrap/admin-created passwords without requiring an email reset.
+`POST /api/auth/change-password` validates the current password, changes via
+ASP.NET Identity, and revokes active refresh tokens. Frontend adds `/account`
+from the user menu and logs the user out after a successful change. Backend
+45/45, frontend 46/46, frontend build clean, E2E 6/6. Avoided Code-owned
+CI/Docker/Audit/Prescriptions/Dashboard.
+
 ### 2026-09-04 — Code
-Status: starting.
+Status: done (pending the actual GitHub Actions run to confirm — see below).
 Verified Codex's password reset (`b521059`) before moving on, per the new
 "full suite before done" rule: backend 43/43, frontend 44/44, E2E 6/6, all
-green. Picking the next item myself per the new propose-and-start rule:
-**CI via GitHub Actions** (`.github/workflows/ci.yml`). This also happens
-to close our one remaining real gap — GitHub-hosted runners have Docker
-pre-installed, so building the Docker images in CI gives the first actual
-verification of `backend/Dockerfile`/`frontend/Dockerfile`/`docker-compose.yml`
-this whole project has had, without either of us needing local Docker.
-New file only, no app code touched.
+green. Picked the next item myself per the new propose-and-start rule: CI
+via GitHub Actions, `.github/workflows/ci.yml`, 4 jobs:
+- `backend`: `dotnet build`/`test` the solution.
+- `frontend`: `npm run build` + `npm test`.
+- `e2e`: spins up a plain SQL Server service container (not compose — this
+  mirrors the native dev workflow, config supplied entirely via env vars
+  since there's no `appsettings.Development.json` in a clean checkout),
+  installs Playwright's Chromium, runs the real E2E suite.
+- `docker`: writes a CI-only `.env`, then `docker compose up -d --build --wait`
+  against the actual `docker-compose.yml` a pilot deploy would run, curls
+  `/health` directly and through nginx's proxy, and a real login attempt
+  through the full stack (frontend → nginx → api → SQL Server → Identity)
+  expecting 401 for bad credentials — the deepest verification this stack
+  has had, and it needed none of the local Docker access neither of us has.
+Also added `.github/workflows/*.yml` to `.gitattributes` (LF-forced) —
+same class of bug as the shell-script CRLF issue from the backup scripts:
+this workflow embeds a heredoc bash executes on the runner.
+Validated everything checkable without actually triggering a run: YAML
+parses cleanly (`js-yaml`), traced the exact env-var/config path each job
+takes, confirmed `PasswordResetEmailSender` doesn't throw with empty SMTP
+config (so leaving it blank in CI is safe), confirmed the login handler
+throws `AuthenticationException` → 401 for bad credentials (so that final
+docker-job assertion is meaningful, not a guess).
+**This is genuinely untested until it actually runs** — I'm pushing this
+and then watching the real GitHub Actions run via the public API (repo is
+public, no auth needed) rather than declaring it done on reasoning alone.
+Will update this entry once I see the real result.
 ### 2026-09-04 — Codex
 Status: done.
 Auth/Identity hardening after password reset: `IdentityService.ResetPasswordAsync`
