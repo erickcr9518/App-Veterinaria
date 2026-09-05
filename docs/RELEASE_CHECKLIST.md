@@ -110,10 +110,18 @@ fixtures — goes into the system.
 - [x] **A deploy story.** ~~There is no Dockerfile...~~ Done: `backend/Dockerfile`,
       `frontend/Dockerfile` + `frontend/nginx.conf`, root `docker-compose.yml`,
       and `docs/DEPLOYMENT.md` walk through standing this up via Docker Compose
-      on any host. Still manual (`git pull` + `docker compose up`), no CI/CD.
-      Password reset SMTP/reset URL env vars are now wired into Compose, but
-      Docker remains unverified in this environment because Docker is not
-      installed/available here.
+      on any host. Still manual (`git pull` + `docker compose up`), no CD (CI
+      exists, see below). Password reset SMTP/reset URL env vars are wired
+      into Compose. **Docker is now actually verified**: `.github/workflows/ci.yml`'s
+      `docker` job runs `docker compose up --build` on a real GitHub-hosted
+      Linux runner and checks `/health`, the frontend, and the nginx `/api/*`
+      proxy — confirmed green on commit `373908b`. No longer "unverified."
+- [x] **CI.** `.github/workflows/ci.yml` runs backend build+test, frontend
+      build+test, the full Playwright E2E suite against a real SQL Server
+      container, and the Docker Compose stack, on every push/PR to `main`.
+      All 4 jobs green as of commit `373908b` (fixed a Node 20→24 mismatch —
+      Angular CLI 22 requires Node ≥22.22.3/24.15.0 and was failing silently
+      in CI while working locally on a newer Node).
 - [x] **A way to manage platform-administrator accounts.** The Usuarios
       screen now lets a SuperAdministrador switch between platform accounts
       and clinic-scoped staff. `GET /api/users` without `clinicId` returns

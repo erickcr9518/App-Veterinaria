@@ -44,7 +44,7 @@ solo un permiso más en el catálogo.
 | 1 | Proveedor de LLM | ✅ **Resuelto — Anthropic Claude.** Confirmado por Erick el 2026-09-05. `ILlmClient` (sección C) se implementa contra la API de Claude. |
 | 2 | API key de PubMed | ⏳ **En espera.** Se resuelve cuando lleguemos a esa parte del desarrollo (fase 1, punto 1 de la sección J) — no bloquea nada ahora. |
 | 3 | No enviar datos identificables de paciente en Fase 1 | ✅ **Resuelto — confirmado.** Por Erick el 2026-09-05. |
-| 4 | Visibilidad en el menú | 🟡 **En discusión** — ver la aclaración en el punto 9 más abajo; Erick preguntó qué significa exactamente. |
+| 4 | Visibilidad en el menú | ✅ **Resuelto — Opción B.** Confirmado el 2026-09-05: solo Erick (o una cuenta de prueba) ve VetIA Ask primero; se habilita para el resto del equipo veterinario recién cuando esté conforme con la calidad de respuestas reales. |
 | 5 | Nombre definitivo del módulo | ⏳ **Pendiente.** Sigue siendo "VetIA" (provisional) hasta que Erick decida lo contrario. |
 
 ---
@@ -453,9 +453,12 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
        específica) lo ve al principio, mientras se valida que las respuestas
        son confiables, y recién después se le da el permiso al resto del
        equipo veterinario.
-     No urge resolverlo ahora, solo antes de que termine la Fase 1 — pero
-     dado que Erick preguntó explícitamente qué significaba esto, quedó
-     pendiente de su respuesta sobre A o B.
+     **Resuelto el 2026-09-05: Opción B.** El razonamiento de Erick (y
+     nuestra recomendación): cambiar entre A y B no cuesta nada de trabajo
+     extra — es el mismo interruptor de permisos — así que conviene
+     arrancar por la opción de menor riesgo. Es la primera función de IA de
+     toda la app; si algo sale raro en las primeras respuestas conviene que
+     lo vea Erick primero, no todo el equipo veterinario a la vez.
    - **Nombre definitivo.** "VetIA" es un nombre provisional del propio
      brief de Erick. Puede quedarse así o cambiar más adelante — mejor
      pensarlo antes de que el nombre se vuelva parte del código/las

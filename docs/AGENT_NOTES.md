@@ -52,6 +52,25 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (3)
+Status: done.
+Two small closeouts:
+1. **CI is confirmed fully green**, not just "should work now." Checked the
+   GitHub Actions API for commit `373908b` (the Node 20→24 fix): backend,
+   frontend, e2e, and docker jobs all `completed success`. Updated
+   `RELEASE_CHECKLIST.md`'s Docker item — it no longer says "unverified,"
+   the `docker` job's `docker compose up --build` + health/proxy checks on a
+   real GitHub-hosted Linux runner is the actual verification. Added a
+   dedicated CI checklist item too.
+2. Erick resolved decision #4 in `VETIA_CLINIC_ANALYSIS.md`: **Option B** —
+   VetIA Ask goes live for Erick only first (or a test account), and gets
+   opened to the rest of the clinic's vets only after he's satisfied with
+   real-question quality. Same permission-catalog mechanism either way, no
+   extra engineering — just decides who gets `vetia.ask` first when we get
+   there. Updated the decisions table. Still only #2 (PubMed key, deferred
+   on purpose) and #5 (final name) open on that doc; still no VetIA code
+   written, still waiting on Erick's go-ahead per standing rule 2.
+
 ### 2026-09-05 — Code (2)
 Status: done (still analysis only — no VetIA code yet, still waiting on
 Erick's full go-ahead).
