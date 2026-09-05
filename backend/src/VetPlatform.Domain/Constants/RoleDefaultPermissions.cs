@@ -21,6 +21,7 @@ public static class RoleDefaultPermissions
             PermissionCodes.AppointmentsRead, PermissionCodes.AppointmentsWrite,
             PermissionCodes.UsersManage,
             PermissionCodes.AuditReadAll,
+            PermissionCodes.VethecaAsk,
         },
         [RoleNames.Veterinarian] = new[]
         {
@@ -31,6 +32,7 @@ public static class RoleDefaultPermissions
             PermissionCodes.PrescriptionsWrite,
             PermissionCodes.AppointmentsRead, PermissionCodes.AppointmentsWriteOwn,
             PermissionCodes.AuditReadOwn,
+            PermissionCodes.VethecaAsk,
         },
         [RoleNames.Receptionist] = new[]
         {

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using VetPlatform.Application.Common.Interfaces;
 using VetPlatform.Application.Common.Models;
@@ -13,6 +14,7 @@ using VetPlatform.Domain.Constants;
 using VetPlatform.Infrastructure.Identity;
 using VetPlatform.Infrastructure.Persistence;
 using VetPlatform.Infrastructure.Persistence.Interceptors;
+using VetPlatform.Infrastructure.Vetheca;
 
 namespace VetPlatform.Infrastructure;
 
@@ -51,6 +53,14 @@ public static class DependencyInjection
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IPasswordResetEmailSender, PasswordResetEmailSender>();
+
+        services.Configure<PubMedSettings>(configuration.GetSection(PubMedSettings.SectionName));
+        services.AddHttpClient<IPubMedClient, PubMedClient>((provider, client) =>
+        {
+            var pubMedSettings = provider.GetRequiredService<IOptions<PubMedSettings>>().Value;
+            client.BaseAddress = new Uri(pubMedSettings.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
 
         services.AddAuthentication(options =>
             {

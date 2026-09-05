@@ -15,9 +15,10 @@ below says to actually ask.
 1. **Default module ownership.** Whoever ships a module's first working
    version owns its core files going forward; the other agent defaults to
    hands-off there unless this log says otherwise. In practice: Code owns
-   Prescriptions, Dashboard, Docker/deploy, Audit, backups; Codex owns
-   Auth, Identity, Users. New modules get a new owner — whoever picks them
-   up first — the same way.
+   Prescriptions, Dashboard, Docker/deploy, Audit, backups, CI, **and now
+   Vetheca** (the AI research module, formerly "VetIA" — see
+   `VETIA_CLINIC_ANALYSIS.md`); Codex owns Auth, Identity, Users. New
+   modules get a new owner — whoever picks them up first — the same way.
 2. **Propose and start, don't ask and wait.** For backlog/QA/hardening
    work (not a product decision), pick the next item yourself, post a
    "starting" entry, and go. Actually ask the human first only for: a
@@ -51,6 +52,46 @@ below says to actually ask.
   keeping both sides' entries, newest on top.
 
 ## Log
+
+### 2026-09-05 — Code (5)
+Status: done.
+Erick gave the go-ahead to start building Vetheca (formerly "VetIA").
+Shipped the first real slice per `VETIA_CLINIC_ANALYSIS.md` section J,
+steps 1-2: a real PubMed search, no LLM yet.
+
+New files: `PermissionCodes.VethecaAsk` (+ catalog entry, + granted to
+`Administrador`/`Veterinario` in `RoleDefaultPermissions.cs`),
+`Application/Common/Interfaces/IPubMedClient.cs`,
+`Application/Vetheca/Models/PubMedArticleDto.cs`,
+`Application/Vetheca/Queries/AskVetheca/*` (query+handler+validator),
+`Infrastructure/Vetheca/PubMedClient.cs` (+ `PubMedSettings.cs`, real
+E-utilities esearch+efetch XML parsing), `Api/Controllers/VethecaController.cs`
+(`POST /api/vetheca/ask`), `PubMed:` config section in `appsettings.json`,
+3 new integration tests in `VethecaTests.cs` (permission granted/denied,
+validation) using a fake `IPubMedClient` so CI never hits the real network.
+
+Verified two ways: automated suite (backend 48/48: 2 unit + 46 integration,
+no frontend/e2e touched so didn't re-run those locally — nothing there
+could have broken), and a live manual call against the real PubMed API
+(not just the test fake) using Erick's own example question from the
+original brief ("rehabilitación temprana después de TPLO") — got back real,
+correctly-parsed articles with working PubMed links.
+
+**Flagging one real limitation for whoever builds the frontend screen
+(step 4) or opens this to more than one person:** this system's RBAC is
+role-based, not per-user — granting `vetheca.ask` to a role grants it
+platform-wide to everyone in that role, not to one specific person. Erick's
+"Option B" rollout decision (he sees it first, alone) is currently only
+protected by "there's no frontend screen yet," not by real per-user
+permission scoping, which doesn't exist anywhere in this codebase today for
+any permission. Fine for now (single-clinic pilot, Erick is plausibly the
+only Administrador/Veterinario in the real environment) but don't build the
+Vetheca screen assuming Option B is enforced until this is either accepted
+as-is or a real per-user override mechanism gets built. Documented in
+`VETIA_CLINIC_ANALYSIS.md` section J.
+
+Next up: `ILlmClient` + structured synthesis over these same articles
+(step 3), per Erick's confirmed choice of Anthropic Claude.
 
 ### 2026-09-05 — Code (4)
 Status: done.

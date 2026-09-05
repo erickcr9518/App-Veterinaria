@@ -1,8 +1,11 @@
 # VetIA Clinic — Análisis de evolución del producto
 
-**Estado: propuesta pendiente de aprobación del humano (Erick). No empezar a
-construir nada de esto hasta que lo confirme explícitamente — ver la nota en
-`AGENT_NOTES.md`.**
+**Estado: APROBADO por Erick el 2026-09-05. En implementación.** Todas las
+decisiones bloqueantes están resueltas (ver tabla abajo). Code tomó
+ownership de este módulo (`Vetheca`) siguiendo la regla 1 de
+`AGENT_NOTES.md` (whoever ships first owns it) — agregado a esa lista.
+Codex puede seguir trabajando en su área normalmente; no hace falta
+coordinación adicional para tocar los archivos nuevos bajo `Vetheca/`.
 
 **Nombre del módulo de IA: "VetIA" queda descartado (nombre saturado, ver
 sección G.1 y el estudio de mercado más abajo). Nombre elegido: `Vetheca`
@@ -387,14 +390,36 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
 
 ## J. MVP exacto — qué construir primero
 
-1. `IPubMedClient`/`PubMedClient` en Infrastructure — búsqueda por palabra
-   clave contra E-utilities, sin LLM todavía.
-2. Endpoint `POST /api/vetia/ask` que solo busca y devuelve artículos crudos
+1. ~~`IPubMedClient`/`PubMedClient` en Infrastructure — búsqueda por palabra
+   clave contra E-utilities, sin LLM todavía.~~ **Hecho el 2026-09-05.**
+2. ~~Endpoint `POST /api/vetia/ask` que solo busca y devuelve artículos crudos
    (título, autores, journal, año, abstract, PMID, link) — valida la
-   integración externa de menor riesgo antes de sumarle el LLM.
+   integración externa de menor riesgo antes de sumarle el LLM.~~ **Hecho
+   el 2026-09-05**, como `POST /api/vetheca/ask`. Verificado en vivo contra
+   PubMed real (no solo en tests) con la pregunta de ejemplo del brief
+   original ("rehabilitación temprana después de TPLO") — devuelve artículos
+   reales, correctamente parseados (título, autores, journal, año, abstract,
+   PMID, URL). 3 tests de integración nuevos (permiso concedido, permiso
+   denegado, validación), backend 48/48 (2 unit + 46 integración).
+
+   **Nota importante sobre el permiso `vetheca.ask` y la Opción B:** el
+   RBAC de este sistema es por rol, no por usuario individual — no existe
+   (todavía) una forma de darle un permiso a una sola persona sin dárselo a
+   todo el rol. El permiso se agregó a los roles `Administrador` y
+   `Veterinario` en `RoleDefaultPermissions.cs`, lo que técnicamente lo
+   habilita para **cualquier** administrador/veterinario de **cualquier**
+   clínica en la plataforma (incluidas las cuentas demo), no solo para
+   Erick. La Opción B ("solo yo lo veo primero") queda protegida hoy
+   únicamente porque **todavía no hay pantalla en el frontend** — nadie
+   puede llegar a esto navegando la app, solo llamando la API directamente.
+   Antes de construir la pantalla (paso 4 de esta lista), hay que resolver
+   esto de verdad: o Erick es realmente el único Administrador/Veterinario
+   activo en la plataforma (cierto hoy, en un piloto de una sola clínica),
+   o hace falta construir un mecanismo de permisos por usuario individual
+   (trabajo nuevo, no existía antes de este módulo).
 3. Una vez validado eso: agregar `ILlmClient` y la síntesis estructurada con
-   citas sobre esos mismos artículos.
-4. Permiso `vetia.ask` en el catálogo, pantalla nueva mínima en frontend.
+   citas sobre esos mismos artículos. **Siguiente paso.**
+4. Pantalla nueva mínima en frontend — resolver la nota de arriba primero.
 5. Recién ahí: `AiInteractionAudit`, `SavedResearch`, Evidence Cards.
 
 ---

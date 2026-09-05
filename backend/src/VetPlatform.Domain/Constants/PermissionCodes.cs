@@ -26,6 +26,8 @@ public static class PermissionCodes
     public const string AuditReadAll = "audit.read.all";
     public const string AuditReadOwn = "audit.read.own";
 
+    public const string VethecaAsk = "vetheca.ask";
+
     public static readonly IReadOnlyList<(string Code, string Module, string Description)> Catalog = new[]
     {
         (OwnersRead, "Propietarios", "Ver propietarios"),
@@ -44,5 +46,6 @@ public static class PermissionCodes
         (ClinicsManage, "Administración", "Crear y administrar clínicas"),
         (AuditReadAll, "Auditoría", "Ver la bitácora completa de la clínica"),
         (AuditReadOwn, "Auditoría", "Ver únicamente la bitácora de las propias acciones"),
+        (VethecaAsk, "Vetheca", "Consultar evidencia científica veterinaria (Vetheca Ask)"),
     };
 }
