@@ -92,6 +92,101 @@ public class AuthAndAuthorizationTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Login_Removes_Inactive_Refresh_Tokens_For_User()
+    {
+        var email = $"token-cleanup-login-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, password);
+        var auth = await LoginAsync(email, password);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var now = DateTime.UtcNow;
+            dbContext.RefreshTokens.AddRange(
+                new RefreshToken
+                {
+                    UserId = auth.UserId,
+                    Token = $"expired-{Guid.NewGuid():N}",
+                    CreatedAtUtc = now.AddDays(-10),
+                    ExpiresAtUtc = now.AddDays(-1),
+                },
+                new RefreshToken
+                {
+                    UserId = auth.UserId,
+                    Token = $"revoked-{Guid.NewGuid():N}",
+                    CreatedAtUtc = now.AddDays(-2),
+                    ExpiresAtUtc = now.AddDays(5),
+                    RevokedAtUtc = now.AddDays(-1),
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var newAuth = await LoginAsync(email, password);
+
+        using var assertScope = _factory.Services.CreateScope();
+        var assertDbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userTokens = await assertDbContext.RefreshTokens
+            .Where(t => t.UserId == auth.UserId)
+            .ToListAsync();
+
+        Assert.DoesNotContain(userTokens, t => t.ExpiresAtUtc <= DateTime.UtcNow || t.RevokedAtUtc != null);
+        Assert.Contains(userTokens, t => t.Token == auth.RefreshToken);
+        Assert.Contains(userTokens, t => t.Token == newAuth.RefreshToken);
+    }
+
+    [Fact]
+    public async Task Refresh_Removes_Inactive_Refresh_Tokens_For_User()
+    {
+        var email = $"token-cleanup-refresh-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Receptionist, password);
+        var auth = await LoginAsync(email, password);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var now = DateTime.UtcNow;
+            dbContext.RefreshTokens.AddRange(
+                new RefreshToken
+                {
+                    UserId = auth.UserId,
+                    Token = $"expired-{Guid.NewGuid():N}",
+                    CreatedAtUtc = now.AddDays(-10),
+                    ExpiresAtUtc = now.AddDays(-1),
+                },
+                new RefreshToken
+                {
+                    UserId = auth.UserId,
+                    Token = $"revoked-{Guid.NewGuid():N}",
+                    CreatedAtUtc = now.AddDays(-2),
+                    ExpiresAtUtc = now.AddDays(5),
+                    RevokedAtUtc = now.AddDays(-1),
+                });
+            await dbContext.SaveChangesAsync();
+        }
+
+        var refreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refreshToken = auth.RefreshToken,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        var refreshed = await refreshResponse.Content.ReadFromJsonAsync<AuthResultDto>();
+        Assert.NotNull(refreshed);
+
+        using var assertScope = _factory.Services.CreateScope();
+        var assertDbContext = assertScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var userTokens = await assertDbContext.RefreshTokens
+            .Where(t => t.UserId == auth.UserId)
+            .ToListAsync();
+
+        Assert.DoesNotContain(userTokens, t => t.Token.StartsWith("expired-") || t.Token.StartsWith("revoked-"));
+        Assert.Contains(userTokens, t => t.Token == auth.RefreshToken && t.RevokedAtUtc != null);
+        Assert.Contains(userTokens, t => t.Token == refreshed!.RefreshToken && t.RevokedAtUtc == null);
+    }
+
+    [Fact]
     public async Task Login_Locks_User_After_Repeated_Failed_Attempts()
     {
         var email = $"lockout-{Guid.NewGuid():N}@vetplatform.test";

@@ -90,6 +90,23 @@ Next up per the plan: still no DB persistence anywhere in Vetheca
 per the plan). Step 4 (frontend screen + real permission scoping) needs
 the Option-B RBAC question flagged in the previous entry resolved first.
 
+### 2026-09-05 — Codex
+Status: done.
+Auth/Identity hardening: prune stale refresh-token rows during login/refresh so
+`RefreshTokens` does not grow forever in a real clinic. Working in a clean
+Codex worktree because Code has uncommitted Vetheca LLM changes in the main
+checkout. Expected touch points: auth command handlers, auth integration tests,
+and release checklist. Avoiding Code-owned Vetheca/Dashboard/Prescriptions/
+Docker/Audit/Backups/CI files.
+
+Shipped cleanup in `LoginCommandHandler` and `RefreshTokenCommandHandler`, with
+2 new integration tests covering removal of expired/revoked rows on login and
+refresh while preserving active/current tokens. Verification: backend 52/52
+(2 unit + 50 integration), frontend 46/46, frontend build OK, E2E 6/6. Note:
+the main checkout's WIP Vetheca LLM tests were failing separately because the
+endpoint response shape changed from a raw article list to `{ articles,
+synthesis }`; left untouched for Code to finish with that module.
+
 ### 2026-09-05 — Code (5)
 Status: done.
 Erick gave the go-ahead to start building Vetheca (formerly "VetIA").

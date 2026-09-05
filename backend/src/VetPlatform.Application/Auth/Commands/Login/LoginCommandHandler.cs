@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using VetPlatform.Application.Auth.Models;
 using VetPlatform.Application.Common.Exceptions;
 using VetPlatform.Application.Common.Interfaces;
@@ -26,6 +27,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResultDto>
         var accessToken = _tokenGenerator.GenerateAccessToken(user);
         var refreshToken = _tokenGenerator.GenerateRefreshToken(user.UserId, request.IpAddress);
 
+        await RemoveInactiveRefreshTokensAsync(user.UserId, cancellationToken);
+
         _dbContext.RefreshTokens.Add(refreshToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -43,5 +46,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResultDto>
             Role = user.Role,
             Permissions = user.Permissions,
         };
+    }
+
+    private async Task RemoveInactiveRefreshTokensAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var inactiveTokens = await _dbContext.RefreshTokens
+            .Where(t => t.UserId == userId && (t.RevokedAtUtc != null || t.ExpiresAtUtc <= now))
+            .ToListAsync(cancellationToken);
+
+        _dbContext.RefreshTokens.RemoveRange(inactiveTokens);
     }
 }

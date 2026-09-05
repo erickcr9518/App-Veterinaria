@@ -35,6 +35,8 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
 
         var newRefreshToken = _tokenGenerator.GenerateRefreshToken(user.UserId, request.IpAddress);
 
+        await RemoveInactiveRefreshTokensAsync(user.UserId, request.RefreshToken, cancellationToken);
+
         existingToken.RevokedAtUtc = DateTime.UtcNow;
         existingToken.ReplacedByToken = newRefreshToken.Token;
         _dbContext.RefreshTokens.Add(newRefreshToken);
@@ -57,5 +59,18 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             Role = user.Role,
             Permissions = user.Permissions,
         };
+    }
+
+    private async Task RemoveInactiveRefreshTokensAsync(Guid userId, string currentToken, CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var inactiveTokens = await _dbContext.RefreshTokens
+            .Where(t =>
+                t.UserId == userId &&
+                t.Token != currentToken &&
+                (t.RevokedAtUtc != null || t.ExpiresAtUtc <= now))
+            .ToListAsync(cancellationToken);
+
+        _dbContext.RefreshTokens.RemoveRange(inactiveTokens);
     }
 }

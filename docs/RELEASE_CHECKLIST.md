@@ -82,6 +82,13 @@ fixtures — goes into the system.
       use ASP.NET Core rate limiting by client IP, defaulting to 10 requests per minute and
       returning `429` when exceeded. Configurable through
       `RateLimiting:Auth:*` and covered by integration tests.
+- [x] **Refresh-token cleanup.** Login and refresh-token rotation now remove
+      stale refresh-token rows for that same user (`RevokedAtUtc` set or
+      `ExpiresAtUtc` in the past), so normal use does not grow the
+      `RefreshTokens` table forever. Refresh keeps the current token long
+      enough to revoke and link it to the replacement token. Covered by
+      `Login_Removes_Inactive_Refresh_Tokens_For_User` and
+      `Refresh_Removes_Inactive_Refresh_Tokens_For_User`.
 - [x] **Structured logging.** Serilog now writes structured request/response
       logs (method, path, status, duration) plus everything the app already
       logged (including `ExceptionHandlingMiddleware`'s unhandled-exception
@@ -170,8 +177,8 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist (commit `464a5ec` + access-token invalidation fix on
-top): backend 45/45 (2 unit + 43 integration), frontend 46/46, E2E 6/6 —
+As of this checklist update: backend 52/52 (2 unit + 50 integration),
+frontend 46/46, E2E 6/6 —
 re-run all before relying on these numbers, since they move as both agents
 add coverage.
 These cover role/permission access
