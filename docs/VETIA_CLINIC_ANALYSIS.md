@@ -4,6 +4,14 @@
 construir nada de esto hasta que lo confirme explícitamente — ver la nota en
 `AGENT_NOTES.md`.**
 
+**Nombre del módulo de IA: "VetIA" queda descartado (nombre saturado, ver
+sección G.1 y el estudio de mercado más abajo). Nombre elegido: `Vetheca`
+(vet + bibliotheca/biblioteca) — confirmado por Erick el 2026-09-05, sin
+conflictos encontrados. El resto de este documento sigue usando "VetIA"
+como referencia al concepto/módulo en la prosa ya escrita — reemplazar por
+"Vetheca" al momento de nombrar cosas reales en código (permisos, rutas,
+etc.) durante la implementación.**
+
 Este documento responde a una idea de producto planteada por Erick: evolucionar
 VetPlatform (el sistema actual de gestión clínica) hacia "VetIA Clinic", una
 plataforma que combina gestión clínica + un asistente de investigación
@@ -45,7 +53,7 @@ solo un permiso más en el catálogo.
 | 2 | API key de PubMed | ⏳ **En espera.** Se resuelve cuando lleguemos a esa parte del desarrollo (fase 1, punto 1 de la sección J) — no bloquea nada ahora. |
 | 3 | No enviar datos identificables de paciente en Fase 1 | ✅ **Resuelto — confirmado.** Por Erick el 2026-09-05. |
 | 4 | Visibilidad en el menú | ✅ **Resuelto — Opción B.** Confirmado el 2026-09-05: solo Erick (o una cuenta de prueba) ve VetIA Ask primero; se habilita para el resto del equipo veterinario recién cuando esté conforme con la calidad de respuestas reales. |
-| 5 | Nombre definitivo del módulo | ⏳ **Pendiente.** Sigue siendo "VetIA" (provisional) hasta que Erick decida lo contrario. |
+| 5 | Nombre definitivo del módulo | ✅ **Resuelto — `Vetheca`.** Confirmado el 2026-09-05. "VetIA" e "IAVet" se descartaron por estar saturados (ver estudio de mercado, sección K) — se encontraron 15+ productos existentes con ese patrón de nombre. `Vetheca` (vet + bibliotheca) no tiene conflictos encontrados. |
 
 ---
 
@@ -291,9 +299,17 @@ solo fuentes tipo PubMed/Crossref.
   Drugs. Son bibliotecas de consulta, no motores que busquen y sinteticen
   evidencia con citas verificables como plantea este proyecto.
 - **Decisión clínica con evidencia real:** en medicina humana existe
-  UpToDate/DynaMed haciendo algo parecido a lo que describe el brief. **En
-  veterinaria no hay un equivalente maduro y ampliamente adoptado** — es un
-  vacío real, no una cancha ya ocupada. Buena señal para la idea.
+  UpToDate/DynaMed haciendo algo parecido a lo que describe el brief.
+
+  **Corrección tras la investigación exhaustiva de la sección K (esta
+  afirmación era prematura, no estaba bien investigada cuando se escribió):**
+  sí existen competidores directos, en particular **Vetgo.ai** (España, RAG
+  sobre PubMed Abstracts/CIMAVet) y el incumbente **Vetesoft/MIAUV**
+  (Colombia, ~30% de las clínicas del país). No es una cancha vacía. Lo que
+  sigue siendo cierto es más específico: ninguno de los competidores
+  encontrados combina evidencia verificable + contexto real del paciente +
+  gobernanza estricta de no-escritura-automática, en español. Ver sección K
+  para el análisis completo, con fuentes.
 
 **¿Se pueden incluir libros/referencias como Plumb's?** Con matices
 importantes, porque no es un tema técnico sino de licencias:
@@ -468,6 +484,95 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
     el cliente de PubMed y un endpoint que solo busca y devuelve artículos
     crudos, sin LLM todavía. Es la pieza de menor riesgo y valida la
     integración externa antes de comprometerse con nada más.
+
+---
+
+## K. Estudio de mercado exhaustivo (2026-09-05)
+
+Erick pidió una investigación de mercado seria antes de seguir adelante,
+después de que una primera respuesta rápida ("no hay competencia madura")
+resultó ser demasiado optimista. Esto es lo que encontró una investigación
+en profundidad — con fuente citada en cada afirmación relevante.
+
+### K.1 Competidores directos en el mercado hispanohablante
+
+| Producto | Qué hace | Evidencia científica en vivo | Tracción real |
+|---|---|---|---|
+| **Vetgo.ai** (España) | Asistente conversacional RAG integrado al PMS del cliente | Declara PubMed Abstracts, CIMAVet, MSD Vet Manual como fuentes — es el más parecido a este proyecto | Casi nula: sin reseñas públicas, sin financiamiento reportado, LinkedIn de bajo perfil |
+| **Veta-i** (España) | SOAP por voz, diagnóstico diferencial vía RAG sobre CIMAVet | Menciona RAG pero sin evidencia de búsqueda en vivo ni citas verificables | Sin datos públicos |
+| **VetPraxis Intelligence** (LatAm) | Gestión de clínica + IA que sugiere diagnósticos desde la ficha del paciente | Basado en lo cargado en la historia clínica, sin búsqueda de literatura | Sin datos públicos |
+| **Vetesoft / MIAUV** (Colombia) | **Empresa establecida, +25 años, presente en ~30% de las clínicas veterinarias colombianas.** Lanzó en 2025 un módulo de IA para diagnóstico | Marketing agresivo (cifras no verificables de forma independiente); usado con fines educativos en universidades colombianas | **Es el competidor de mayor riesgo real** — no por tecnología, por distribución ya instalada |
+| **Arlovet** (España) | Chatbox de pre-diagnóstico y prescripción | Sin evidencia de citas verificables | Cobertura de prensa (marzo 2025), sin financiamiento reportado |
+| **IAVET** (España) | Consultoría de IA para clínicas (no es un producto de software) | N/A | N/A |
+
+**Ninguno combina las tres piezas del proyecto de Erick**: búsqueda en vivo
+con citas verificables + contexto real del expediente del paciente +
+gobernanza de que la IA nunca escribe sola al expediente.
+
+### K.2 Competidores en inglés (contexto, no compiten directo en el mercado hispanohablante)
+
+- **Vetnio** — AI copilot de notas clínicas, respaldado por **Y Combinator**, en uso en clínicas de Países Bajos y Reino Unido. La mejor validación institucional encontrada, pero enfocado en documentación, no en evidencia.
+- **co.vet** — AI scribe con la mejor tracción de satisfacción de usuario verificable de toda la investigación (4.8/5 en App Store y Chrome Web Store).
+- **VetGeni** — usa una base de fármacos licenciada con Wiley (no búsqueda en vivo), **0 reseñas en G2** pese a marketing pulido — tracción real baja.
+- Los grandes PMS incumbentes (ezyVet, Provet Cloud, Covetrus, Digitail) están todos en fase de "documentación/automatización", ninguno ofrece búsqueda de evidencia científica con citas verificables integrada al expediente.
+
+### K.3 Tamaño y tendencias de mercado
+
+- Mercado de software veterinario en general: ~US$1.1–2.1B (2025), creciendo 6–7% anual (varias firmas de research, cifras no coincidentes exactamente pero del mismo orden).
+- Mercado específico de "IA en salud animal": creciendo mucho más rápido, 17–19% anual según Grand View Research y Precedence Research — pero ese crecimiento reportado es mayormente diagnóstico por imagen, no apoyo a decisión clínica por literatura (un nicho que ningún reporte de mercado cuantifica todavía por separado).
+- España: 7,032 clínicas veterinarias, 37,836 veterinarios registrados (2024), facturación del sector 2,853M€ (+9.2% interanual).
+- México: ~48,000 veterinarios/zootecnistas; consultas veterinarias digitales +41% interanual.
+- Adopción de IA entre veterinarios: 69.5–83% ya la usa semanal/diariamente según dos encuestas (AVMA/AJVR 2024, Digitail+AAHA) — pero casi toda esa adopción es para documentación (recetas, notas SOAP), no para búsqueda de evidencia.
+
+### K.4 El dato más importante sobre demanda
+
+Una encuesta internacional (2,137 respuestas, 78 países, PLOS ONE 2016)
+encontró que **solo el 7.4% de los veterinarios consulta PubMed
+directamente** — no es un hábito instalado; usan más las revistas (65.8%) o
+VIN (25.6%). Lectura de este documento: esto no invalida la idea, es
+justamente el problema que resuelve automatizar la búsqueda — pero significa
+que **hay que enseñar el valor de la herramienta activamente, no asumir que
+la demanda ya existe formada**.
+
+El movimiento de "medicina veterinaria basada en evidencia" (EBVM) es real
+e institucional en el mundo anglosajón (RCVS Knowledge, BestBETs for Vets,
+un marco activo de la AVMA sobre IA responsable) pero **prácticamente
+inexistente como iniciativa formal en España o Latinoamérica** — no se
+encontró ningún capítulo, comité ni posición de asociación veterinaria
+nacional al respecto. Oportunidad de ser temprano en ese ángulo específico
+en español, pero también trabajo de construir la cultura, no solo la
+herramienta.
+
+### K.5 Naming — conclusión confirmada con datos
+
+Se encontraron **15+ productos existentes** con el patrón literal
+"Vet + IA/AI" entre español e inglés durante esta sola investigación
+(Vetgo.ai, Veta-i, VetiA Learning, vetIA Pro, IAVET, IA Vet, VetGeni, VEA,
+Vet-AI/Joii, Vetty AI, y más). Confirma la decisión de abandonar ese patrón
+de nombre — ver la sección de decisiones arriba, nombre elegido: `Vetheca`.
+
+### K.6 Conclusión de este documento sobre innovación y demanda
+
+**¿Es innovador?** Sí, en la combinación específica — no en la categoría
+general. "IA + veterinaria" ya no es territorio virgen (2026-09-05 en
+adelante, dejar de decir eso); la combinación exacta de evidencia
+verificable + contexto real del paciente + gobernanza estricta, en español,
+sigue sin encontrarse ejecutada por nadie en esta investigación.
+
+**¿Hay demanda?** Parcialmente validada. La adopción de IA en general por
+veterinarios es real y creciente (documentación, sobre todo). La demanda
+específica de "búsqueda de evidencia con IA" no tiene todavía métricas
+duras de nadie en la industria — es una apuesta razonable, no una certeza,
+y probablemente requiera educar al mercado más que en categorías donde el
+ahorro de tiempo es obvio de entrada (como los AI scribes).
+
+**Riesgo nuevo a vigilar:** Vetesoft/MIAUV (Colombia) — un incumbente con
+distribución real ya instalada moviéndose hacia IA. Un competidor así puede
+ganar por alcance aunque su tecnología sea más débil.
+
+Fuentes completas de todo lo anterior: ver la investigación original citada
+en `AGENT_NOTES.md` (entrada del 2026-09-05) — cada afirmación de esta
+sección viene de una URL específica verificada en esa investigación.
 
 ---
 

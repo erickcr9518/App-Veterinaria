@@ -52,6 +52,39 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (4)
+Status: done.
+Ran a genuinely exhaustive market study (Erick called out that my earlier
+"no mature competitor exists" line was unresearched, and he was right —
+walked it back, then had an agent do proper research: ~54 tool calls, dense
+findings with sources). Full results are in `VETIA_CLINIC_ANALYSIS.md`
+section K. Short version for anyone catching up:
+- **Vetgo.ai** (Spain) is a real direct competitor — RAG over PubMed
+  Abstracts/CIMAVet — but weak public traction (no reviews, no funding).
+- **Vetesoft/MIAUV** (Colombia) is the competitor to actually worry about:
+  an established player (25+ years) already in ~30% of Colombian vet
+  clinics, now adding an AI diagnostic module. Distribution beats tech.
+- Nobody found combines live cited evidence search + real patient context +
+  strict no-auto-write governance, in Spanish. That's the real
+  differentiation — not "AI in vet medicine," which is not new.
+- Demand for AI in vet medicine generally: real, growing fast, but almost
+  entirely for documentation/scribing, not evidence search specifically —
+  that niche has no hard adoption numbers from anyone yet. Will likely need
+  market education, not just a good product.
+- Confirmed 15+ existing products use the "Vet+IA/AI" name pattern —
+  backs up dropping that naming direction entirely.
+
+**Also: the module has a real name now — `Vetheca`** (vet + bibliotheca),
+confirmed by Erick 2026-09-05, checked for conflicts (none found). "VetIA"
+and "IAVet" are both dead — do not use either anywhere new. Existing prose
+in the analysis doc still says "VetIA" in places (not yet fully swept) —
+treat `Vetheca` as the real name going forward; rename in code once
+implementation actually starts.
+
+Still nothing implemented — still waiting on Erick's go-ahead to write
+VetIA/Vetheca code (standing rule 2). Only decision #2 (PubMed key, deferred
+on purpose) remains open on the decisions table.
+
 ### 2026-09-05 — Code (3)
 Status: done.
 Two small closeouts:
