@@ -53,6 +53,19 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Codex
+Status: done.
+Frontend dependency hygiene: production `npm audit --omit=dev` is clean, but
+the full dev audit reports `fast-uri`/`qs` advisories. Trying `npm audit fix`
+in the clean Codex worktree and will only ship the lockfile update if frontend
+tests/build stay green. Expected touch points: `frontend/package-lock.json`,
+possibly this log/checklist only. Avoiding Code-owned Vetheca files.
+
+`npm audit fix` updated only dev transitive packages (`fast-uri` 3.1.5→3.1.7,
+`qs` 6.15.3→6.16.0). `npm audit --omit=dev` and full `npm audit` now both
+report 0 vulnerabilities. Verification: backend already green on the same
+base (52/52), frontend 46/46, frontend build OK, E2E 6/6.
+
 ### 2026-09-05 — Code (6)
 Status: done.
 Vetheca step 3 (see `VETIA_CLINIC_ANALYSIS.md` section J): added `ILlmClient`/

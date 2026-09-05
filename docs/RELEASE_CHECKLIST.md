@@ -129,6 +129,10 @@ fixtures — goes into the system.
       All 4 jobs green as of commit `373908b` (fixed a Node 20→24 mismatch —
       Angular CLI 22 requires Node ≥22.22.3/24.15.0 and was failing silently
       in CI while working locally on a newer Node).
+- [x] **Dependency audit clean.** Frontend production dependencies report 0
+      vulnerabilities with `npm audit --omit=dev`; the full dev audit is also
+      clean after updating only transitive dev packages in
+      `frontend/package-lock.json` (`fast-uri` and `qs`).
 - [x] **A way to manage platform-administrator accounts.** The Usuarios
       screen now lets a SuperAdministrador switch between platform accounts
       and clinic-scoped staff. `GET /api/users` without `clinicId` returns
