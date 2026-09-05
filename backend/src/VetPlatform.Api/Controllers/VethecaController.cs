@@ -1,15 +1,16 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using VetPlatform.Application.Vetheca.Models;
 using VetPlatform.Application.Vetheca.Queries.AskVetheca;
 using VetPlatform.Domain.Constants;
 
 namespace VetPlatform.Api.Controllers;
 
-// First slice of Vetheca (see docs/VETIA_CLINIC_ANALYSIS.md, section J):
-// plain PubMed search, no LLM synthesis yet. Not linked from the frontend
-// nav yet either - see the "Vetheca rollout" decision in that doc.
+// Vetheca (see docs/VETIA_CLINIC_ANALYSIS.md, section J): PubMed search +
+// LLM synthesis over the retrieved articles. Not linked from the frontend
+// nav yet - see the "Vetheca rollout" decision in that doc. Synthesis comes
+// back null when Anthropic:ApiKey isn't configured yet; the raw articles
+// are still returned either way.
 [ApiController]
 [Route("api/vetheca")]
 [Authorize]
@@ -24,7 +25,7 @@ public class VethecaController : ControllerBase
 
     [HttpPost("ask")]
     [Authorize(Policy = PermissionCodes.VethecaAsk)]
-    public async Task<ActionResult<IReadOnlyList<PubMedArticleDto>>> Ask(AskVethecaRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<AskVethecaResult>> Ask(AskVethecaRequest request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new AskVethecaQuery(request.Question, request.MaxResults ?? 5), cancellationToken);
         return Ok(result);

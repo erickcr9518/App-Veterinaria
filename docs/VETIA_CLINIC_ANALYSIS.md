@@ -417,8 +417,31 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
    activo en la plataforma (cierto hoy, en un piloto de una sola clínica),
    o hace falta construir un mecanismo de permisos por usuario individual
    (trabajo nuevo, no existía antes de este módulo).
-3. Una vez validado eso: agregar `ILlmClient` y la síntesis estructurada con
-   citas sobre esos mismos artículos. **Siguiente paso.**
+3. ~~Una vez validado eso: agregar `ILlmClient` y la síntesis estructurada con
+   citas sobre esos mismos artículos.~~ **Hecho el 2026-09-05.** `ILlmClient`/
+   `AnthropicLlmClient` en Infrastructure, llamando a la API de Claude
+   directamente (sin SDK). El mismo endpoint `POST /api/vetheca/ask` ahora
+   devuelve `{ articles, synthesis }`; `synthesis` viene `null` si
+   `Anthropic:ApiKey` no está configurada (arranca así por defecto, sin
+   romper nada — mismo patrón que `PasswordResetEmailSender` cuando falta
+   SMTP). Verificado en vivo sin clave configurada: sigue devolviendo los
+   artículos reales de PubMed con `synthesis: null`, como se espera.
+   **No se pudo verificar una síntesis real de Claude en vivo** — hace
+   falta una clave de Anthropic real de la cuenta de Erick, que Code no
+   tiene. Backend 50/50 (2 unit + 48 integración, 2 tests nuevos).
+
+   El prompt implementa las reglas de la sección 23 del brief que aplican al
+   MVP: solo usar los abstracts entregados, nunca inventar PMID/DOI, no
+   afirmar haber leído el texto completo, no extrapolar entre especies sin
+   decirlo, decir explícitamente cuando la evidencia es insuficiente, y
+   tratar los abstracts recuperados como datos no confiables (nunca
+   instrucciones) — mitigación de prompt injection real, no solo mencionada
+   en el documento. Además hay una **verificación de citas real, no solo
+   una instrucción en el prompt**: después de parsear la respuesta,
+   cualquier cita que referencie un PMID que no esté entre los artículos
+   realmente recuperados se descarta antes de llegar al usuario. Cubierto
+   por un test dedicado (`AnthropicLlmClient_Drops_Citations_Referencing_Unknown_Pmids`)
+   que verifica esto contra una respuesta simulada con una cita inventada.
 4. Pantalla nueva mínima en frontend — resolver la nota de arriba primero.
 5. Recién ahí: `AiInteractionAudit`, `SavedResearch`, Evidence Cards.
 

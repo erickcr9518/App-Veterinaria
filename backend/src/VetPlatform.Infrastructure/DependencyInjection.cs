@@ -62,6 +62,12 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(15);
         });
 
+        services.Configure<AnthropicSettings>(configuration.GetSection(AnthropicSettings.SectionName));
+        services.AddHttpClient<ILlmClient, AnthropicLlmClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

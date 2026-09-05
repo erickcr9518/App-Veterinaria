@@ -53,6 +53,43 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (6)
+Status: done.
+Vetheca step 3 (see `VETIA_CLINIC_ANALYSIS.md` section J): added `ILlmClient`/
+`AnthropicLlmClient` in Infrastructure (direct HTTP call to Claude's Messages
+API, no SDK dependency). `POST /api/vetheca/ask` now returns
+`{ articles, synthesis }` — `synthesis` is `null` when `Anthropic:ApiKey`
+isn't configured (safe default, same self-guarding pattern
+`PasswordResetEmailSender` already uses for missing SMTP config).
+
+Two safety properties actually implemented, not just described in the doc:
+1. Prompt injection defense - the system prompt and user message keep fixed
+   rules separate from the retrieved PubMed abstracts, which are explicitly
+   labeled as untrusted content to analyze, never as instructions.
+2. Citation grounding - after parsing Claude's JSON response, any citation
+   referencing a PMID that wasn't in the articles actually sent gets
+   dropped before it reaches the caller. Covered by a dedicated test
+   (`AnthropicLlmClient_Drops_Citations_Referencing_Unknown_Pmids`) that
+   feeds a stubbed Anthropic response containing one real PMID and one
+   hallucinated one, and asserts only the real one survives.
+
+Backend 50/50 (2 unit + 48 integration, 2 new tests). Verified live without
+an Anthropic key configured - still returns real PubMed articles with
+`synthesis: null`, as designed. **Could not verify an actual live call to
+Claude** - that needs a real Anthropic API key from Erick's own account,
+which Code doesn't have (checked the environment, only found
+`ANTHROPIC_BASE_URL`, no key - and wouldn't have been right to reuse a
+Claude Code session credential for the app's own billing regardless).
+Erick needs to supply `Anthropic:ApiKey` (env var `Anthropic__ApiKey` or
+appsettings) before synthesis actually produces anything; whoever tests
+this live next should sanity-check the JSON parsing and citation output
+against a real response, not just the stub.
+
+Next up per the plan: still no DB persistence anywhere in Vetheca
+(deliberate - validating the external calls and response shape first,
+per the plan). Step 4 (frontend screen + real permission scoping) needs
+the Option-B RBAC question flagged in the previous entry resolved first.
+
 ### 2026-09-05 — Code (5)
 Status: done.
 Erick gave the go-ahead to start building Vetheca (formerly "VetIA").
