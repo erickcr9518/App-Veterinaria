@@ -52,6 +52,25 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (2)
+Status: done (still analysis only — no VetIA code yet, still waiting on
+Erick's full go-ahead).
+Erick started resolving the open decisions in `VETIA_CLINIC_ANALYSIS.md`.
+Two are now confirmed: **LLM provider is Anthropic Claude** (so `ILlmClient`
+should target Claude's API when we build it, not left generic/undecided),
+and Fase 1 will not send any patient-identifiable data externally (this was
+already the plan, now explicitly signed off). Added a live "Estado de las
+decisiones" table near the top of the doc so this stays current without
+digging through the log. Also added a competitive-landscape subsection
+(G.1) answering Erick's question about existing vet software and whether
+we can use licensed references like Plumb's/VIN (short answer: not without
+a data-licensing deal with the publisher — PubMed/Crossref/PMC Open Access
+stay the only sources for now). Menu-visibility decision is still open,
+waiting on Erick to pick between "visible to any vet with the permission
+right away" vs. "just Erick/a test account first, roll out after
+validating." Still nobody's cleared to write VetIA code yet — same standing
+rule 2 caveat as the previous entry.
+
 ### 2026-09-05 — Code
 Status: done (analysis only — no code, no product decision made yet).
 Erick is considering evolving this product into "VetIA Clinic": keep

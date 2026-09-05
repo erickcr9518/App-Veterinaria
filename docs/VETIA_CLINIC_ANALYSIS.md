@@ -37,6 +37,18 @@ solo un permiso más en el catálogo.
 
 ---
 
+## Estado de las decisiones (se actualiza a medida que Erick va resolviendo)
+
+| # | Decisión | Estado |
+|---|---|---|
+| 1 | Proveedor de LLM | ✅ **Resuelto — Anthropic Claude.** Confirmado por Erick el 2026-09-05. `ILlmClient` (sección C) se implementa contra la API de Claude. |
+| 2 | API key de PubMed | ⏳ **En espera.** Se resuelve cuando lleguemos a esa parte del desarrollo (fase 1, punto 1 de la sección J) — no bloquea nada ahora. |
+| 3 | No enviar datos identificables de paciente en Fase 1 | ✅ **Resuelto — confirmado.** Por Erick el 2026-09-05. |
+| 4 | Visibilidad en el menú | 🟡 **En discusión** — ver la aclaración en el punto 9 más abajo; Erick preguntó qué significa exactamente. |
+| 5 | Nombre definitivo del módulo | ⏳ **Pendiente.** Sigue siendo "VetIA" (provisional) hasta que Erick decida lo contrario. |
+
+---
+
 ## A. Estado actual — resumen técnico
 
 **Stack:** Angular 22 (standalone components) + ASP.NET Core 8 (Clean
@@ -427,10 +439,23 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
      todavía, así que esto ya se cumple por diseño. Es solo pedirle a Erick
      que confirme que ese límite le parece correcto antes de que exista la
      tentación de "conectarlo todo" más rápido de lo debido.
-   - **Visibilidad en el menú.** Qué es: decidir si la sección de VetIA
-     aparece visible para cualquiera con el permiso apenas esté lista, o si
-     Erick prefiere mantenerla oculta/en modo "beta interno" mientras se
-     prueba. No urge resolverlo ahora, solo antes de la Fase 1.
+   - **Visibilidad en el menú.** Aclaración importante primero: esto es el
+     menú **interno** de la app, el mismo que ya usan hoy Owners/Pacientes/
+     Consultas — el que solo se ve después de iniciar sesión con usuario y
+     contraseña. **Nunca es público en internet**, ni hoy ni con VetIA; eso
+     no existe ni va a existir. La pregunta real es otra: una vez que VetIA
+     Ask esté funcionando, ¿quién de la gente que **ya usa el sistema
+     internamente** lo ve primero?
+     - **Opción A — abierto de una vez:** aparece en el menú para cualquier
+       usuario que tenga el permiso `vetia.ask` (por ejemplo, todos los
+       veterinarios de la clínica), igual que cualquier otro módulo hoy.
+     - **Opción B — piloto acotado:** solo Erick (o una cuenta de prueba
+       específica) lo ve al principio, mientras se valida que las respuestas
+       son confiables, y recién después se le da el permiso al resto del
+       equipo veterinario.
+     No urge resolverlo ahora, solo antes de que termine la Fase 1 — pero
+     dado que Erick preguntó explícitamente qué significaba esto, quedó
+     pendiente de su respuesta sobre A o B.
    - **Nombre definitivo.** "VetIA" es un nombre provisional del propio
      brief de Erick. Puede quedarse así o cambiar más adelante — mejor
      pensarlo antes de que el nombre se vuelva parte del código/las
