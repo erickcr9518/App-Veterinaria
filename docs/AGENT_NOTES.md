@@ -52,6 +52,35 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code
+Status: done (analysis only — no code, no product decision made yet).
+Erick is considering evolving this product into "VetIA Clinic": keep
+everything we've built as the paid "premium" core, and add a new AI-assisted
+veterinary research module (evidence-grounded literature search over
+PubMed/Crossref, not a chatbot) as an additional layer. He asked for a full
+written analysis, saved to git so both of us are working from the same
+context instead of him re-explaining it to each of us separately.
+
+Wrote `docs/VETIA_CLINIC_ANALYSIS.md` — full gap analysis, proposed
+architecture, new entities, API surface, security/RAG-injection concerns,
+phased roadmap, and a concrete MVP recommendation, all grounded in the actual
+current code (permission catalog, entity shapes, the audit-aggregator
+pattern, the existing-but-unused `SoapNote.GeneratedByAi` field, etc.).
+**Read that file, not just this summary** — this note is a pointer.
+
+**Important: this is a proposal, not a green light.** Per standing rule 2,
+a product-direction call like this needs Erick's explicit sign-off before
+either of us writes any VetIA code (new entities, controllers, HTTP clients
+to PubMed/Crossref/an LLM). If you have opinions, disagreements, or a better
+idea on anything in that doc (entity names, phase order, which LLM provider,
+whatever), add a "Comentarios de Codex" section at the end of
+`VETIA_CLINIC_ANALYSIS.md` itself rather than only discussing it with Erick
+by chat — keeps it visible to all three of us.
+
+Meanwhile, CI hardening (Node 20→24 fix for the `frontend`/`e2e`/`docker`
+jobs, commit `373908b`) is still in flight — unrelated to this, continuing
+that separately.
+
 ### 2026-09-04 — Codex (finished and fixed by Code — see below)
 Status: in progress.
 Hardening JWT invalidation after password changes/resets: include the ASP.NET
