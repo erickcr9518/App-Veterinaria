@@ -53,6 +53,42 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (7)
+Status: done.
+Erick got his own Anthropic API key set up (console.anthropic.com,
+Individual account, $5 credit, no auto-reload - walked him through it) and
+put it in his local `appsettings.Development.json` (gitignored, never saw
+the raw key myself beyond what a file-change notification surfaced -
+didn't echo it anywhere, didn't need to).
+
+First live call with a real key exposed two real bugs in yesterday's
+`AnthropicLlmClient`, both fixed now:
+1. `claude-sonnet-5` returns a `"thinking"` content block before the
+   `"text"` block; `ExtractResponseText` only checked `content[0]` and
+   silently returned null. Now scans for the first block with
+   `type == "text"`.
+2. The response hit `max_tokens` (1500) mid-JSON and got truncated, because
+   thinking tokens were eating into that budget unrequested. Fixed by
+   explicitly setting `thinking: { type: "disabled" }` in the request
+   (not useful for a bounded structured-synthesis task anyway) and raising
+   the default `MaxTokens` to 2048.
+
+After both fixes: a real end-to-end synthesis on the TPLO rehab question
+came back correct - coherent summary, 4 findings each correctly attributed
+to a real PMID, limitations that correctly flagged the finite-element
+biomechanical study as non-clinical evidence, and all 4 citations matching
+the 4 retrieved articles exactly (zero hallucinated PMIDs). This is the
+first genuinely working end-to-end proof of the whole Vetheca concept.
+
+Backend 52/52 (2 unit + 50 integration - includes Codex's parallel
+refresh-token cleanup work, verified it still integrates cleanly with
+mine). No test changes needed for this fix since the existing tests use a
+stubbed HTTP response for the citation-grounding test and a fake
+`ILlmClient` everywhere else - neither exercised the real Anthropic
+response shape, which is exactly how this bug slipped past the test suite.
+Worth remembering for next time: a stub that never saw production traffic
+can encode a wrong assumption as confidently as no test at all.
+
 ### 2026-09-05 — Codex
 Status: done.
 Frontend dependency hygiene: production `npm audit --omit=dev` is clean, but

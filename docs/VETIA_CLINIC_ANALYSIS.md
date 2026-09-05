@@ -426,9 +426,26 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
    romper nada — mismo patrón que `PasswordResetEmailSender` cuando falta
    SMTP). Verificado en vivo sin clave configurada: sigue devolviendo los
    artículos reales de PubMed con `synthesis: null`, como se espera.
-   **No se pudo verificar una síntesis real de Claude en vivo** — hace
-   falta una clave de Anthropic real de la cuenta de Erick, que Code no
-   tiene. Backend 50/50 (2 unit + 48 integración, 2 tests nuevos).
+   **Actualización el mismo día:** Erick configuró su propia clave de
+   Anthropic (`console.anthropic.com`, cuenta "Individual", $5 de crédito
+   inicial, sin auto-recarga) en su `appsettings.Development.json` local
+   (gitignored). Verificado en vivo con la clave real: la primera llamada
+   falló silenciosamente (`synthesis: null`) — el modelo `claude-sonnet-5`
+   devuelve un bloque de `"thinking"` antes del bloque `"text"`, y el
+   parseo solo miraba el primer bloque; además la respuesta se cortó a la
+   mitad por quedarse sin tokens (`max_tokens` era muy bajo con thinking
+   habilitado). Corregido: `ExtractResponseText` ahora busca el primer
+   bloque de tipo `"text"` en vez de asumir que es el bloque `[0]`, se
+   deshabilitó `thinking` explícitamente en la solicitud (no aporta nada
+   para esta tarea de síntesis estructurada y solo consume tokens), y
+   `MaxTokens` subió de 1500 a 2048. Con eso, una síntesis real y completa
+   sobre rehabilitación post-TPLO salió correcta: resumen coherente,
+   4 hallazgos bien atribuidos a sus PMIDs reales, limitaciones que
+   identificaron correctamente el estudio de menor calidad (un modelo
+   biomecánico, no un ensayo clínico) como tal, y las 4 citas coincidiendo
+   exactamente con los 4 artículos recuperados — cero PMIDs inventados.
+   Backend 52/52 (2 unit + 50 integración, incluye el trabajo de Codex en
+   paralelo).
 
    El prompt implementa las reglas de la sección 23 del brief que aplican al
    MVP: solo usar los abstracts entregados, nunca inventar PMID/DOI, no

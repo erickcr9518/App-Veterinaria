@@ -96,6 +96,7 @@ public class AnthropicLlmClient : ILlmClient
             model = _settings.Model,
             max_tokens = _settings.MaxTokens,
             system = SystemPrompt,
+            thinking = new { type = "disabled" },
             messages = new[] { new { role = "user", content = userMessage } },
         };
 
@@ -165,12 +166,25 @@ public class AnthropicLlmClient : ILlmClient
     private static string? ExtractResponseText(string responseBody)
     {
         using var document = JsonDocument.Parse(responseBody);
-        if (!document.RootElement.TryGetProperty("content", out var content) || content.GetArrayLength() == 0)
+        if (!document.RootElement.TryGetProperty("content", out var content))
         {
             return null;
         }
 
-        return content[0].TryGetProperty("text", out var textElement) ? textElement.GetString() : null;
+        // Claude can return other block types (e.g. "thinking") before the
+        // actual "text" block - find the first text block rather than
+        // assuming content[0] is it.
+        foreach (var block in content.EnumerateArray())
+        {
+            if (block.TryGetProperty("type", out var typeElement) &&
+                typeElement.ValueEquals("text") &&
+                block.TryGetProperty("text", out var textElement))
+            {
+                return textElement.GetString();
+            }
+        }
+
+        return null;
     }
 
     private VethecaSynthesisDto? ParseSynthesis(string text)
