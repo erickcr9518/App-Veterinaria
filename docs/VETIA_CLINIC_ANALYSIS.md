@@ -264,6 +264,49 @@ implementan `ITenantEntity`.
 - **Nada de scraping** de sitios de journals — solo APIs oficiales, para
   no violar términos de servicio ni exponer al producto a un bloqueo.
 
+### G.1 Panorama competitivo — ¿ya existe algo así?
+
+Pregunta de Erick: si ya hay aplicaciones veterinarias parecidas, y si se
+pueden incluir libros/referencias de uso médico-veterinario (ej. Plumb's) o
+solo fuentes tipo PubMed/Crossref.
+
+**¿Ya existe algo así?** Sí, pero en piezas separadas, no integradas:
+- **Gestión de clínica** (lo que ya tenemos hoy): ezyVet, Provet Cloud,
+  IDEXX Neo, Covetrus. Ninguno tiene un asistente de investigación con
+  evidencia integrado.
+- **Bibliotecas/referencias veterinarias por suscripción:** VIN (Veterinary
+  Information Network), Vetlexicon, BSAVA Formulary, Plumb's Veterinary
+  Drugs. Son bibliotecas de consulta, no motores que busquen y sinteticen
+  evidencia con citas verificables como plantea este proyecto.
+- **Decisión clínica con evidencia real:** en medicina humana existe
+  UpToDate/DynaMed haciendo algo parecido a lo que describe el brief. **En
+  veterinaria no hay un equivalente maduro y ampliamente adoptado** — es un
+  vacío real, no una cancha ya ocupada. Buena señal para la idea.
+
+**¿Se pueden incluir libros/referencias como Plumb's?** Con matices
+importantes, porque no es un tema técnico sino de licencias:
+- **PubMed / Crossref / PMC Open Access:** libres de usar desde el día uno,
+  sin pedir permiso a nadie. Nota aparte: **PubMed Central (PMC)** tiene un
+  "Open Access Subset" donde sí se puede usar el **texto completo**
+  legalmente — distinto de PubMed "normal", que solo da metadata + abstract.
+  Vale la pena sumarlo como fuente desde el MVP, es igual de gratuito.
+- **Plumb's, VIN, Vetlexicon, BSAVA Formulary:** son productos **comerciales
+  con copyright**. No se pueden incorporar solo porque existan o se puedan
+  ver online — haría falta un **acuerdo de licenciamiento de datos/API
+  directamente con el editor**. Es un paso de negocio (contactar, negociar,
+  pagar una licencia), no un paso de programación, y no depende de nosotros
+  resolverlo con código.
+- **Guías de organizaciones veterinarias** (WSAVA, ACVIM consensus
+  statements, etc.): muchas se publican gratis en PDF en el sitio de la
+  propia organización — revisando los términos de cada una, son una fuente
+  intermedia razonable entre "PubMed gratis" y "biblioteca de pago".
+
+**Recomendación:** arrancar 100% con PubMed + Crossref + PMC Open Access
+para el MVP (fases 1-3 del roadmap). Dejar Plumb's/VIN/Vetlexicon anotados
+como una fase futura explícitamente condicionada a conseguir una licencia de
+datos — no bloquea nada del desarrollo técnico actual, pero tampoco hay que
+asumir que van a estar disponibles gratis.
+
 ---
 
 ## H. Dónde interviene la IA (y dónde explícitamente no)
@@ -353,13 +396,46 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
    los abstracts recuperados → respuesta con citas verificables. Sin
    contexto de paciente, sin research explorer todavía.
 8. **Orden de implementación:** el roadmap de la sección I.
-9. **Decisiones que Erick debe tomar antes de empezar:**
-   - Qué proveedor de LLM usar y presupuesto aproximado por consulta.
-   - Si se tramitará una API key gratuita de PubMed (recomendado).
-   - Confirmar que en Fase 1 no se envía ningún dato identificable de
-     paciente/propietario a un proveedor externo.
-   - Si el módulo aparece visible en el menú ya en esta fase, u oculto tras
-     el permiso hasta que esté más maduro.
+9. **Decisiones que Erick debe tomar antes de empezar** — explicadas en
+   detalle, porque no todas requieren que Erick "investigue" nada; en varias
+   el trabajo de investigar es nuestro y lo único que hace falta es su
+   aprobación:
+
+   - **Proveedor de LLM y presupuesto por consulta.** Qué es: elegir qué
+     servicio de IA va a leer los estudios y redactar la respuesta (ej.
+     Anthropic Claude, OpenAI). Estos servicios cobran por uso medido en
+     "tokens" (fragmentos de texto de entrada y salida), no una suscripción
+     fija — por eso se habla de "costo por consulta" en vez de un precio
+     mensual único. **Nuestra recomendación:** empezar con Anthropic Claude,
+     por consistencia con el resto de este proyecto y por su buen
+     comportamiento siguiendo reglas estrictas de "no inventar" (crítico
+     para no alucinar citas). Costo esperado: el orden de unos pocos
+     centavos de dólar por consulta — con cientos de consultas al mes el
+     gasto total ronda unos pocos dólares, no cientos. Como `ILlmClient`
+     queda detrás de una interfaz (sección C), cambiar de proveedor más
+     adelante es barato si no convence. **Lo que Erick tiene que hacer:**
+     nada de investigación propia — decir "de acuerdo, arrancamos así" o
+     pedir que comparemos otra opción antes de escribir código.
+   - **API key gratuita de PubMed.** Qué es: un registro gratis de 5 minutos
+     en el sitio de NCBI para subir el límite de velocidad de las búsquedas.
+     **Lo que Erick tiene que hacer:** nada todavía — cuando lleguemos a esa
+     parte del desarrollo se comparte el link exacto; puede hacerse con
+     cualquier email de contacto del proyecto, no tiene que ser personal.
+   - **Confirmar que en Fase 1 no se envía ningún dato identificable de
+     paciente/propietario a un proveedor externo.** Qué es: una promesa de
+     privacidad — la Fase 1 (VetIA Ask) ni siquiera usa contexto de paciente
+     todavía, así que esto ya se cumple por diseño. Es solo pedirle a Erick
+     que confirme que ese límite le parece correcto antes de que exista la
+     tentación de "conectarlo todo" más rápido de lo debido.
+   - **Visibilidad en el menú.** Qué es: decidir si la sección de VetIA
+     aparece visible para cualquiera con el permiso apenas esté lista, o si
+     Erick prefiere mantenerla oculta/en modo "beta interno" mientras se
+     prueba. No urge resolverlo ahora, solo antes de la Fase 1.
+   - **Nombre definitivo.** "VetIA" es un nombre provisional del propio
+     brief de Erick. Puede quedarse así o cambiar más adelante — mejor
+     pensarlo antes de que el nombre se vuelva parte del código/las
+     pantallas, porque cambiarlo después es más trabajo (aunque no
+     bloqueante).
 10. **Primera tarea concreta de desarrollo:** el punto 1-2 de la sección J —
     el cliente de PubMed y un endpoint que solo busca y devuelve artículos
     crudos, sin LLM todavía. Es la pieza de menor riesgo y valida la
