@@ -126,6 +126,104 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Administrator_Can_Update_User_Roles_In_Their_Own_Clinic_And_Old_Token_Is_Invalidated()
+    {
+        var adminEmail = $"users-role-admin-{Guid.NewGuid():N}@vetplatform.test";
+        var staffEmail = $"users-role-staff-{Guid.NewGuid():N}@vetplatform.test";
+        var (clinicId, _) = await _factory.CreateClinicUserAsync(adminEmail, RoleNames.Administrator, Password);
+        var staffUserId = await _factory.CreateClinicUserInClinicAsync(clinicId, staffEmail, RoleNames.Veterinarian, Password);
+
+        var adminAuth = await LoginAsync(adminEmail);
+        var staffAuthBefore = await LoginAsync(staffEmail);
+
+        var updateResponse = await PutAsAuthenticatedJsonAsync(adminAuth.AccessToken, $"/api/users/{staffUserId}/roles", new
+        {
+            roles = new[] { RoleNames.Administrator, RoleNames.Veterinarian },
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, updateResponse.StatusCode);
+
+        var staleTokenResponse = await SendAuthenticatedAsync(staffAuthBefore.AccessToken, HttpMethod.Get, "/api/auth/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, staleTokenResponse.StatusCode);
+
+        var staffAuthAfter = await LoginAsync(staffEmail);
+        Assert.Equal(RoleNames.Administrator, staffAuthAfter.Role);
+        Assert.Contains(RoleNames.Administrator, staffAuthAfter.Roles);
+        Assert.Contains(RoleNames.Veterinarian, staffAuthAfter.Roles);
+        Assert.Contains(PermissionCodes.UsersManage, staffAuthAfter.Permissions);
+        Assert.Contains(PermissionCodes.ConsultationsWrite, staffAuthAfter.Permissions);
+
+        var usersResponse = await SendAuthenticatedAsync(staffAuthAfter.AccessToken, HttpMethod.Get, "/api/users");
+        Assert.Equal(HttpStatusCode.OK, usersResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Administrator_Cannot_Update_Roles_For_CrossClinic_Platform_Or_Themselves()
+    {
+        var adminAEmail = $"users-role-admin-a-{Guid.NewGuid():N}@vetplatform.test";
+        var adminBEmail = $"users-role-admin-b-{Guid.NewGuid():N}@vetplatform.test";
+        var platformAdminEmail = $"users-role-platform-{Guid.NewGuid():N}@vetplatform.test";
+        var (_, adminAUserId) = await _factory.CreateClinicUserAsync(adminAEmail, RoleNames.Administrator, Password);
+        await _factory.CreateClinicUserAsync(adminBEmail, RoleNames.Administrator, Password);
+        var platformAdminUserId = await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
+
+        var adminAAuth = await LoginAsync(adminAEmail);
+        var adminBAuth = await LoginAsync(adminBEmail);
+
+        var selfUpdateResponse = await PutAsAuthenticatedJsonAsync(adminAAuth.AccessToken, $"/api/users/{adminAUserId}/roles", new
+        {
+            roles = new[] { RoleNames.Veterinarian },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, selfUpdateResponse.StatusCode);
+
+        var crossClinicResponse = await PutAsAuthenticatedJsonAsync(adminBAuth.AccessToken, $"/api/users/{adminAUserId}/roles", new
+        {
+            roles = new[] { RoleNames.Veterinarian },
+        });
+        Assert.Equal(HttpStatusCode.NotFound, crossClinicResponse.StatusCode);
+
+        var platformUserResponse = await PutAsAuthenticatedJsonAsync(adminAAuth.AccessToken, $"/api/users/{platformAdminUserId}/roles", new
+        {
+            roles = new[] { RoleNames.Veterinarian },
+        });
+        Assert.Equal(HttpStatusCode.NotFound, platformUserResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Platform_Administrator_Can_Update_Clinic_User_Roles_But_Cannot_Mix_Platform_And_Clinic_Scopes()
+    {
+        var vetEmail = $"users-role-platform-vet-{Guid.NewGuid():N}@vetplatform.test";
+        var platformAdminEmail = $"users-role-platform-admin-{Guid.NewGuid():N}@vetplatform.test";
+        var (clinicId, vetUserId) = await _factory.CreateClinicUserAsync(vetEmail, RoleNames.Veterinarian, Password);
+        var platformAdminUserId = await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
+
+        var platformAdminAuth = await LoginAsync(platformAdminEmail);
+
+        var updateClinicUserResponse = await PutAsAuthenticatedJsonAsync(platformAdminAuth.AccessToken, $"/api/users/{vetUserId}/roles", new
+        {
+            roles = new[] { RoleNames.Administrator, RoleNames.Veterinarian },
+        });
+        Assert.Equal(HttpStatusCode.NoContent, updateClinicUserResponse.StatusCode);
+
+        var scopedList = await GetAsAuthenticatedAsync<List<UserSummary>>(platformAdminAuth.AccessToken, $"/api/users?clinicId={clinicId}");
+        var updatedVet = Assert.Single(scopedList.Where(u => u.UserId == vetUserId));
+        Assert.Contains(RoleNames.Administrator, updatedVet.Roles);
+        Assert.Contains(RoleNames.Veterinarian, updatedVet.Roles);
+
+        var promoteClinicUserResponse = await PutAsAuthenticatedJsonAsync(platformAdminAuth.AccessToken, $"/api/users/{vetUserId}/roles", new
+        {
+            roles = new[] { RoleNames.PlatformAdministrator },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, promoteClinicUserResponse.StatusCode);
+
+        var convertPlatformUserResponse = await PutAsAuthenticatedJsonAsync(platformAdminAuth.AccessToken, $"/api/users/{platformAdminUserId}/roles", new
+        {
+            roles = new[] { RoleNames.Administrator },
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, convertPlatformUserResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Platform_Administrator_Cannot_Create_User_Mixing_Platform_And_Clinic_Roles()
     {
         var platformAdminEmail = $"users-platform-mixed-{Guid.NewGuid():N}@vetplatform.test";
@@ -182,6 +280,17 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
     private async Task<HttpResponseMessage> PostAsAuthenticatedJsonAsync<TBody>(string accessToken, string requestUri, TBody body)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        {
+            Content = JsonContent.Create(body),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        return await _client.SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> PutAsAuthenticatedJsonAsync<TBody>(string accessToken, string requestUri, TBody body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
         {
             Content = JsonContent.Create(body),
         };

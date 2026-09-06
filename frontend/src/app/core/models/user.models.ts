@@ -15,3 +15,8 @@ export interface CreateUserRequest {
   roles: string[];
   clinicId?: string | null;
 }
+
+export interface UpdateUserRolesRequest {
+  role?: string;
+  roles: string[];
+}

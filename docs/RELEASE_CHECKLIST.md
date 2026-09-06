@@ -149,6 +149,14 @@ fixtures — goes into the system.
       displays role combinations, while preserving the older single `role`
       field for compatibility. Covered by Users integration tests, validator
       tests, Users component specs, and Shell role-display specs.
+- [x] **Edit existing staff roles.** The Usuarios screen now lets authorized
+      admins update role combinations for existing clinic staff without
+      exposing raw permission codes. Backend `PUT /api/users/{id}/roles`
+      enforces the same tenant and platform-scope rules as user creation,
+      blocks self-role edits, and invalidates the target user's old
+      access/refresh tokens so permission changes take effect immediately.
+      Covered by Users integration tests, validator tests, and Users
+      component specs.
 
 ## Data readiness
 
@@ -189,8 +197,8 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist update: backend 59/59 (4 unit + 55 integration),
-frontend 53/53, E2E 6/6 —
+As of this checklist update: backend 65/65 (7 unit + 58 integration),
+frontend 55/55, E2E 6/6 —
 re-run all before relying on these numbers, since they move as both agents
 add coverage.
 These cover role/permission access

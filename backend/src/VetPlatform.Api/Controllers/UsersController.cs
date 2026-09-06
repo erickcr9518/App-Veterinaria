@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using VetPlatform.Application.Common.Models;
 using VetPlatform.Application.Users.Commands.CreateUser;
 using VetPlatform.Application.Users.Commands.SetUserActive;
+using VetPlatform.Application.Users.Commands.SetUserRoles;
 using VetPlatform.Application.Users.Queries.GetUsers;
 using VetPlatform.Domain.Constants;
 
@@ -41,6 +42,15 @@ public class UsersController : ControllerBase
         await _sender.Send(new SetUserActiveCommand(id, request.IsActive), cancellationToken);
         return NoContent();
     }
+
+    [HttpPut("{id:guid}/roles")]
+    public async Task<IActionResult> SetRoles(Guid id, SetUserRolesRequest request, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new SetUserRolesCommand(id, request.Role, request.Roles), cancellationToken);
+        return NoContent();
+    }
 }
 
 public record SetUserActiveRequest(bool IsActive);
+
+public record SetUserRolesRequest(string? Role = null, IReadOnlyList<string>? Roles = null);

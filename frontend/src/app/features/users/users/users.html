@@ -74,20 +74,52 @@
         <div class="list">
           @for (user of users(); track user.userId) {
             <article class="row">
-              <div>
-                <strong>{{ user.fullName }} @if (isSelf(user)) { (tu) }</strong>
-                <span>{{ user.email }} &middot; {{ roleLabels(user) }}</span>
+              <div class="row-main">
+                <div>
+                  <strong>{{ user.fullName }} @if (isSelf(user)) { (tu) }</strong>
+                  <span>{{ user.email }} &middot; {{ roleLabels(user) }}</span>
+                </div>
+                <div class="row-actions">
+                  <span class="status" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive">
+                    {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                  @if (canEditRoles(user)) {
+                    <button class="ghost-button" type="button" (click)="startRoleEdit(user)">
+                      Editar roles
+                    </button>
+                  }
+                  @if (!isSelf(user)) {
+                    <button class="ghost-button" type="button" (click)="toggleActive(user)">
+                      {{ user.isActive ? 'Desactivar' : 'Activar' }}
+                    </button>
+                  }
+                </div>
               </div>
-              <div class="row-actions">
-                <span class="status" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive">
-                  {{ user.isActive ? 'Activo' : 'Inactivo' }}
-                </span>
-                @if (!isSelf(user)) {
-                  <button class="ghost-button" type="button" (click)="toggleActive(user)">
-                    {{ user.isActive ? 'Desactivar' : 'Activar' }}
-                  </button>
-                }
-              </div>
+
+              @if (isEditingRoles(user)) {
+                <div class="role-editor">
+                  <span>Roles de clinica</span>
+                  <div class="role-options compact">
+                    @for (role of clinicRoleOptions(); track role.value) {
+                      <label class="role-option">
+                        <input
+                          type="checkbox"
+                          [checked]="isEditableRoleSelected(role.value)"
+                          #editableRoleInput
+                          (change)="toggleEditableRole(role.value, editableRoleInput.checked)"
+                        />
+                        <span>{{ role.label }}</span>
+                      </label>
+                    }
+                  </div>
+                  <div class="editor-actions">
+                    <button class="ghost-button" type="button" (click)="cancelRoleEdit()" [disabled]="isUpdatingRoles()">Cancelar</button>
+                    <button type="button" (click)="saveRoleEdit(user)" [disabled]="isUpdatingRoles()">
+                      {{ isUpdatingRoles() ? 'Guardando...' : 'Guardar roles' }}
+                    </button>
+                  </div>
+                </div>
+              }
             </article>
           }
         </div>

@@ -55,6 +55,18 @@ below says to actually ask.
 
 ### 2026-09-05 — Codex
 Status: done.
+Continuing in Codex-owned Auth/Identity/Users after syncing with latest
+`origin/main`. Next hardening gap: users can now be created with multiple
+roles, but existing accounts could not have their roles changed. Added
+`PUT /api/users/{id}/roles`, a permission-safe role update flow for existing
+clinic staff, keeping SuperAdministrador platform-only/mutually exclusive,
+preserving tenant checks/self-protection, and invalidating the target user's
+old access/refresh tokens after role changes. Frontend Usuarios now has an
+inline role editor per eligible staff row. Verification: backend 65/65,
+frontend 55/55, frontend build OK, E2E 6/6.
+
+### 2026-09-05 — Codex
+Status: done.
 Implemented multi-role user accounts in Auth/Identity/Users, per Erick's
 green light and Code's request. Clinic users can now hold combinations like
 Administrador+Veterinario and receive the union of role permissions, while

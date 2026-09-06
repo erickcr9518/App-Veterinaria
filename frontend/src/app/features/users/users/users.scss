@@ -125,6 +125,10 @@ input[type='checkbox'] {
   gap: 8px;
 }
 
+.role-options.compact {
+  gap: 6px;
+}
+
 .role-option {
   display: inline-flex;
   align-items: center;
@@ -172,8 +176,8 @@ button:disabled {
 }
 
 .row {
-  grid-template-columns: 1fr auto;
-  align-items: center;
+  grid-template-columns: 1fr;
+  align-items: stretch;
   padding: 14px 0;
   border-bottom: 1px solid rgba(22, 33, 30, 0.1);
 }
@@ -181,6 +185,12 @@ button:disabled {
 .row div {
   display: grid;
   gap: 4px;
+}
+
+.row-main {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
 }
 
 .row .row-actions {
@@ -193,6 +203,28 @@ button:disabled {
 
 .row strong {
   color: #16211e;
+}
+
+.role-editor {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(22, 33, 30, 0.12);
+  border-radius: 8px;
+  background: #f6f8f7;
+}
+
+.role-editor > span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.editor-actions {
+  display: flex;
+  justify-content: end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .status {
@@ -233,7 +265,7 @@ button:disabled {
 @media (max-width: 840px) {
   .page-header,
   .workspace,
-  .row {
+  .row-main {
     grid-template-columns: 1fr;
   }
 

@@ -27,8 +27,10 @@ describe('Users', () => {
     const selfRow = rows.find((row) => row.nativeElement.textContent.includes('(tu)'));
     const otherRow = rows.find((row) => !row.nativeElement.textContent.includes('(tu)'));
 
-    expect(selfRow?.query(By.css('button'))).toBeFalsy();
-    expect(otherRow?.query(By.css('button'))?.nativeElement.textContent.trim()).toBe('Desactivar');
+    expect(selfRow?.nativeElement.textContent).not.toContain('Editar roles');
+    expect(selfRow?.nativeElement.textContent).not.toContain('Desactivar');
+    expect(otherRow?.nativeElement.textContent).toContain('Editar roles');
+    expect(otherRow?.nativeElement.textContent).toContain('Desactivar');
   });
 
   it('shows platform accounts by default and clinic staff after selecting a clinic for a platform administrator', async () => {
@@ -116,6 +118,51 @@ describe('Users', () => {
     expect(fixture.componentInstance.form.controls.roles.value).toEqual(['SuperAdministrador']);
   });
 
+  it('updates roles for an existing clinic staff account', async () => {
+    let payload: unknown;
+    const fixture = await createComponent(createUser(), {
+      updateUserRoles: (_userId: string, request: unknown) => {
+        payload = request;
+        return of(undefined);
+      },
+    });
+
+    const staffRow = fixture.debugElement
+      .queryAll(By.css('.row'))
+      .find((row) => row.nativeElement.textContent.includes('Dra. Ana Rojas'));
+
+    expect(staffRow).toBeTruthy();
+    staffRow!.queryAll(By.css('button'))
+      .find((button) => button.nativeElement.textContent.includes('Editar roles'))!
+      .nativeElement.click();
+    fixture.detectChanges();
+
+    const administrator = findEditableRoleOption(fixture, 'Administrador');
+    administrator.checked = true;
+    administrator.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    fixture.debugElement.queryAll(By.css('.role-editor button'))
+      .find((button) => button.nativeElement.textContent.includes('Guardar roles'))!
+      .nativeElement.click();
+
+    expect(payload).toEqual({
+      role: 'Administrador',
+      roles: ['Administrador', 'Veterinario'],
+    });
+  });
+
+  it('does not offer role editing for platform accounts', async () => {
+    const fixture = await createComponent(createUser({
+      clinicId: null,
+      clinicName: null,
+      role: 'SuperAdministrador',
+      roles: ['SuperAdministrador'],
+    }));
+
+    expect(fixture.nativeElement.textContent).not.toContain('Editar roles');
+  });
+
   async function createComponent(
     user: CurrentUser,
     usersServiceOverrides: Partial<UsersService> = {},
@@ -126,6 +173,7 @@ describe('Users', () => {
       getUsers: (clinicId?: string | null) => of(createStaffForScope(user, clinicId)),
       createUser: () => of('new-user-id'),
       setUserActive: () => of(undefined),
+      updateUserRoles: () => of(undefined),
       ...usersServiceOverrides,
     };
     const clinicsService = {
@@ -183,6 +231,15 @@ describe('Users', () => {
   function findRoleOption(fixture: ComponentFixture<Users>, label: string): HTMLInputElement {
     const option = fixture.debugElement
       .queryAll(By.css('.role-option'))
+      .find((element) => element.nativeElement.textContent.includes(label));
+
+    expect(option).toBeTruthy();
+    return option!.query(By.css('input')).nativeElement as HTMLInputElement;
+  }
+
+  function findEditableRoleOption(fixture: ComponentFixture<Users>, label: string): HTMLInputElement {
+    const option = fixture.debugElement
+      .queryAll(By.css('.role-editor .role-option'))
       .find((element) => element.nativeElement.textContent.includes(label));
 
     expect(option).toBeTruthy();

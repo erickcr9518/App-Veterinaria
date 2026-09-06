@@ -200,6 +200,48 @@ public class IdentityService : IIdentityService
         return result.Succeeded;
     }
 
+    public async Task<UserAccountResult> SetUserRolesAsync(Guid userId, IReadOnlyCollection<string> roles)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return UserAccountResult.Failure(new[] { "El usuario no existe." });
+        }
+
+        var targetRoles = OrderRoles(roles);
+        var currentRoles = await _userManager.GetRolesAsync(user);
+        var rolesToRemove = currentRoles.Except(targetRoles, StringComparer.Ordinal).ToArray();
+        var rolesToAdd = targetRoles.Except(currentRoles, StringComparer.Ordinal).ToArray();
+
+        if (rolesToRemove.Length > 0)
+        {
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            if (!removeResult.Succeeded)
+            {
+                return UserAccountResult.Failure(removeResult.Errors.Select(e => e.Description));
+            }
+        }
+
+        if (rolesToAdd.Length > 0)
+        {
+            var addResult = await _userManager.AddToRolesAsync(user, rolesToAdd);
+            if (!addResult.Succeeded)
+            {
+                return UserAccountResult.Failure(addResult.Errors.Select(e => e.Description));
+            }
+        }
+
+        var stampResult = await _userManager.UpdateSecurityStampAsync(user);
+        if (!stampResult.Succeeded)
+        {
+            return UserAccountResult.Failure(stampResult.Errors.Select(e => e.Description));
+        }
+
+        await RevokeActiveRefreshTokensAsync(user.Id);
+
+        return UserAccountResult.Success(user.Id);
+    }
+
     public async Task<IReadOnlyDictionary<Guid, string>> GetUserFullNamesAsync(IEnumerable<Guid> userIds)
     {
         var distinctIds = userIds.Distinct().ToArray();
@@ -217,6 +259,11 @@ public class IdentityService : IIdentityService
     {
         return await _userManager.Users
             .AnyAsync(u => u.Id == userId && u.ClinicId == clinicId && u.IsActive);
+    }
+
+    public async Task<bool> UserExistsAsync(Guid userId)
+    {
+        return await _userManager.Users.AnyAsync(u => u.Id == userId);
     }
 
     private async Task<AuthenticatedUser> BuildAuthenticatedUserAsync(ApplicationUser user)

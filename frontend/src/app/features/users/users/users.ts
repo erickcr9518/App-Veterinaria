@@ -41,6 +41,9 @@ export class Users implements OnInit {
   readonly users = signal<UserSummary[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
+  readonly editingRolesUserId = signal<string | null>(null);
+  readonly editingRoles = signal<string[]>([]);
+  readonly isUpdatingRoles = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly hasUsers = computed(() => this.users().length > 0);
   readonly listTitle = computed(() =>
@@ -148,6 +151,77 @@ export class Users implements OnInit {
     return user.userId === this.currentUser()?.userId;
   }
 
+  canEditRoles(user: UserSummary): boolean {
+    return !this.isSelf(user) && !this.userHasPlatformRole(user);
+  }
+
+  startRoleEdit(user: UserSummary): void {
+    if (!this.canEditRoles(user)) {
+      return;
+    }
+
+    this.editingRolesUserId.set(user.userId);
+    this.editingRoles.set(this.normalizeClinicRoles(user.roles?.length ? user.roles : [user.role]));
+    this.errorMessage.set(null);
+  }
+
+  cancelRoleEdit(): void {
+    this.editingRolesUserId.set(null);
+    this.editingRoles.set([]);
+  }
+
+  isEditingRoles(user: UserSummary): boolean {
+    return this.editingRolesUserId() === user.userId;
+  }
+
+  isEditableRoleSelected(role: string): boolean {
+    return this.editingRoles().includes(role);
+  }
+
+  toggleEditableRole(role: string, checked: boolean): void {
+    const selected = new Set(this.editingRoles());
+
+    if (checked) {
+      selected.add(role);
+    } else {
+      selected.delete(role);
+    }
+
+    this.editingRoles.set(this.clinicRoleOptions()
+      .map((option) => option.value)
+      .filter((value) => selected.has(value)));
+  }
+
+  saveRoleEdit(user: UserSummary): void {
+    const roles = this.normalizeClinicRoles(this.editingRoles());
+    if (roles.length === 0) {
+      this.errorMessage.set('Selecciona al menos un rol.');
+      return;
+    }
+
+    this.isUpdatingRoles.set(true);
+    this.errorMessage.set(null);
+
+    this.usersService.updateUserRoles(user.userId, {
+      role: roles[0],
+      roles,
+    }).subscribe({
+      next: () => {
+        this.isUpdatingRoles.set(false);
+        this.cancelRoleEdit();
+        this.loadUsers();
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(this.getErrorMessage(error, 'No tienes permiso para cambiar roles.', 'No se pudieron cambiar los roles.'));
+        this.isUpdatingRoles.set(false);
+      },
+    });
+  }
+
+  clinicRoleOptions(): { value: string; label: string }[] {
+    return ROLE_OPTIONS.filter((role) => role.value !== PLATFORM_ROLE);
+  }
+
   isRoleSelected(role: string): boolean {
     return this.form.controls.roles.value.includes(role);
   }
@@ -202,7 +276,17 @@ export class Users implements OnInit {
       .filter((role) => roles.includes(role));
   }
 
+  private normalizeClinicRoles(roles: string[]): string[] {
+    return this.clinicRoleOptions()
+      .map((option) => option.value)
+      .filter((role) => roles.includes(role));
+  }
+
   private roleLabel(role: string): string {
     return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
+  }
+
+  private userHasPlatformRole(user: UserSummary): boolean {
+    return (user.roles?.length ? user.roles : [user.role]).includes(PLATFORM_ROLE);
   }
 }

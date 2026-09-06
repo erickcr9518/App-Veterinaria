@@ -22,7 +22,11 @@ public interface IIdentityService
 
     Task<bool> SetUserActiveAsync(Guid userId, bool isActive);
 
+    Task<UserAccountResult> SetUserRolesAsync(Guid userId, IReadOnlyCollection<string> roles);
+
     Task<Guid?> GetUserClinicIdAsync(Guid userId);
+
+    Task<bool> UserExistsAsync(Guid userId);
 
     Task<IReadOnlyDictionary<Guid, string>> GetUserFullNamesAsync(IEnumerable<Guid> userIds);
 

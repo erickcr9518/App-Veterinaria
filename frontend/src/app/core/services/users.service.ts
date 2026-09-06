@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CreateUserRequest, UserSummary } from '../models/user.models';
+import { CreateUserRequest, UpdateUserRolesRequest, UserSummary } from '../models/user.models';
 
 @Injectable({ providedIn: 'root' })
 export class UsersService {
@@ -23,5 +23,9 @@ export class UsersService {
 
   setUserActive(userId: string, isActive: boolean): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/users/${userId}/status`, { isActive });
+  }
+
+  updateUserRoles(userId: string, request: UpdateUserRolesRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/users/${userId}/roles`, request);
   }
 }
