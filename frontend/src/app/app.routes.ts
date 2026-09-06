@@ -117,6 +117,12 @@ export const routes: Routes = [
         data: { permission: ['audit.read.all', 'audit.read.own'] },
       },
       {
+        path: 'vetheca',
+        loadComponent: () => import('./features/vetheca/vetheca-ask/vetheca-ask').then((m) => m.VethecaAsk),
+        canActivate: [permissionGuard],
+        data: { permission: 'vetheca.ask' },
+      },
+      {
         path: 'account',
         loadComponent: () => import('./features/auth/account/account').then((m) => m.Account),
       },

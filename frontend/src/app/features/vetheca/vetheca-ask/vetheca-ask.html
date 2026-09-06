@@ -1,0 +1,83 @@
+<section class="page vetheca-page">
+  <header class="page-header">
+    <div>
+      <h1>Vetheca</h1>
+      <p>Preguntá algo clínico y buscamos evidencia científica real en PubMed, con las fuentes a la vista.</p>
+    </div>
+  </header>
+
+  <form class="ask-form" [formGroup]="form" (ngSubmit)="ask()">
+    <textarea
+      formControlName="question"
+      rows="3"
+      placeholder="Ej: ¿Sirve la rehabilitación temprana después de una TPLO en perros?"
+    ></textarea>
+    <button type="submit" [disabled]="form.invalid || isLoading()">
+      @if (isLoading()) {
+        Buscando evidencia y generando un resumen...
+      } @else {
+        Preguntar
+      }
+    </button>
+  </form>
+
+  @if (errorMessage(); as message) {
+    <p class="error">{{ message }}</p>
+  }
+
+  @if (isLoading()) {
+    <p class="empty">Esto puede tardar unos segundos — estamos buscando en PubMed y armando el resumen.</p>
+  }
+
+  @if (result(); as result) {
+    @if (result.synthesis; as synthesis) {
+      <article class="synthesis-card">
+        @if (!synthesis.evidenceSufficient) {
+          <p class="insufficient-badge">No se encontró evidencia suficiente para una conclusión firme</p>
+        }
+
+        <h2>Resumen</h2>
+        <p>{{ synthesis.summary }}</p>
+
+        @if (synthesis.keyFindings.length > 0) {
+          <h3>Hallazgos principales</h3>
+          <ul>
+            @for (finding of synthesis.keyFindings; track finding) {
+              <li>{{ finding }}</li>
+            }
+          </ul>
+        }
+
+        @if (synthesis.clinicalApplicability) {
+          <h3>Aplicabilidad clínica</h3>
+          <p>{{ synthesis.clinicalApplicability }}</p>
+        }
+
+        @if (synthesis.limitations) {
+          <h3>Limitaciones</h3>
+          <p>{{ synthesis.limitations }}</p>
+        }
+      </article>
+    } @else {
+      <p class="empty">No se pudo generar un resumen esta vez — mostrando los artículos encontrados igual.</p>
+    }
+
+    @if (result.articles.length > 0) {
+      <section class="sources">
+        <h2>Fuentes</h2>
+        @for (article of result.articles; track article.pmid) {
+          <article class="source-card">
+            <h3>{{ article.title }}</h3>
+            <p class="meta">{{ article.authors }} — {{ article.journal }} ({{ article.year }})</p>
+            @if (article.abstractText) {
+              <p class="abstract">{{ article.abstractText }}</p>
+            }
+            <a [href]="article.url" target="_blank" rel="noopener">Ver en PubMed (PMID {{ article.pmid }})</a>
+          </article>
+        }
+      </section>
+    } @else {
+      <p class="empty">No se encontraron artículos para esta pregunta.</p>
+    }
+  }
+</section>

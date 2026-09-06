@@ -67,6 +67,14 @@ public class AnthropicLlmClient : ILlmClient
         }
         """;
 
+    private const string TranslateSystemPrompt = """
+        Convertís preguntas clínicas veterinarias (en cualquier idioma) en una
+        consulta de búsqueda de PubMed corta y efectiva, en inglés, usando
+        terminología médica/veterinaria relevante (estilo MeSH cuando aplique).
+        Respondé ÚNICAMENTE con la consulta de búsqueda en texto plano, sin
+        comillas, sin explicación, sin JSON, en una sola línea.
+        """;
+
     private readonly HttpClient _httpClient;
     private readonly AnthropicSettings _settings;
     private readonly ILogger<AnthropicLlmClient> _logger;
@@ -78,24 +86,46 @@ public class AnthropicLlmClient : ILlmClient
         _logger = logger;
     }
 
+    public async Task<string?> TranslateToSearchQueryAsync(string question, CancellationToken cancellationToken)
+    {
+        var text = await SendMessageAsync(TranslateSystemPrompt, question, maxTokens: 100, cancellationToken);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        return text.Trim().Trim('"');
+    }
+
     public async Task<VethecaSynthesisDto?> SynthesizeAsync(
         string question,
         IReadOnlyList<PubMedArticleDto> articles,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+        var userMessage = BuildUserMessage(question, articles);
+        var text = await SendMessageAsync(SystemPrompt, userMessage, _settings.MaxTokens, cancellationToken);
+        if (text is null)
         {
-            _logger.LogInformation("Anthropic:ApiKey no está configurada; se omite la síntesis de Vetheca y se devuelven solo los artículos crudos.");
             return null;
         }
 
-        var userMessage = BuildUserMessage(question, articles);
+        var synthesis = ParseSynthesis(text);
+        return synthesis is null ? null : FilterUngroundedCitations(synthesis, articles);
+    }
+
+    private async Task<string?> SendMessageAsync(string systemPrompt, string userMessage, int maxTokens, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
+        {
+            _logger.LogInformation("Anthropic:ApiKey no está configurada; se omite esta llamada a Vetheca.");
+            return null;
+        }
 
         var requestBody = new
         {
             model = _settings.Model,
-            max_tokens = _settings.MaxTokens,
-            system = SystemPrompt,
+            max_tokens = maxTokens,
+            system = systemPrompt,
             thinking = new { type = "disabled" },
             messages = new[] { new { role = "user", content = userMessage } },
         };
@@ -114,7 +144,7 @@ public class AnthropicLlmClient : ILlmClient
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogWarning(
-                    "La API de Anthropic devolvió {StatusCode} al sintetizar una respuesta de Vetheca: {Body}",
+                    "La API de Anthropic devolvió {StatusCode} en una llamada de Vetheca: {Body}",
                     response.StatusCode, errorBody);
                 return null;
             }
@@ -123,21 +153,14 @@ public class AnthropicLlmClient : ILlmClient
             var text = ExtractResponseText(responseBody);
             if (text is null)
             {
-                _logger.LogWarning("No se pudo extraer el texto de la respuesta de Anthropic para Vetheca.");
-                return null;
+                _logger.LogWarning("No se pudo extraer el texto de una respuesta de Anthropic para Vetheca.");
             }
 
-            var synthesis = ParseSynthesis(text);
-            if (synthesis is null)
-            {
-                return null;
-            }
-
-            return FilterUngroundedCitations(synthesis, articles);
+            return text;
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            _logger.LogWarning(ex, "Fallo de red al llamar a Anthropic para sintetizar una respuesta de Vetheca.");
+            _logger.LogWarning(ex, "Fallo de red al llamar a Anthropic desde Vetheca.");
             return null;
         }
     }

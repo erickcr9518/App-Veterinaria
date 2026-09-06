@@ -1,0 +1,173 @@
+:host {
+  display: block;
+}
+
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+.page-header h1 {
+  margin: 0;
+  color: #16211e;
+  font-size: 26px;
+}
+
+.page-header p {
+  margin: 6px 0 0;
+  color: #52615c;
+}
+
+.ask-form {
+  display: grid;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid rgba(22, 33, 30, 0.12);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.ask-form textarea {
+  resize: vertical;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid rgba(22, 33, 30, 0.2);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.ask-form button {
+  justify-self: start;
+  padding: 10px 20px;
+  background: #16211e;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ask-form button:disabled {
+  background: #9aa5a1;
+  cursor: not-allowed;
+}
+
+.empty,
+.error {
+  padding: 14px;
+  border-radius: 8px;
+}
+
+.empty {
+  background: #f6f8f7;
+  color: #52615c;
+}
+
+.error {
+  background: #fff0ed;
+  color: #9b2c1f;
+}
+
+.synthesis-card {
+  background: #fff;
+  border: 1px solid rgba(22, 33, 30, 0.12);
+  border-radius: 8px;
+  padding: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.synthesis-card h2 {
+  margin: 0;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #16211e;
+}
+
+.synthesis-card h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #52615c;
+}
+
+.synthesis-card p,
+.synthesis-card li {
+  margin: 0;
+  color: #16211e;
+  line-height: 1.5;
+}
+
+.synthesis-card ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.insufficient-badge {
+  display: inline-block;
+  background: #fff4e0;
+  color: #8a5a00;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+.sources {
+  display: grid;
+  gap: 12px;
+}
+
+.sources h2 {
+  margin: 0;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #16211e;
+}
+
+.source-card {
+  background: #fff;
+  border: 1px solid rgba(22, 33, 30, 0.12);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.source-card h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #16211e;
+}
+
+.source-card .meta {
+  margin: 0;
+  color: #52615c;
+  font-size: 13px;
+}
+
+.source-card .abstract {
+  margin: 4px 0 0;
+  color: #16211e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.source-card a {
+  justify-self: start;
+  color: #1c6b52;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.source-card a:hover {
+  text-decoration: underline;
+}

@@ -52,14 +52,7 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
     [Fact]
     public async Task Ask_Includes_Synthesis_When_An_Llm_Client_Is_Available()
     {
-        var fakeSynthesis = new VethecaSynthesisDto
-        {
-            EvidenceSufficient = true,
-            Summary = "Resumen de prueba.",
-            KeyFindings = new[] { "Hallazgo 1" },
-            Citations = new[] { new VethecaCitationDto { Pmid = "12345678", Claim = "Afirmacion de prueba" } },
-        };
-        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(fakeSynthesis));
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
         var email = $"vetheca-vet-synth-{Guid.NewGuid():N}@vetplatform.test";
         const string password = "Password123!";
         await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
@@ -117,6 +110,63 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Ask_Searches_PubMed_With_The_Translated_Query_Not_The_Original_Question()
+    {
+        // PubMed's index is almost entirely in English - see the bug this
+        // fixes: a Spanish question searched verbatim against PubMed found
+        // zero articles. The handler must search with whatever the LLM
+        // translates the question to, not the raw (possibly Spanish) input.
+        var recordingPubMed = new RecordingPubMedClient();
+        var client = CreateClientWithFakes(recordingPubMed, new FakeLlmClient(CreateFakeSynthesis(), translatedQuery: "chronic kidney disease diet cats"));
+        var email = $"vetheca-translate-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new
+        {
+            question = "manejo dietético de la enfermedad renal crónica en gatos",
+            maxResults = 5,
+        });
+
+        Assert.Equal("chronic kidney disease diet cats", recordingPubMed.LastQuery);
+    }
+
+    [Fact]
+    public async Task Ask_Falls_Back_To_The_Original_Question_When_Translation_Is_Unavailable()
+    {
+        var recordingPubMed = new RecordingPubMedClient();
+        var client = CreateClientWithFakes(recordingPubMed, new FakeLlmClient(CreateFakeSynthesis(), translatedQuery: null));
+        var email = $"vetheca-notranslate-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new
+        {
+            question = "rehabilitation after TPLO in dogs",
+            maxResults = 5,
+        });
+
+        Assert.Equal("rehabilitation after TPLO in dogs", recordingPubMed.LastQuery);
+    }
+
+    [Fact]
+    public async Task AnthropicLlmClient_Translates_A_Question_Into_A_Search_Query()
+    {
+        using var httpClient = new HttpClient(new StubHttpMessageHandler("""
+            {"content": [{"type": "text", "text": "chronic kidney disease diet cats"}]}
+            """));
+        var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
+        var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
+
+        var query = await llmClient.TranslateToSearchQueryAsync(
+            "manejo dietético de la enfermedad renal crónica en gatos", CancellationToken.None);
+
+        Assert.Equal("chronic kidney disease diet cats", query);
+    }
+
+    [Fact]
     public async Task AnthropicLlmClient_Drops_Citations_Referencing_Unknown_Pmids()
     {
         // This is the safety-critical bit: if Claude hallucinates a PMID that
@@ -149,6 +199,14 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
         var citation = Assert.Single(synthesis!.Citations);
         Assert.Equal("111", citation.Pmid);
     }
+
+    private static VethecaSynthesisDto CreateFakeSynthesis() => new()
+    {
+        EvidenceSufficient = true,
+        Summary = "Resumen de prueba.",
+        KeyFindings = new[] { "Hallazgo 1" },
+        Citations = new[] { new VethecaCitationDto { Pmid = "12345678", Claim = "Afirmacion de prueba" } },
+    };
 
     private HttpClient CreateClientWithFakes(IPubMedClient pubMedClient, ILlmClient? llmClient)
     {
@@ -206,14 +264,34 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
     private class FakeLlmClient : ILlmClient
     {
         private readonly VethecaSynthesisDto _synthesis;
+        private readonly string? _translatedQuery;
 
-        public FakeLlmClient(VethecaSynthesisDto synthesis)
+        public FakeLlmClient(VethecaSynthesisDto synthesis, string? translatedQuery = null)
         {
             _synthesis = synthesis;
+            _translatedQuery = translatedQuery;
         }
+
+        public Task<string?> TranslateToSearchQueryAsync(string question, CancellationToken cancellationToken)
+            => Task.FromResult(_translatedQuery);
 
         public Task<VethecaSynthesisDto?> SynthesizeAsync(string question, IReadOnlyList<PubMedArticleDto> articles, CancellationToken cancellationToken)
             => Task.FromResult<VethecaSynthesisDto?>(_synthesis);
+    }
+
+    private class RecordingPubMedClient : IPubMedClient
+    {
+        public string? LastQuery { get; private set; }
+
+        public Task<IReadOnlyList<PubMedArticleDto>> SearchAsync(string query, int maxResults, CancellationToken cancellationToken)
+        {
+            LastQuery = query;
+            IReadOnlyList<PubMedArticleDto> articles = new[]
+            {
+                new PubMedArticleDto { Pmid = "12345678", Title = "Test", Authors = "A", Journal = "J", Year = "2023", AbstractText = "Abstract", Url = "https://pubmed.ncbi.nlm.nih.gov/12345678/" },
+            };
+            return Task.FromResult(articles);
+        }
     }
 
     private class StubHttpMessageHandler : HttpMessageHandler

@@ -21,7 +21,15 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
 
     public async Task<AskVethecaResult> Handle(AskVethecaQuery request, CancellationToken cancellationToken)
     {
-        var articles = await _pubMedClient.SearchAsync(request.Question, request.MaxResults, cancellationToken);
+        // PubMed's index is almost entirely in English, so a question asked in
+        // Spanish (the expected case - this whole app is in Spanish) searched
+        // verbatim finds close to nothing. Translate to a search query first;
+        // fall back to the raw question if that's unavailable, which keeps
+        // today's behavior for English questions and when no LLM is configured.
+        var searchQuery = await _llmClient.TranslateToSearchQueryAsync(request.Question, cancellationToken)
+            ?? request.Question;
+
+        var articles = await _pubMedClient.SearchAsync(searchQuery, request.MaxResults, cancellationToken);
 
         if (articles.Count == 0)
         {

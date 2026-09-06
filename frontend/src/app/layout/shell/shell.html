@@ -22,6 +22,9 @@
       @if (hasPermission('audit.read.all') || hasPermission('audit.read.own')) {
         <a routerLink="/audit">Auditoría</a>
       }
+      @if (hasPermission('vetheca.ask')) {
+        <a routerLink="/vetheca">Vetheca</a>
+      }
     </nav>
 
     @if (currentUser(); as user) {
