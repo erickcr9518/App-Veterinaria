@@ -46,6 +46,14 @@ fixtures — goes into the system.
       frontend and API are served from the same origin behind a reverse
       proxy). Decide the actual deploy topology and update this if the API
       lives on a different host/port.
+- [ ] **Resolve MediatR's licensing.** Every request logs a warning that
+      MediatR (used throughout the whole backend for CQRS, not just a
+      single feature) is unlicensed for production use ("Lucky Penny
+      software" model — see startup logs, or `docs/AGENT_NOTES.md`'s
+      2026-09-05 Vetheca testing entry where this was noticed). Fine for
+      dev/testing per their own terms, but needs a real decision — buy a
+      license, or migrate off MediatR — before a paying pilot goes live.
+      Nobody's owner of this decision yet; flag it to Erick.
 - [x] **Add login lockout.** Identity now records failed login attempts,
       locks accounts for 15 minutes after 5 failed attempts, resets the
       failure counter on successful login, and enables lockout for both new

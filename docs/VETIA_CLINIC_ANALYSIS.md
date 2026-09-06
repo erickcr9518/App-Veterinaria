@@ -473,6 +473,38 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
    pregunta original si la traducción no está disponible. Verificado en
    vivo con la clave real: la misma pregunta en español pasó de 0 a 5
    artículos, con síntesis completa en español.
+
+   **Ronda de pruebas reales con Erick (2026-09-05), distintas especies y
+   tipos de pregunta** (canino, felino, aviar, bovino, equino; casos
+   clínicos, seguridad de fármacos, lenguaje coloquial de dueño, pedido de
+   protocolo, y una pregunta de control totalmente ajena a veterinaria)
+   encontró dos bugs más de la misma familia, ambos arreglados:
+   - Una consulta de **7 palabras sin ningún AND/OR explícito**
+     ("long-term meloxicam safety cats chronic kidney disease") devolvió
+     0 resultados — PubMed exige que todas las palabras sin comillas
+     coexistan en el mismo artículo, con o sin "AND" escrito. Confirmado
+     directamente contra la API de PubMed: la misma consulta recortada a
+     4 palabras devolvió 7 resultados. Se ajustó el prompt de traducción:
+     máximo 3-4 palabras clave, y nunca incluir palabras calificativas
+     genéricas ("safety", "long-term", "best", "effective") que no
+     ayudan a encontrar artículos.
+   - Una respuesta más larga de lo normal superó el límite de 2048 tokens
+     y se cortó a mitad del JSON. Subido a 4096, y se agregó un log
+     específico para cuando esto vuelva a pasar (`stop_reason: max_tokens`).
+
+   **Confirmación de que el diseño funciona, no un bug:** una pregunta
+   pidiendo el "protocolo" de atención del síndrome abdominal agudo
+   equino devolvió `evidenciaSuficiente: false` con una explicación
+   honesta de que los papers de investigación recuperados no arman un
+   protocolo paso a paso (eso es contenido de guías clínicas, no de
+   papers individuales) — exactamente el comportamiento de "decilo en vez
+   de inventarlo" que este módulo existe para garantizar.
+
+   **Hallazgo aparte, no relacionado con Vetheca pero real:** el servidor
+   registra en cada request que MediatR (usado en todo el backend, no
+   solo acá) no tiene licencia para uso en producción. Anotado en
+   `docs/RELEASE_CHECKLIST.md` como pendiente de decisión antes de
+   cualquier piloto pago real.
 5. Recién ahí: `AiInteractionAudit`, `SavedResearch`, Evidence Cards.
 
 ---

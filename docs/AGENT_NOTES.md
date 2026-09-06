@@ -53,6 +53,47 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (10)
+Status: done.
+Erick spent real time asking Vetheca varied clinical questions (different
+species: canine, feline, avian, bovine; different question shapes: case
+vignette, drug-safety, colloquial owner phrasing, a protocol request, plus
+one deliberately off-topic control question). Found and fixed two more
+real bugs, same root-cause family as the earlier translation fix - all
+from live use, none from reading code:
+
+1. Implicit multi-word queries over-restrict PubMed just like chained
+   AND does - a 7-word query with no AND/OR at all ("long-term meloxicam
+   safety cats chronic kidney disease") returned 0 results; trimming to
+   4 words returned 7. PubMed requires every unquoted word to co-occur.
+   Tightened the translate prompt: hard cap of 3-4 keywords, and
+   explicitly drop generic qualifier words ("safety", "long-term",
+   "best", "effective") that dilute the query without helping find
+   anything - those questions get answered by analyzing the retrieved
+   abstracts, not by searching for the word itself.
+2. A richer question produced a longer synthesis than the 2048-token
+   budget allowed, truncating mid-JSON. Raised MaxTokens to 4096 and
+   added a specific log line when a response's `stop_reason` is
+   `max_tokens`, so this is instantly diagnosable next time.
+
+Also confirmed something working as designed, not a bug: a question
+about an equine acute-abdomen "protocol" correctly came back with
+`evidenciaSuficiente: false` and an honest explanation that the retrieved
+research papers don't add up to a step-by-step protocol (that's a
+guideline-document thing, not a research-paper thing) - exactly the
+"say so instead of inventing" behavior this whole module exists to
+guarantee.
+
+Unrelated finding worth Erick knowing about before any real production
+use: the server logs a warning every request that MediatR (used
+throughout this whole backend, not just Vetheca) is unlicensed for
+production use ("Lucky Penny software" licensing model). Not blocking
+anything now, but needs a decision (buy a license, or migrate off
+MediatR) before this goes live for a paying pilot - flagging here so it
+doesn't get lost, not treating it as mine or Codex's to just decide.
+
+Backend 65/65 (verified together with Codex's SetUserRoles work).
+
 ### 2026-09-05 — Codex
 Status: done.
 Continuing in Codex-owned Auth/Identity/Users after syncing with latest
