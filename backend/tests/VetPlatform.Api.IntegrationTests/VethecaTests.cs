@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using VetPlatform.Application.Audit.Models;
 using VetPlatform.Application.Auth.Models;
 using VetPlatform.Application.Common.Interfaces;
 using VetPlatform.Application.Vetheca.Models;
@@ -200,6 +201,110 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
         Assert.Equal("111", citation.Pmid);
     }
 
+    [Fact]
+    public async Task Ask_Persists_A_Log_Entry_Visible_In_The_Audit_Log()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var email = $"vetheca-audit-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new
+        {
+            question = "rehabilitation after TPLO in dogs",
+            maxResults = 5,
+        });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+
+        var auditLog = await GetAsAuthenticatedAsync<List<AuditEntryDto>>(client, auth.AccessToken, "/api/audit");
+
+        var entry = Assert.Single(auditLog, e => e.EntityType == "VethecaSearchLog" && e.EntityId == askResult!.Id);
+        Assert.Equal("Consulta a Vetheca", entry.Action);
+        Assert.Contains("rehabilitation after TPLO in dogs", entry.Summary);
+    }
+
+    [Fact]
+    public async Task User_Can_Save_A_Search_And_See_It_In_Their_Saved_List()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var email = $"vetheca-save-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new
+        {
+            question = "rehabilitation after TPLO in dogs",
+            maxResults = 5,
+        });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+
+        var savedBeforeSaving = await GetAsAuthenticatedAsync<List<VethecaSavedSearchSummaryDto>>(client, auth.AccessToken, "/api/vetheca/saved");
+        Assert.Empty(savedBeforeSaving);
+
+        var saveResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, $"/api/vetheca/{askResult!.Id}/save", new { title = "TPLO en perros mayores" });
+        Assert.Equal(HttpStatusCode.NoContent, saveResponse.StatusCode);
+
+        var savedAfterSaving = await GetAsAuthenticatedAsync<List<VethecaSavedSearchSummaryDto>>(client, auth.AccessToken, "/api/vetheca/saved");
+        var summary = Assert.Single(savedAfterSaving);
+        Assert.Equal(askResult.Id, summary.Id);
+        Assert.Equal("TPLO en perros mayores", summary.Title);
+
+        var detail = await GetAsAuthenticatedAsync<VethecaSavedSearchDetailDto>(client, auth.AccessToken, $"/api/vetheca/saved/{askResult.Id}");
+        Assert.Equal("TPLO en perros mayores", detail.Title);
+        Assert.NotNull(detail.Synthesis);
+        Assert.Single(detail.Articles);
+    }
+
+    [Fact]
+    public async Task User_Can_Unsave_A_Search_And_It_Disappears_From_The_Saved_List_But_Not_The_Audit_Log()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var email = $"vetheca-unsave-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new { question = "rehabilitation after TPLO in dogs", maxResults = 5 });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+        await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, $"/api/vetheca/{askResult!.Id}/save", new { title = "Para revisar despues" });
+
+        var unsaveResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, $"/api/vetheca/{askResult.Id}/unsave", new { });
+        Assert.Equal(HttpStatusCode.NoContent, unsaveResponse.StatusCode);
+
+        var savedAfterUnsaving = await GetAsAuthenticatedAsync<List<VethecaSavedSearchSummaryDto>>(client, auth.AccessToken, "/api/vetheca/saved");
+        Assert.Empty(savedAfterUnsaving);
+
+        // Un-saving must not erase the audit trail - it just stops showing up
+        // in the user's own "saved" list.
+        var auditLog = await GetAsAuthenticatedAsync<List<AuditEntryDto>>(client, auth.AccessToken, "/api/audit");
+        Assert.Contains(auditLog, e => e.EntityType == "VethecaSearchLog" && e.EntityId == askResult.Id);
+    }
+
+    [Fact]
+    public async Task User_Cannot_Save_Or_View_Another_Users_Search()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var ownerEmail = $"vetheca-owner-{Guid.NewGuid():N}@vetplatform.test";
+        var intruderEmail = $"vetheca-intruder-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        var (clinicId, _) = await _factory.CreateClinicUserAsync(ownerEmail, RoleNames.Veterinarian, password);
+        await _factory.CreateClinicUserInClinicAsync(clinicId, intruderEmail, RoleNames.Veterinarian, password);
+        var ownerAuth = await LoginAsync(client, ownerEmail, password);
+        var intruderAuth = await LoginAsync(client, intruderEmail, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, ownerAuth.AccessToken, "/api/vetheca/ask", new { question = "rehabilitation after TPLO in dogs", maxResults = 5 });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+        await PostAsAuthenticatedJsonAsync(client, ownerAuth.AccessToken, $"/api/vetheca/{askResult!.Id}/save", new { title = "Mia" });
+
+        var intruderSaveAttempt = await PostAsAuthenticatedJsonAsync(client, intruderAuth.AccessToken, $"/api/vetheca/{askResult.Id}/save", new { title = "Robada" });
+        Assert.Equal(HttpStatusCode.Forbidden, intruderSaveAttempt.StatusCode);
+
+        var intruderViewAttempt = await GetRawAsAuthenticatedAsync(client, intruderAuth.AccessToken, $"/api/vetheca/saved/{askResult.Id}");
+        Assert.Equal(HttpStatusCode.Forbidden, intruderViewAttempt.StatusCode);
+    }
+
     private static VethecaSynthesisDto CreateFakeSynthesis() => new()
     {
         EvidenceSufficient = true,
@@ -236,6 +341,20 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
     private static async Task<HttpResponseMessage> PostAsAuthenticatedJsonAsync<TBody>(HttpClient client, string accessToken, string requestUri, TBody body)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = JsonContent.Create(body) };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await client.SendAsync(request);
+    }
+
+    private static async Task<T> GetAsAuthenticatedAsync<T>(HttpClient client, string accessToken, string requestUri)
+    {
+        var response = await GetRawAsAuthenticatedAsync(client, accessToken, requestUri);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<T>())!;
+    }
+
+    private static async Task<HttpResponseMessage> GetRawAsAuthenticatedAsync(HttpClient client, string accessToken, string requestUri)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         return await client.SendAsync(request);
     }

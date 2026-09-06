@@ -227,6 +227,24 @@ public class GetAuditLogQueryHandler : IRequestHandler<GetAuditLogQuery, IReadOn
             PerformedByName = ResolveNamePlaceholder(s.ChangedByUserId),
         }));
 
+        var vethecaSearches = await _dbContext.VethecaSearchLogs
+            .AsNoTracking()
+            .Where(v => v.CreatedAtUtc >= fromUtc && v.CreatedAtUtc <= toUtc)
+            .Where(v => ownUserId == null || v.CreatedByUserId == ownUserId)
+            .Select(v => new { v.Id, v.Question, v.ArticleCount, v.CreatedAtUtc, v.CreatedByUserId })
+            .ToListAsync(cancellationToken);
+
+        entries.AddRange(vethecaSearches.Select(v => new AuditEntryDto
+        {
+            Id = v.Id,
+            OccurredAtUtc = v.CreatedAtUtc,
+            EntityType = "VethecaSearchLog",
+            EntityId = v.Id,
+            Action = "Consulta a Vetheca",
+            Summary = $"{Truncate(v.Question, 120)} ({v.ArticleCount} fuente{(v.ArticleCount == 1 ? string.Empty : "s")})",
+            PerformedByName = ResolveNamePlaceholder(v.CreatedByUserId),
+        }));
+
         var userIds = entries
             .Select(e => e.PerformedByName)
             .Where(placeholder => placeholder.StartsWith(UserIdPlaceholderPrefix, StringComparison.Ordinal))
@@ -259,5 +277,10 @@ public class GetAuditLogQueryHandler : IRequestHandler<GetAuditLogQuery, IReadOn
     private static string ResolveNamePlaceholder(Guid? userId)
     {
         return userId is { } id ? $"{UserIdPlaceholderPrefix}{id}" : "Sistema";
+    }
+
+    private static string Truncate(string text, int maxLength)
+    {
+        return text.Length <= maxLength ? text : text[..maxLength] + "…";
     }
 }

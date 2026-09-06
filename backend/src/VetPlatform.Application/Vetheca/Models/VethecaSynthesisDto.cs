@@ -8,6 +8,7 @@ public record VethecaCitationDto
 
 public record VethecaSynthesisDto
 {
+    public string ModelUsed { get; init; } = string.Empty;
     public bool EvidenceSufficient { get; init; }
     public string Summary { get; init; } = string.Empty;
     public IReadOnlyList<string> KeyFindings { get; init; } = Array.Empty<string>();

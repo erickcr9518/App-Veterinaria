@@ -262,6 +262,7 @@ public class AnthropicLlmClient : ILlmClient
 
             return new VethecaSynthesisDto
             {
+                ModelUsed = _settings.Model,
                 EvidenceSufficient = raw.EvidenciaSuficiente,
                 Summary = raw.Resumen ?? string.Empty,
                 KeyFindings = raw.HallazgosPrincipales ?? Array.Empty<string>(),

@@ -40,6 +40,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<AppointmentStatusChange> AppointmentStatusChanges => Set<AppointmentStatusChange>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
+    public DbSet<VethecaSearchLog> VethecaSearchLogs => Set<VethecaSearchLog>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
