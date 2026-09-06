@@ -14,6 +14,7 @@ export interface VethecaCitation {
 }
 
 export interface VethecaSynthesis {
+  modelUsed: string;
   evidenceSufficient: boolean;
   summary: string;
   keyFindings: string[];
@@ -23,6 +24,25 @@ export interface VethecaSynthesis {
 }
 
 export interface VethecaAskResult {
+  id: string;
+  articles: VethecaArticle[];
+  synthesis: VethecaSynthesis | null;
+}
+
+export interface VethecaSavedSearchSummary {
+  id: string;
+  question: string;
+  title: string | null;
+  articleCount: number;
+  evidenceSufficient: boolean | null;
+  createdAtUtc: string;
+}
+
+export interface VethecaSavedSearchDetail {
+  id: string;
+  question: string;
+  title: string | null;
+  createdAtUtc: string;
   articles: VethecaArticle[];
   synthesis: VethecaSynthesis | null;
 }

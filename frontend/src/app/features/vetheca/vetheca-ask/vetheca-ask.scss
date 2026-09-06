@@ -54,6 +54,107 @@
   cursor: not-allowed;
 }
 
+.saved-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.saved-list h2 {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #52615c;
+  flex-basis: 100%;
+}
+
+.saved-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid rgba(22, 33, 30, 0.15);
+  border-radius: 20px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  max-width: 260px;
+}
+
+.saved-item:hover {
+  border-color: #16211e;
+}
+
+.saved-item .saved-title {
+  font-size: 13px;
+  color: #16211e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.saved-item .saved-meta {
+  font-size: 11px;
+  color: #52615c;
+}
+
+.save-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.save-form {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.save-form input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid rgba(22, 33, 30, 0.2);
+  border-radius: 6px;
+  font: inherit;
+}
+
+.save-form button,
+.save-bar .link-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.save-form button {
+  background: #16211e;
+  color: #fff;
+  border: none;
+}
+
+.save-form button:disabled {
+  background: #9aa5a1;
+  cursor: not-allowed;
+}
+
+.saved-badge {
+  font-size: 13px;
+  color: #1c6b52;
+  font-weight: 600;
+}
+
+.save-bar .link-button {
+  background: none;
+  border: 1px solid rgba(22, 33, 30, 0.2);
+  color: #52615c;
+}
+
 .empty,
 .error {
   padding: 14px;

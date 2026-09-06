@@ -21,6 +21,18 @@
     </button>
   </form>
 
+  @if (savedSearches().length > 0) {
+    <section class="saved-list">
+      <h2>Tus consultas guardadas</h2>
+      @for (saved of savedSearches(); track saved.id) {
+        <button type="button" class="saved-item" (click)="openSaved(saved.id)">
+          <span class="saved-title">{{ saved.title || saved.question }}</span>
+          <span class="saved-meta">{{ saved.articleCount }} fuente{{ saved.articleCount === 1 ? '' : 's' }}</span>
+        </button>
+      }
+    </section>
+  }
+
   @if (errorMessage(); as message) {
     <p class="error">{{ message }}</p>
   }
@@ -30,6 +42,20 @@
   }
 
   @if (result(); as result) {
+    <div class="save-bar">
+      @if (result.isSaved) {
+        <span class="saved-badge">Guardada{{ result.title ? ' como "' + result.title + '"' : '' }}</span>
+        <button type="button" class="link-button" [disabled]="isSaving()" (click)="unsaveCurrent()">Quitar de guardadas</button>
+      } @else {
+        <form [formGroup]="saveForm" (ngSubmit)="saveCurrent()" class="save-form">
+          <input formControlName="title" type="text" placeholder="Título opcional para guardarla" />
+          <button type="submit" [disabled]="isSaving()">
+            {{ isSaving() ? 'Guardando...' : 'Guardar esta consulta' }}
+          </button>
+        </form>
+      }
+    </div>
+
     @if (result.synthesis; as synthesis) {
       <article class="synthesis-card">
         @if (!synthesis.evidenceSufficient) {

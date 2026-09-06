@@ -1,7 +1,16 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VethecaService } from '../../../core/services/vetheca.service';
-import { VethecaAskResult } from '../../../core/models/vetheca.models';
+import { VethecaArticle, VethecaSavedSearchSummary, VethecaSynthesis } from '../../../core/models/vetheca.models';
+
+interface DisplayedResult {
+  id: string;
+  question: string;
+  articles: VethecaArticle[];
+  synthesis: VethecaSynthesis | null;
+  isSaved: boolean;
+  title: string | null;
+}
 
 @Component({
   selector: 'app-vetheca-ask',
@@ -10,17 +19,27 @@ import { VethecaAskResult } from '../../../core/models/vetheca.models';
   templateUrl: './vetheca-ask.html',
   styleUrl: './vetheca-ask.scss',
 })
-export class VethecaAsk {
+export class VethecaAsk implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly vethecaService = inject(VethecaService);
 
   readonly isLoading = signal(false);
+  readonly isSaving = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly result = signal<VethecaAskResult | null>(null);
+  readonly result = signal<DisplayedResult | null>(null);
+  readonly savedSearches = signal<VethecaSavedSearchSummary[]>([]);
 
   readonly form = this.fb.group({
     question: ['', [Validators.required, Validators.maxLength(500)]],
   });
+
+  readonly saveForm = this.fb.group({
+    title: ['', [Validators.maxLength(200)]],
+  });
+
+  ngOnInit(): void {
+    this.loadSavedSearches();
+  }
 
   ask(): void {
     if (this.form.invalid || this.isLoading()) {
@@ -31,15 +50,101 @@ export class VethecaAsk {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.result.set(null);
+    this.saveForm.reset();
 
     this.vethecaService.ask(question).subscribe({
-      next: (result) => {
-        this.result.set(result);
+      next: (response) => {
+        this.result.set({
+          id: response.id,
+          question,
+          articles: response.articles,
+          synthesis: response.synthesis,
+          isSaved: false,
+          title: null,
+        });
         this.isLoading.set(false);
       },
       error: () => {
         this.errorMessage.set('No se pudo completar la búsqueda. Intentá de nuevo en unos minutos.');
         this.isLoading.set(false);
+      },
+    });
+  }
+
+  saveCurrent(): void {
+    const current = this.result();
+    if (!current || this.isSaving()) {
+      return;
+    }
+
+    const title = this.saveForm.value.title?.trim() || null;
+    this.isSaving.set(true);
+    this.vethecaService.saveSearch(current.id, title).subscribe({
+      next: () => {
+        this.result.set({ ...current, isSaved: true, title });
+        this.isSaving.set(false);
+        this.loadSavedSearches();
+      },
+      error: () => {
+        this.errorMessage.set('No se pudo guardar la consulta.');
+        this.isSaving.set(false);
+      },
+    });
+  }
+
+  unsaveCurrent(): void {
+    const current = this.result();
+    if (!current || this.isSaving()) {
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.vethecaService.unsaveSearch(current.id).subscribe({
+      next: () => {
+        this.result.set({ ...current, isSaved: false, title: null });
+        this.isSaving.set(false);
+        this.loadSavedSearches();
+      },
+      error: () => {
+        this.errorMessage.set('No se pudo quitar la consulta de guardadas.');
+        this.isSaving.set(false);
+      },
+    });
+  }
+
+  openSaved(id: string): void {
+    if (this.isLoading()) {
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.vethecaService.getSavedSearchById(id).subscribe({
+      next: (detail) => {
+        this.form.patchValue({ question: detail.question });
+        this.result.set({
+          id: detail.id,
+          question: detail.question,
+          articles: detail.articles,
+          synthesis: detail.synthesis,
+          isSaved: true,
+          title: detail.title,
+        });
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('No se pudo abrir esa búsqueda guardada.');
+        this.isLoading.set(false);
+      },
+    });
+  }
+
+  private loadSavedSearches(): void {
+    this.vethecaService.getSavedSearches().subscribe({
+      next: (searches) => this.savedSearches.set(searches),
+      error: () => {
+        // Non-critical for the main flow - just leave the saved list empty.
       },
     });
   }

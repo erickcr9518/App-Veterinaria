@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { VethecaAskResult } from '../../../core/models/vetheca.models';
+import { VethecaAskResult, VethecaSavedSearchDetail, VethecaSavedSearchSummary } from '../../../core/models/vetheca.models';
 import { VethecaService } from '../../../core/services/vetheca.service';
 import { VethecaAsk } from './vetheca-ask';
 
 describe('VethecaAsk', () => {
   it('shows the synthesis and sources when the search succeeds', async () => {
-    const fixture = await createComponent(() => of(createResult()));
+    const fixture = await createComponent({ ask: () => of(createResult()) });
     askQuestion(fixture);
 
     const text = fixture.nativeElement.textContent;
@@ -17,7 +17,7 @@ describe('VethecaAsk', () => {
   });
 
   it('shows a fallback message when there is no synthesis yet', async () => {
-    const fixture = await createComponent(() => of({ ...createResult(), synthesis: null }));
+    const fixture = await createComponent({ ask: () => of({ ...createResult(), synthesis: null }) });
     askQuestion(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('No se pudo generar un resumen esta vez');
@@ -26,17 +26,63 @@ describe('VethecaAsk', () => {
   it('flags when the evidence was insufficient', async () => {
     const result = createResult();
     result.synthesis!.evidenceSufficient = false;
-    const fixture = await createComponent(() => of(result));
+    const fixture = await createComponent({ ask: () => of(result) });
     askQuestion(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('No se encontró evidencia suficiente');
   });
 
   it('shows an error message when the request fails', async () => {
-    const fixture = await createComponent(() => throwError(() => new Error('boom')));
+    const fixture = await createComponent({ ask: () => throwError(() => new Error('boom')) });
     askQuestion(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('No se pudo completar la búsqueda');
+  });
+
+  it('lets the user save a search and shows the saved badge afterwards', async () => {
+    const saveSearch = vi.fn(() => of(undefined));
+    const fixture = await createComponent({ ask: () => of(createResult()), saveSearch });
+    askQuestion(fixture);
+
+    fixture.componentInstance.saveForm.controls.title.setValue('Mi título');
+    fixture.componentInstance.saveCurrent();
+    fixture.detectChanges();
+
+    expect(saveSearch).toHaveBeenCalledWith('log-1', 'Mi título');
+    expect(fixture.nativeElement.textContent).toContain('Guardada como "Mi título"');
+  });
+
+  it('shows previously saved searches and opens one on click', async () => {
+    const savedSummary: VethecaSavedSearchSummary = {
+      id: 'log-2',
+      question: 'pregunta guardada',
+      title: 'Título guardado',
+      articleCount: 2,
+      evidenceSufficient: true,
+      createdAtUtc: '2026-09-05T00:00:00Z',
+    };
+    const savedDetail: VethecaSavedSearchDetail = {
+      ...createResult(),
+      id: 'log-2',
+      question: 'pregunta guardada',
+      title: 'Título guardado',
+      createdAtUtc: '2026-09-05T00:00:00Z',
+    };
+    const getSavedSearchById = vi.fn(() => of(savedDetail));
+
+    const fixture = await createComponent({
+      ask: () => of(createResult()),
+      getSavedSearches: () => of([savedSummary]),
+      getSavedSearchById,
+    });
+
+    expect(fixture.nativeElement.textContent).toContain('Título guardado');
+
+    fixture.componentInstance.openSaved('log-2');
+    fixture.detectChanges();
+
+    expect(getSavedSearchById).toHaveBeenCalledWith('log-2');
+    expect(fixture.nativeElement.textContent).toContain('Guardada como "Título guardado"');
   });
 
   function askQuestion(fixture: ComponentFixture<VethecaAsk>): void {
@@ -45,8 +91,11 @@ describe('VethecaAsk', () => {
     fixture.detectChanges();
   }
 
-  async function createComponent(ask: () => ReturnType<VethecaService['ask']>): Promise<ComponentFixture<VethecaAsk>> {
-    const vethecaService = { ask };
+  async function createComponent(overrides: Partial<VethecaService>): Promise<ComponentFixture<VethecaAsk>> {
+    const vethecaService: Partial<VethecaService> = {
+      getSavedSearches: () => of([]),
+      ...overrides,
+    };
 
     await TestBed.configureTestingModule({
       imports: [VethecaAsk],
@@ -60,6 +109,7 @@ describe('VethecaAsk', () => {
 
   function createResult(): VethecaAskResult {
     return {
+      id: 'log-1',
       articles: [
         {
           pmid: '12345678',
@@ -72,6 +122,7 @@ describe('VethecaAsk', () => {
         },
       ],
       synthesis: {
+        modelUsed: 'claude-sonnet-5',
         evidenceSufficient: true,
         summary: 'Resumen de prueba.',
         keyFindings: ['Hallazgo de prueba'],
