@@ -19,7 +19,7 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, IReadOnlyList
 
     public Task<IReadOnlyList<UserSummary>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
     {
-        if (_currentUserService.Role == RoleNames.PlatformAdministrator)
+        if (_currentUserService.Roles.Contains(RoleNames.PlatformAdministrator))
         {
             return request.ClinicId is { } clinicId
                 ? _identityService.GetUsersByClinicAsync(clinicId)

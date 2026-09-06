@@ -13,5 +13,6 @@ public class AuthResultDto
     public Guid? ClinicId { get; init; }
     public string? ClinicName { get; init; }
     public string Role { get; init; } = string.Empty;
+    public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
     public IReadOnlyList<string> Permissions { get; init; } = Array.Empty<string>();
 }

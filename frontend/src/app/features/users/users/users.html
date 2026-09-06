@@ -42,14 +42,22 @@
         <input formControlName="password" type="password" autocomplete="new-password" />
       </label>
 
-      <label>
-        <span>Rol</span>
-        <select formControlName="role">
+      <fieldset class="role-field">
+        <legend>Roles</legend>
+        <div class="role-options">
           @for (role of roleOptions(); track role.value) {
-            <option [value]="role.value">{{ role.label }}</option>
+            <label class="role-option">
+              <input
+                type="checkbox"
+                [checked]="isRoleSelected(role.value)"
+                #roleInput
+                (change)="toggleRole(role.value, roleInput.checked)"
+              />
+              <span>{{ role.label }}</span>
+            </label>
           }
-        </select>
-      </label>
+        </div>
+      </fieldset>
 
       @if (isPlatformAdmin()) {
         <p class="hint">La clinica seleccionada arriba se usara para el nuevo usuario, salvo que sea Superadministrador.</p>
@@ -68,7 +76,7 @@
             <article class="row">
               <div>
                 <strong>{{ user.fullName }} @if (isSelf(user)) { (tu) }</strong>
-                <span>{{ user.email }} &middot; {{ user.role }}</span>
+                <span>{{ user.email }} &middot; {{ roleLabels(user) }}</span>
               </div>
               <div class="row-actions">
                 <span class="status" [class.status-active]="user.isActive" [class.status-inactive]="!user.isActive">

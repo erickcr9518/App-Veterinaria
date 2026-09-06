@@ -7,11 +7,14 @@ import { UsersService } from '../../../core/services/users.service';
 import { Clinic } from '../../../core/models/clinic.models';
 import { UserSummary } from '../../../core/models/user.models';
 
+const PLATFORM_ROLE = 'SuperAdministrador';
+const DEFAULT_CLINIC_ROLE = 'Veterinario';
+
 const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: 'Administrador', label: 'Administrador' },
-  { value: 'Veterinario', label: 'Veterinario' },
+  { value: DEFAULT_CLINIC_ROLE, label: 'Veterinario' },
   { value: 'Recepcion', label: 'Recepcion' },
-  { value: 'SuperAdministrador', label: 'Superadministrador (plataforma)' },
+  { value: PLATFORM_ROLE, label: 'Superadministrador (plataforma)' },
 ];
 
 @Component({
@@ -28,7 +31,7 @@ export class Users implements OnInit {
   private readonly clinicsService = inject(ClinicsService);
 
   readonly currentUser = this.authService.currentUser;
-  readonly isPlatformAdmin = computed(() => !this.currentUser()?.clinicId);
+  readonly isPlatformAdmin = computed(() => this.currentUser()?.roles.includes(PLATFORM_ROLE) ?? false);
   readonly roleOptions = computed(() =>
     this.isPlatformAdmin() ? ROLE_OPTIONS : ROLE_OPTIONS.filter((role) => role.value !== 'SuperAdministrador'),
   );
@@ -53,7 +56,7 @@ export class Users implements OnInit {
     fullName: ['', [Validators.required, Validators.maxLength(200)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(200)]],
     password: ['', [Validators.required, Validators.minLength(8)]],
-    role: ['Veterinario', [Validators.required]],
+    roles: this.fb.nonNullable.control<string[]>([DEFAULT_CLINIC_ROLE], [Validators.required]),
   });
 
   ngOnInit(): void {
@@ -91,14 +94,25 @@ export class Users implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid || this.isSaving()) {
-      this.form.markAllAsTouched();
+    if (this.isSaving()) {
       return;
     }
 
     const value = this.form.getRawValue();
-    const needsClinic = this.isPlatformAdmin() && value.role !== 'SuperAdministrador';
-    const createsPlatformUser = this.isPlatformAdmin() && value.role === 'SuperAdministrador';
+    const roles = this.normalizeRoles(value.roles);
+    if (roles.length === 0) {
+      this.form.markAllAsTouched();
+      this.errorMessage.set('Selecciona al menos un rol.');
+      return;
+    }
+
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const createsPlatformUser = this.isPlatformAdmin() && roles.includes(PLATFORM_ROLE);
+    const needsClinic = this.isPlatformAdmin() && !createsPlatformUser;
     if (needsClinic && !this.selectedClinicId()) {
       this.errorMessage.set('Selecciona una clinica antes de crear el usuario.');
       return;
@@ -111,11 +125,12 @@ export class Users implements OnInit {
       fullName: value.fullName,
       email: value.email,
       password: value.password,
-      role: value.role,
+      role: roles[0],
+      roles,
       clinicId: needsClinic ? this.selectedClinicId() : null,
     }).subscribe({
       next: () => {
-        this.form.reset({ fullName: '', email: '', password: '', role: 'Veterinario' });
+        this.form.reset({ fullName: '', email: '', password: '', roles: [DEFAULT_CLINIC_ROLE] });
         if (createsPlatformUser) {
           this.selectedClinicId.set(null);
         }
@@ -131,6 +146,35 @@ export class Users implements OnInit {
 
   isSelf(user: UserSummary): boolean {
     return user.userId === this.currentUser()?.userId;
+  }
+
+  isRoleSelected(role: string): boolean {
+    return this.form.controls.roles.value.includes(role);
+  }
+
+  toggleRole(role: string, checked: boolean): void {
+    const selected = new Set(this.form.controls.roles.value);
+
+    if (checked && role === PLATFORM_ROLE) {
+      this.form.controls.roles.setValue([PLATFORM_ROLE]);
+      return;
+    }
+
+    selected.delete(PLATFORM_ROLE);
+    if (checked) {
+      selected.add(role);
+    } else {
+      selected.delete(role);
+    }
+
+    this.form.controls.roles.setValue(this.roleOptions()
+      .map((option) => option.value)
+      .filter((value) => selected.has(value)));
+  }
+
+  roleLabels(user: UserSummary): string {
+    const roles = user.roles?.length ? user.roles : [user.role];
+    return roles.map((role) => this.roleLabel(role)).join(' + ');
   }
 
   toggleActive(user: UserSummary): void {
@@ -150,5 +194,15 @@ export class Users implements OnInit {
     return error instanceof HttpErrorResponse && error.status === 403
       ? forbiddenMessage
       : fallbackMessage;
+  }
+
+  private normalizeRoles(roles: string[]): string[] {
+    return this.roleOptions()
+      .map((option) => option.value)
+      .filter((role) => roles.includes(role));
+  }
+
+  private roleLabel(role: string): string {
+    return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role;
   }
 }

@@ -5,6 +5,7 @@ public interface ICurrentUserService
     Guid? UserId { get; }
     Guid? ClinicId { get; }
     string? Role { get; }
+    IReadOnlyList<string> Roles { get; }
     IReadOnlyList<string> Permissions { get; }
     bool HasPermission(string permissionCode);
 }

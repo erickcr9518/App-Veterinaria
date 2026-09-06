@@ -24,15 +24,16 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
 
     public async Task<Guid> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        var isCreatingPlatformAdministrator = request.Role == RoleNames.PlatformAdministrator;
+        var roles = ResolveRoles(request);
+        var isCreatingPlatformAdministrator = roles.Contains(RoleNames.PlatformAdministrator);
 
-        if (isCreatingPlatformAdministrator && _currentUserService.Role != RoleNames.PlatformAdministrator)
+        if (isCreatingPlatformAdministrator && !_currentUserService.Roles.Contains(RoleNames.PlatformAdministrator))
         {
             throw new ForbiddenAccessException("Solo un superadministrador puede crear otros superadministradores.");
         }
 
         var clinicId = await ResolveClinicIdAsync(request, isCreatingPlatformAdministrator, cancellationToken);
-        var result = await _identityService.CreateUserAsync(request.Email, request.Password, request.FullName, clinicId, request.Role);
+        var result = await _identityService.CreateUserAsync(request.Email, request.Password, request.FullName, clinicId, roles);
 
         if (!result.Succeeded)
         {
@@ -45,6 +46,20 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
         return result.UserId!.Value;
     }
 
+    private static IReadOnlyList<string> ResolveRoles(CreateUserCommand request)
+    {
+        var roles = request.Roles is { Count: > 0 }
+            ? request.Roles
+            : string.IsNullOrWhiteSpace(request.Role)
+                ? Array.Empty<string>()
+                : new[] { request.Role };
+
+        return roles
+            .Where(role => !string.IsNullOrWhiteSpace(role))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
     private async Task<Guid?> ResolveClinicIdAsync(
         CreateUserCommand request,
         bool isCreatingPlatformAdministrator,
@@ -55,7 +70,7 @@ public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Guid>
             return null;
         }
 
-        if (_currentUserService.Role == RoleNames.PlatformAdministrator)
+        if (_currentUserService.Roles.Contains(RoleNames.PlatformAdministrator))
         {
             var clinicId = request.ClinicId
                 ?? throw new ValidationException(new[]

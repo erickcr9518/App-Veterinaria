@@ -41,6 +41,15 @@ describe('Shell', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/login');
   });
 
+  it('shows every role assigned to the current user', async () => {
+    const fixture = await createComponent(
+      ['owners.read'],
+      createAuthService(['owners.read'], ['Administrador', 'Veterinario']),
+    );
+
+    expect(fixture.nativeElement.textContent).toContain('Administrador + Veterinario');
+  });
+
   async function createComponent(
     permissions: string[],
     authService = createAuthService(permissions),
@@ -58,14 +67,15 @@ describe('Shell', () => {
     return fixture;
   }
 
-  function createAuthService(permissions: string[]) {
+  function createAuthService(permissions: string[], roles = ['Recepcion']) {
     const currentUser = signal<CurrentUser | null>({
       userId: 'user-1',
       email: 'qa@vetplatform.test',
       fullName: 'QA User',
       clinicId: 'clinic-1',
       clinicName: 'Clinica Demo',
-      role: 'Recepcion',
+      role: roles[0],
+      roles,
       permissions,
     });
 

@@ -9,6 +9,7 @@ export interface AuthResult {
   clinicId: string | null;
   clinicName: string | null;
   role: string;
+  roles: string[];
   permissions: string[];
 }
 
@@ -19,6 +20,7 @@ export interface CurrentUser {
   clinicId: string | null;
   clinicName: string | null;
   role: string;
+  roles: string[];
   permissions: string[];
 }
 

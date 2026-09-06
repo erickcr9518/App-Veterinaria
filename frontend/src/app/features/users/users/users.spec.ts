@@ -10,13 +10,11 @@ import { UsersService } from '../../../core/services/users.service';
 import { Users } from './users';
 
 describe('Users', () => {
-  it('lists the clinic staff and hides the role select option for platform admin', async () => {
+  it('lists the clinic staff and hides the platform role option for clinic admins', async () => {
     const fixture = await createComponent(createUser());
 
     const text = fixture.nativeElement.textContent;
-    const roleOptions = fixture.debugElement
-      .queryAll(By.css('select[formcontrolname="role"] option'))
-      .map((option) => option.nativeElement.textContent.trim());
+    const roleOptions = getRoleOptionLabels(fixture);
 
     expect(text).toContain('Dra. Ana Rojas');
     expect(roleOptions).not.toContain('Superadministrador (plataforma)');
@@ -34,12 +32,15 @@ describe('Users', () => {
   });
 
   it('shows platform accounts by default and clinic staff after selecting a clinic for a platform administrator', async () => {
-    const fixture = await createComponent(createUser({ clinicId: null, clinicName: null, role: 'SuperAdministrador' }));
+    const fixture = await createComponent(createUser({
+      clinicId: null,
+      clinicName: null,
+      role: 'SuperAdministrador',
+      roles: ['SuperAdministrador'],
+    }));
 
     let text = fixture.nativeElement.textContent;
-    const roleOptions = fixture.debugElement
-      .queryAll(By.css('select[formcontrolname="role"] option'))
-      .map((option) => option.nativeElement.textContent.trim());
+    const roleOptions = getRoleOptionLabels(fixture);
 
     expect(text).toContain('Cuentas de plataforma');
     expect(text).toContain('Root Admin');
@@ -57,13 +58,75 @@ describe('Users', () => {
     expect(text).not.toContain('Root Admin');
   });
 
-  async function createComponent(user: CurrentUser): Promise<ComponentFixture<Users>> {
+  it('submits multiple selected clinic roles as a role list', async () => {
+    let payload: unknown;
+    const fixture = await createComponent(createUser(), {
+      createUser: (request: unknown) => {
+        payload = request;
+        return of('new-user-id');
+      },
+    });
+
+    fixture.componentInstance.form.patchValue({
+      fullName: 'Dra. Encargada',
+      email: 'encargada@vetplatform.test',
+      password: 'Password123!',
+    });
+
+    const veterinarian = findRoleOption(fixture, 'Veterinario');
+    const administrator = findRoleOption(fixture, 'Administrador');
+    expect(veterinarian.checked).toBe(true);
+
+    administrator.checked = true;
+    administrator.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    fixture.componentInstance.submit();
+
+    expect(payload).toEqual({
+      fullName: 'Dra. Encargada',
+      email: 'encargada@vetplatform.test',
+      password: 'Password123!',
+      role: 'Administrador',
+      roles: ['Administrador', 'Veterinario'],
+      clinicId: null,
+    });
+  });
+
+  it('keeps the platform role mutually exclusive in the form', async () => {
+    const fixture = await createComponent(createUser({
+      clinicId: null,
+      clinicName: null,
+      role: 'SuperAdministrador',
+      roles: ['SuperAdministrador'],
+    }));
+
+    const administrator = findRoleOption(fixture, 'Administrador');
+    const platform = findRoleOption(fixture, 'Superadministrador (plataforma)');
+
+    administrator.checked = true;
+    administrator.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.form.controls.roles.value).toContain('Administrador');
+
+    platform.checked = true;
+    platform.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.form.controls.roles.value).toEqual(['SuperAdministrador']);
+  });
+
+  async function createComponent(
+    user: CurrentUser,
+    usersServiceOverrides: Partial<UsersService> = {},
+  ): Promise<ComponentFixture<Users>> {
     const currentUser = signal<CurrentUser | null>(user);
     const authService = { currentUser: currentUser.asReadonly() };
     const usersService = {
       getUsers: (clinicId?: string | null) => of(createStaffForScope(user, clinicId)),
       createUser: () => of('new-user-id'),
       setUserActive: () => of(undefined),
+      ...usersServiceOverrides,
     };
     const clinicsService = {
       getClinics: () => of([{ id: 'clinic-1', name: 'Clinica Demo', timeZone: 'UTC', isActive: true }]),
@@ -91,22 +154,38 @@ describe('Users', () => {
       clinicId: 'clinic-1',
       clinicName: 'Clinica Demo',
       role: 'Administrador',
+      roles: ['Administrador'],
       permissions: [],
       ...overrides,
     };
   }
 
   function createStaffForScope(user: CurrentUser, clinicId?: string | null): UserSummary[] {
-    if (user.role === 'SuperAdministrador' && !user.clinicId && !clinicId) {
+    if (user.roles.includes('SuperAdministrador') && !user.clinicId && !clinicId) {
       return [
-        { userId: 'user-1', email: 'root@vetplatform.test', fullName: 'Root Admin', role: 'SuperAdministrador', isActive: true },
-        { userId: 'user-3', email: 'platform@vetplatform.test', fullName: 'Platform Operator', role: 'SuperAdministrador', isActive: true },
+        { userId: 'user-1', email: 'root@vetplatform.test', fullName: 'Root Admin', role: 'SuperAdministrador', roles: ['SuperAdministrador'], isActive: true },
+        { userId: 'user-3', email: 'platform@vetplatform.test', fullName: 'Platform Operator', role: 'SuperAdministrador', roles: ['SuperAdministrador'], isActive: true },
       ];
     }
 
     return [
-      { userId: 'user-1', email: 'admin@vetplatform.test', fullName: 'Admin Demo', role: 'Administrador', isActive: true },
-      { userId: 'user-2', email: 'vet@vetplatform.test', fullName: 'Dra. Ana Rojas', role: 'Veterinario', isActive: true },
+      { userId: 'user-1', email: 'admin@vetplatform.test', fullName: 'Admin Demo', role: 'Administrador', roles: ['Administrador', 'Veterinario'], isActive: true },
+      { userId: 'user-2', email: 'vet@vetplatform.test', fullName: 'Dra. Ana Rojas', role: 'Veterinario', roles: ['Veterinario'], isActive: true },
     ];
+  }
+
+  function getRoleOptionLabels(fixture: ComponentFixture<Users>): string[] {
+    return fixture.debugElement
+      .queryAll(By.css('.role-option span'))
+      .map((option) => option.nativeElement.textContent.trim());
+  }
+
+  function findRoleOption(fixture: ComponentFixture<Users>, label: string): HTMLInputElement {
+    const option = fixture.debugElement
+      .queryAll(By.css('.role-option'))
+      .find((element) => element.nativeElement.textContent.includes(label));
+
+    expect(option).toBeTruthy();
+    return option!.query(By.css('input')).nativeElement as HTMLInputElement;
   }
 });

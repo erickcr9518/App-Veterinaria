@@ -29,7 +29,6 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Name, user.FullName),
-            new(ClaimTypes.Role, user.Role),
             new(CurrentUserService.SecurityStampClaimType, user.SecurityStamp),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
@@ -39,6 +38,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             claims.Add(new Claim(CurrentUserService.ClinicIdClaimType, clinicId.ToString()));
         }
 
+        claims.AddRange(user.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
         claims.AddRange(user.Permissions.Select(p => new Claim(CurrentUserService.PermissionClaimType, p)));
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.SigningKey));

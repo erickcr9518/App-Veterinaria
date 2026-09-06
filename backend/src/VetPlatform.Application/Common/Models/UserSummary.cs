@@ -6,5 +6,6 @@ public class UserSummary
     public string Email { get; init; } = string.Empty;
     public string FullName { get; init; } = string.Empty;
     public string Role { get; init; } = string.Empty;
+    public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
     public bool IsActive { get; init; }
 }

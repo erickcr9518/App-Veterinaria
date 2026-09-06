@@ -44,6 +44,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResultDto>
             ClinicId = user.ClinicId,
             ClinicName = user.ClinicName,
             Role = user.Role,
+            Roles = user.Roles,
             Permissions = user.Permissions,
         };
     }

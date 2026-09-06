@@ -27,7 +27,7 @@ public class SetUserActiveCommandHandler : IRequestHandler<SetUserActiveCommand>
             });
         }
 
-        if (_currentUserService.Role != RoleNames.PlatformAdministrator)
+        if (!_currentUserService.Roles.Contains(RoleNames.PlatformAdministrator))
         {
             var ownClinicId = _currentUserService.ClinicId
                 ?? throw new ForbiddenAccessException("El usuario actual no está asociado a ninguna clínica.");

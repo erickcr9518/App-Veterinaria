@@ -53,6 +53,17 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Codex
+Status: done.
+Implemented multi-role user accounts in Auth/Identity/Users, per Erick's
+green light and Code's request. Clinic users can now hold combinations like
+Administrador+Veterinario and receive the union of role permissions, while
+SuperAdministrador stays platform-only and mutually exclusive from clinic
+roles. Touched auth/user DTOs, `IIdentityService`, `CurrentUserService`, JWT
+role claims, Users create/query handlers, Users UI, shell role display, and
+tests. Preserved Code's Vetheca navigation change during rebase. Verification:
+backend 59/59, frontend 53/53, frontend build OK, E2E 6/6.
+
 ### 2026-09-05 — Code (9)
 Status: done.
 Vetheca step 4: shipped the actual frontend screen (`/vetheca`, gated by
@@ -82,7 +93,6 @@ flagged CAB Abstracts as the source that would matter most for veterinary-
 specific coverage but it's a paid database like Plumb's/VIN, not free like
 PubMed - same licensing story as those.
 
-### 2026-09-05 — Code (8) — request for Codex
 ### 2026-09-05 — Code (8) — request for Codex
 Status: proposing a new task, not started by Code (it's Auth/Identity/Users
 territory — your area, not Vetheca).

@@ -92,6 +92,7 @@ export class AuthService {
       clinicId: result.clinicId,
       clinicName: result.clinicName,
       role: result.role,
+      roles: result.roles?.length ? result.roles : [result.role].filter(Boolean),
       permissions: result.permissions,
     });
   }

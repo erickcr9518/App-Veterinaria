@@ -141,6 +141,14 @@ fixtures — goes into the system.
       deactivate other platform administrators, while self-lockout prevention
       remains in place and clinic admins still cannot see or touch platform
       accounts. Covered by `UsersTests` plus the Users component spec.
+- [x] **Multi-role clinic staff accounts.** Clinic users can now hold more
+      than one clinic role (for example, Administrador + Veterinario), and
+      authentication returns the union of all permissions through JWT role
+      claims and `/api/auth/me`. `SuperAdministrador` remains platform-only
+      and mutually exclusive from clinic roles. The Users screen creates and
+      displays role combinations, while preserving the older single `role`
+      field for compatibility. Covered by Users integration tests, validator
+      tests, Users component specs, and Shell role-display specs.
 
 ## Data readiness
 
@@ -181,8 +189,8 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist update: backend 52/52 (2 unit + 50 integration),
-frontend 46/46, E2E 6/6 —
+As of this checklist update: backend 59/59 (4 unit + 55 integration),
+frontend 53/53, E2E 6/6 —
 re-run all before relying on these numbers, since they move as both agents
 add coverage.
 These cover role/permission access

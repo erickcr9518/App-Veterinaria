@@ -32,7 +32,7 @@
         <div class="user-info">
           <span class="user-name">{{ user.fullName }}</span>
           <span class="user-role">
-            {{ user.role }}
+            {{ roleLabels(user) }}
             @if (user.clinicName) {
               · {{ user.clinicName }}
             }

@@ -74,6 +74,7 @@ describe('AuthService', () => {
       clinicId: 'clinic-1',
       clinicName: 'Clinica Demo',
       role: 'Veterinario',
+      roles: ['Veterinario'],
       permissions,
     };
   }

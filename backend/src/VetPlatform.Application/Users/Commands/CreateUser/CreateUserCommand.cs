@@ -6,5 +6,6 @@ public record CreateUserCommand(
     string Email,
     string Password,
     string FullName,
-    string Role,
+    string? Role = null,
+    IReadOnlyList<string>? Roles = null,
     Guid? ClinicId = null) : IRequest<Guid>;

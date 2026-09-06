@@ -57,6 +57,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
             ClinicId = user.ClinicId,
             ClinicName = user.ClinicName,
             Role = user.Role,
+            Roles = user.Roles,
             Permissions = user.Permissions,
         };
     }

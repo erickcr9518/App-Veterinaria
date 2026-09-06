@@ -95,6 +95,55 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Administrator_Can_Create_User_With_Multiple_Clinic_Roles_And_Unioned_Permissions()
+    {
+        var adminEmail = $"users-multi-admin-{Guid.NewGuid():N}@vetplatform.test";
+        var staffEmail = $"users-multi-staff-{Guid.NewGuid():N}@vetplatform.test";
+        await _factory.CreateClinicUserAsync(adminEmail, RoleNames.Administrator, Password);
+        var adminAuth = await LoginAsync(adminEmail);
+
+        var createResponse = await PostAsAuthenticatedJsonAsync(adminAuth.AccessToken, "/api/users", new
+        {
+            email = staffEmail,
+            password = Password,
+            fullName = "Dra. Encargada Clinica",
+            roles = new[] { RoleNames.Administrator, RoleNames.Veterinarian },
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        var staffAuth = await LoginAsync(staffEmail);
+        Assert.Equal(RoleNames.Administrator, staffAuth.Role);
+        Assert.Contains(RoleNames.Administrator, staffAuth.Roles);
+        Assert.Contains(RoleNames.Veterinarian, staffAuth.Roles);
+        Assert.Contains(PermissionCodes.UsersManage, staffAuth.Permissions);
+        Assert.Contains(PermissionCodes.ConsultationsWrite, staffAuth.Permissions);
+        Assert.Contains(PermissionCodes.PrescriptionsWrite, staffAuth.Permissions);
+
+        var me = await GetAsAuthenticatedAsync<CurrentUserDto>(staffAuth.AccessToken, "/api/auth/me");
+        Assert.Contains(RoleNames.Administrator, me.Roles);
+        Assert.Contains(RoleNames.Veterinarian, me.Roles);
+    }
+
+    [Fact]
+    public async Task Platform_Administrator_Cannot_Create_User_Mixing_Platform_And_Clinic_Roles()
+    {
+        var platformAdminEmail = $"users-platform-mixed-{Guid.NewGuid():N}@vetplatform.test";
+        await _factory.CreatePlatformAdministratorAsync(platformAdminEmail, Password);
+        var platformAdminAuth = await LoginAsync(platformAdminEmail);
+
+        var createResponse = await PostAsAuthenticatedJsonAsync(platformAdminAuth.AccessToken, "/api/users", new
+        {
+            email = $"mixed-{Guid.NewGuid():N}@vetplatform.test",
+            password = Password,
+            fullName = "Mixed Role",
+            roles = new[] { RoleNames.PlatformAdministrator, RoleNames.Veterinarian },
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, createResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Veterinarian_Cannot_Access_User_Management_Endpoints()
     {
         var vetEmail = $"users-forbidden-vet-{Guid.NewGuid():N}@vetplatform.test";

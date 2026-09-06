@@ -67,13 +67,16 @@ describe('Dashboard', () => {
   }
 
   function createUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
+    const role = overrides.role ?? 'Administrador';
+
     return {
       userId: 'user-1',
       email: 'user@vetplatform.test',
       fullName: 'QA User',
       clinicId: 'clinic-1',
       clinicName: 'Clinica Demo',
-      role: 'Administrador',
+      role,
+      roles: [role],
       permissions: [],
       ...overrides,
     };

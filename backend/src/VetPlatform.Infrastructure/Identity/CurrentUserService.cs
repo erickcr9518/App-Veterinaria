@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using VetPlatform.Application.Common.Interfaces;
+using VetPlatform.Domain.Constants;
 
 namespace VetPlatform.Infrastructure.Identity;
 
@@ -45,7 +46,10 @@ public class CurrentUserService : ICurrentUserService
         }
     }
 
-    public string? Role => User?.FindFirstValue(ClaimTypes.Role);
+    public string? Role => RoleNames.GetPrimaryRole(Roles);
+
+    public IReadOnlyList<string> Roles =>
+        User?.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToList() ?? new List<string>();
 
     public IReadOnlyList<string> Permissions =>
         User?.FindAll(PermissionClaimType).Select(c => c.Value).ToList() ?? new List<string>();

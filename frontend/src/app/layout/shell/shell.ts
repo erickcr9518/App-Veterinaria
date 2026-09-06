@@ -1,6 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { CurrentUser } from '../../core/models/auth.models';
 import { AuthService } from '../../core/services/auth.service';
+
+const ROLE_LABELS: Record<string, string> = {
+  Administrador: 'Administrador',
+  Veterinario: 'Veterinario',
+  Recepcion: 'Recepcion',
+  SuperAdministrador: 'Superadministrador',
+};
 
 @Component({
   selector: 'app-shell',
@@ -17,6 +25,11 @@ export class Shell {
 
   hasPermission(code: string): boolean {
     return this.authService.hasPermission(code);
+  }
+
+  roleLabels(user: CurrentUser): string {
+    const roles = user.roles.length ? user.roles : [user.role];
+    return roles.map((role) => ROLE_LABELS[role] ?? role).join(' + ');
   }
 
   logout(): void {

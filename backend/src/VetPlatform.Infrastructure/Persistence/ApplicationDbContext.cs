@@ -66,7 +66,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
 
     private Guid? CurrentClinicId => _currentUserService.ClinicId;
 
-    private bool IsPlatformAdministrator => _currentUserService.Role == RoleNames.PlatformAdministrator;
+    private bool IsPlatformAdministrator => _currentUserService.Roles.Contains(RoleNames.PlatformAdministrator);
 
     private LambdaExpression? BuildGlobalFilter(Type clrType)
     {

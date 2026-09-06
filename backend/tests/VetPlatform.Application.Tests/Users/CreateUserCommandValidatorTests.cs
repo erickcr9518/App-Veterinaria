@@ -23,6 +23,18 @@ public class CreateUserCommandValidatorTests
     }
 
     [Fact]
+    public void Allows_Multiple_Clinic_Roles()
+    {
+        var result = _validator.Validate(new CreateUserCommand(
+            "user@vetplatform.test",
+            "Password123!",
+            "Test User",
+            Roles: new[] { RoleNames.Administrator, RoleNames.Veterinarian }));
+
+        Assert.True(result.IsValid, string.Join(", ", result.Errors.Select(e => e.ErrorMessage)));
+    }
+
+    [Fact]
     public void Rejects_Unknown_Roles()
     {
         var result = _validator.Validate(new CreateUserCommand(
@@ -32,6 +44,19 @@ public class CreateUserCommandValidatorTests
             "Owner"));
 
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateUserCommand.Role));
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateUserCommand.Roles));
+    }
+
+    [Fact]
+    public void Rejects_Platform_Administrator_Mixed_With_Clinic_Roles()
+    {
+        var result = _validator.Validate(new CreateUserCommand(
+            "user@vetplatform.test",
+            "Password123!",
+            "Test User",
+            Roles: new[] { RoleNames.PlatformAdministrator, RoleNames.Veterinarian }));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateUserCommand.Roles));
     }
 }

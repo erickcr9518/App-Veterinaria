@@ -8,7 +8,7 @@ public interface IIdentityService
 
     Task<AuthenticatedUser?> GetAuthenticatedUserAsync(Guid userId);
 
-    Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, string role);
+    Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, IReadOnlyCollection<string> roles);
 
     Task<PasswordResetToken?> CreatePasswordResetTokenAsync(string email);
 

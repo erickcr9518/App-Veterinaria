@@ -62,7 +62,7 @@ public class IdentityService : IIdentityService
         return await BuildAuthenticatedUserAsync(user);
     }
 
-    public async Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, string role)
+    public async Task<UserAccountResult> CreateUserAsync(string email, string password, string fullName, Guid? clinicId, IReadOnlyCollection<string> roles)
     {
         var user = new ApplicationUser
         {
@@ -81,7 +81,7 @@ public class IdentityService : IIdentityService
             return UserAccountResult.Failure(createResult.Errors.Select(e => e.Description));
         }
 
-        var roleResult = await _userManager.AddToRoleAsync(user, role);
+        var roleResult = await _userManager.AddToRolesAsync(user, roles);
         if (!roleResult.Succeeded)
         {
             await _userManager.DeleteAsync(user);
@@ -221,20 +221,22 @@ public class IdentityService : IIdentityService
 
     private async Task<AuthenticatedUser> BuildAuthenticatedUserAsync(ApplicationUser user)
     {
-        var roles = await _userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? string.Empty;
+        var roles = OrderRoles(await _userManager.GetRolesAsync(user));
+        var role = RoleNames.GetPrimaryRole(roles);
 
         var permissions = Array.Empty<string>();
-        if (!string.IsNullOrEmpty(role))
+        if (roles.Length > 0)
         {
-            var appRole = await _roleManager.FindByNameAsync(role);
-            if (appRole is not null)
-            {
-                permissions = await _dbContext.RolePermissions
-                    .Where(rp => rp.RoleId == appRole.Id)
-                    .Select(rp => rp.Permission.Code)
-                    .ToArrayAsync();
-            }
+            var roleIds = await _roleManager.Roles
+                .Where(r => roles.Contains(r.Name!))
+                .Select(r => r.Id)
+                .ToArrayAsync();
+
+            permissions = await _dbContext.RolePermissions
+                .Where(rp => roleIds.Contains(rp.RoleId))
+                .Select(rp => rp.Permission.Code)
+                .Distinct()
+                .ToArrayAsync();
         }
 
         string? clinicName = null;
@@ -255,22 +257,38 @@ public class IdentityService : IIdentityService
             ClinicId = user.ClinicId,
             ClinicName = clinicName,
             Role = role,
+            Roles = roles,
             Permissions = permissions,
         };
     }
 
     private async Task<UserSummary> BuildUserSummaryAsync(ApplicationUser user)
     {
-        var roles = await _userManager.GetRolesAsync(user);
+        var roles = OrderRoles(await _userManager.GetRolesAsync(user));
 
         return new UserSummary
         {
             UserId = user.Id,
             Email = user.Email ?? string.Empty,
             FullName = user.FullName,
-            Role = roles.FirstOrDefault() ?? string.Empty,
+            Role = RoleNames.GetPrimaryRole(roles),
+            Roles = roles,
             IsActive = user.IsActive,
         };
+    }
+
+    private static string[] OrderRoles(IEnumerable<string> roles)
+    {
+        var roleSet = roles.ToHashSet(StringComparer.Ordinal);
+        var orderedRoles = RoleNames.All
+            .Where(roleSet.Contains)
+            .ToList();
+
+        orderedRoles.AddRange(roleSet
+            .Except(RoleNames.All, StringComparer.Ordinal)
+            .OrderBy(role => role, StringComparer.Ordinal));
+
+        return orderedRoles.ToArray();
     }
 
     private async Task RevokeActiveRefreshTokensAsync(Guid userId)
