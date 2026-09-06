@@ -68,9 +68,26 @@ public class AnthropicLlmClient : ILlmClient
         """;
 
     private const string TranslateSystemPrompt = """
-        Convertís preguntas clínicas veterinarias (en cualquier idioma) en una
+        Convertís preguntas clínicas veterinarias (en cualquier idioma,
+        posiblemente un caso clínico largo con varios detalles) en una
         consulta de búsqueda de PubMed corta y efectiva, en inglés, usando
-        terminología médica/veterinaria relevante (estilo MeSH cuando aplique).
+        terminología médica/veterinaria relevante (estilo MeSH cuando
+        aplique).
+
+        Reglas importantes sobre la forma de la consulta:
+        - Elegí el diagnóstico o problema clínico CENTRAL de la pregunta,
+          no trates de incluir cada detalle mencionado (edad, todos los
+          signos clínicos, etc.) - eso sobrecarga la búsqueda.
+        - Usá como máximo 2-3 conceptos clave. NUNCA encadenes más de 2
+          operadores AND/OR - en PubMed, encadenar muchos AND exige que
+          TODOS los términos aparezcan juntos en el mismo artículo, lo
+          cual casi siempre devuelve cero resultados relevantes o rellena
+          con resultados irrelevantes.
+        - Preferí una frase corta de términos separados por espacios
+          (2-5 palabras) en vez de una expresión booleana compleja,
+          salvo que un único "AND" entre dos conceptos sea claramente
+          necesario.
+
         Respondé ÚNICAMENTE con la consulta de búsqueda en texto plano, sin
         comillas, sin explicación, sin JSON, en una sola línea.
         """;

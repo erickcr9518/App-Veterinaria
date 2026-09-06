@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using VetPlatform.Application.Common.Interfaces;
 
 namespace VetPlatform.Application.Vetheca.Queries.AskVetheca;
@@ -12,11 +13,13 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
 {
     private readonly IPubMedClient _pubMedClient;
     private readonly ILlmClient _llmClient;
+    private readonly ILogger<AskVethecaQueryHandler> _logger;
 
-    public AskVethecaQueryHandler(IPubMedClient pubMedClient, ILlmClient llmClient)
+    public AskVethecaQueryHandler(IPubMedClient pubMedClient, ILlmClient llmClient, ILogger<AskVethecaQueryHandler> logger)
     {
         _pubMedClient = pubMedClient;
         _llmClient = llmClient;
+        _logger = logger;
     }
 
     public async Task<AskVethecaResult> Handle(AskVethecaQuery request, CancellationToken cancellationToken)
@@ -28,6 +31,8 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
         // today's behavior for English questions and when no LLM is configured.
         var searchQuery = await _llmClient.TranslateToSearchQueryAsync(request.Question, cancellationToken)
             ?? request.Question;
+
+        _logger.LogInformation("Vetheca: pregunta {Question} -> busqueda PubMed {SearchQuery}", request.Question, searchQuery);
 
         var articles = await _pubMedClient.SearchAsync(searchQuery, request.MaxResults, cancellationToken);
 
