@@ -505,7 +505,26 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
    solo acá) no tiene licencia para uso en producción. Anotado en
    `docs/RELEASE_CHECKLIST.md` como pendiente de decisión antes de
    cualquier piloto pago real.
-5. Recién ahí: `AiInteractionAudit`, `SavedResearch`, Evidence Cards.
+5. ~~`AiInteractionAudit`, `SavedResearch`, Evidence Cards.~~ **Hecho el
+   2026-09-06.** Una sola entidad (`VethecaSearchLog`) cumple las dos
+   funciones en vez de duplicar datos en dos tablas: cada pregunta se
+   guarda automáticamente como registro de auditoría (aparece como sexta
+   fuente en `/api/audit`, sin importar si el usuario la guarda o no), y
+   cuando el usuario la guarda explícitamente (`IsSaved`), aparece en su
+   lista personal de "consultas guardadas". "Quitar de guardadas" nunca
+   borra el registro de auditoría — solo dice de baja el flag. Endpoints:
+   `POST /api/vetheca/{id}/save`, `POST /api/vetheca/{id}/unsave`,
+   `GET /api/vetheca/saved`, `GET /api/vetheca/saved/{id}` — todos con
+   verificación de dueño (solo quien preguntó puede guardar/ver/quitar lo
+   suyo, independiente del filtro de clínica). Pantalla: en la misma
+   página de Vetheca (sin navegación nueva), un botón "Guardar esta
+   consulta" bajo cualquier resultado y una lista "Tus consultas
+   guardadas" arriba, clickeable para reabrir. Backend 69/69, frontend
+   57/57. Verificado en vivo de punta a punta: preguntar → guardar → ver
+   en la lista → reabrir → quitar de guardadas, con datos reales.
+
+   **Con esto, el MVP completo de Vetheca (fase 1 del roadmap, sección I)
+   está terminado.**
 
 ---
 

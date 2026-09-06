@@ -53,6 +53,37 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-06 — Code (11)
+Status: done. Also folded everything before "Code (7)" into a compact
+"Earlier history" summary below, per standing rule 5 - this file had grown
+past 800 lines.
+
+Vetheca's MVP is now fully complete (roadmap section I, Fase 1). Last piece:
+persistence. New `VethecaSearchLog` entity/table - one row per ask, serving
+two purposes at once instead of two duplicate tables: it's the audit trail
+(every question, whether or not the user keeps it - now a 6th source in
+`GetAuditLogQueryHandler`/`/api/audit`) and, once `IsSaved` is set, the
+user's own saved-research list. "Unsave" only clears `IsSaved`/`Title` -
+never deletes the row, so the audit trail is never user-erasable.
+
+New endpoints: `POST /api/vetheca/{id}/save`, `POST /api/vetheca/{id}/unsave`,
+`GET /api/vetheca/saved`, `GET /api/vetheca/saved/{id}` - all ownership-
+checked (only the asking user can save/view/unsave their own, independent
+of the tenant filter which only guards cross-clinic access, not cross-user
+within the same clinic). `AskVethecaResult` now carries the log row's Id.
+
+Frontend: no new navigation - a "Guardar esta consulta" control under any
+result, a "Tus consultas guardadas" list above it once the user has any,
+clicking one reopens it in the same result view. Matches Erick's standing
+"as simple as a stethoscope" bar.
+
+Backend 69/69 (5 new tests: save, unsave, ownership enforcement on both
+save and view, audit-log integration). Frontend 57/57 (5 new tests).
+Verified live end-to-end against the real database and real browser: asked
+a real question, saved it with a title, saw it in the list, reopened it,
+unsaved it, confirmed the audit-log entry survives un-saving.
+
+
 ### 2026-09-05 — Code (10)
 Status: done.
 Erick spent real time asking Vetheca varied clinical questions (different
@@ -202,627 +233,60 @@ differently, say so in this log rather than starting in a direction Erick
 hasn't seen — this is exactly the kind of product/UX-shaping change worth
 a quick round-trip before deep implementation, per standing rule 2.
 
-### 2026-09-05 — Code (7)
-Status: done.
-Erick got his own Anthropic API key set up (console.anthropic.com,
-Individual account, $5 credit, no auto-reload - walked him through it) and
-put it in his local `appsettings.Development.json` (gitignored, never saw
-the raw key myself beyond what a file-change notification surfaced -
-didn't echo it anywhere, didn't need to).
+### Earlier history (2026-08-25 – 2026-09-05, folded per standing rule 5)
 
-First live call with a real key exposed two real bugs in yesterday's
-`AnthropicLlmClient`, both fixed now:
-1. `claude-sonnet-5` returns a `"thinking"` content block before the
-   `"text"` block; `ExtractResponseText` only checked `content[0]` and
-   silently returned null. Now scans for the first block with
-   `type == "text"`.
-2. The response hit `max_tokens` (1500) mid-JSON and got truncated, because
-   thinking tokens were eating into that budget unrequested. Fixed by
-   explicitly setting `thinking: { type: "disabled" }` in the request
-   (not useful for a bounded structured-synthesis task anyway) and raising
-   the default `MaxTokens` to 2048.
+**VetIA/Vetheca origin (before the entries above):** Erick proposed evolving
+this product into "VetIA Clinic" — keep the clinic-management app as a paid
+core, add an AI research module on top. Code wrote a full analysis
+(`docs/VETIA_CLINIC_ANALYSIS.md`) grounded in the real codebase. An early
+"no mature competitor exists" claim was wrong (Erick caught it, unresearched)
+— a proper market study found real competitors (Vetgo.ai, and more
+importantly Vetesoft/MIAUV, an established Colombian incumbent already in
+~30% of the country's clinics). Found 15+ existing products using the
+"Vet+IA/AI" name pattern, so the module was renamed **`Vetheca`** (checked,
+no conflicts). Decisions resolved through this period: LLM = Anthropic
+Claude, no patient-identifiable data sent externally in Fase 1, rollout is
+Erick-first (informally protected only by "no frontend screen exists yet" —
+this system's RBAC is role-based with no per-user override, a real
+limitation flagged for whoever builds the frontend or opens access wider).
+Erick separately asked about multi-clinic franchises (SuperAdministrador
+sees every clinic platform-wide, not just one franchise's own — documented
+as a future `Organization`-layer need, not built) and about single accounts
+needing combined roles (Administrador+Veterinario) — the latter became the
+request that Codex picked up (see the multi-role entries kept above).
 
-After both fixes: a real end-to-end synthesis on the TPLO rehab question
-came back correct - coherent summary, 4 findings each correctly attributed
-to a real PMID, limitations that correctly flagged the finite-element
-biomechanical study as non-clinical evidence, and all 4 citations matching
-the 4 retrieved articles exactly (zero hallucinated PMIDs). This is the
-first genuinely working end-to-end proof of the whole Vetheca concept.
+**Everything shipped 2026-08-25 to 2026-08-29, before Vetheca implementation
+started:** Users management (`users.manage`, activate/deactivate, platform-
+admin visibility), Owners/Appointments/Dashboard QA coverage across all 4
+roles, minimal Playwright E2E (login, role access, one full clinical-workflow
+smoke test), login lockout, logout revocation, printable prescriptions (a
+real print-CSS bug caught via genuine headless-Chromium PDF rendering, not
+just visual QA — `100vh` resolving against the print page box, bleeding
+background + blank second page), Docker deploy support (Dockerfiles,
+compose, DEPLOYMENT.md — unverified locally, no Docker access at the time),
+health checks + Serilog structured logging, DB backup/restore scripts
+(unverified locally, same reason), self-service password reset, auth rate
+limiting, SuperAdministrator account management, GitHub Actions CI (4 jobs:
+backend/frontend/e2e/docker) — later confirmed genuinely green including the
+docker job (GitHub-hosted runners have Docker, the first real verification
+of that whole deploy story), fixing a Node 20→24 mismatch along the way
+(Angular CLI 22 requires newer Node than the initial CI pin).
 
-Backend 52/52 (2 unit + 50 integration - includes Codex's parallel
-refresh-token cleanup work, verified it still integrates cleanly with
-mine). No test changes needed for this fix since the existing tests use a
-stubbed HTTP response for the citation-grounding test and a fake
-`ILlmClient` everywhere else - neither exercised the real Anthropic
-response shape, which is exactly how this bug slipped past the test suite.
-Worth remembering for next time: a stub that never saw production traffic
-can encode a wrong assumption as confidently as no test at all.
+**The most serious bug of the whole project, found by the "full suite
+before done" rule (2026-09-04):** Codex's JWT security-stamp hardening
+(invalidate access tokens immediately on password change/reset, not just
+refresh tokens) looked complete and passed casual testing, but a full
+backend suite run turned up 31 of 43 tests failing — essentially every
+authenticated endpoint. Root cause: `CurrentUserService` cached
+`HttpContext.User` in its constructor; the new `OnTokenValidated` handler
+transitively constructed it (via `UserManager` → `ApplicationDbContext`'s
+tenant filter) *before* authentication finished, permanently freezing an
+empty principal for the rest of the request. Fixed by reading
+`HttpContext.User` lazily instead of caching it. Would have broken every
+authenticated call in a real deployment; E2E's fresh-login-per-test pattern
+never exercised the session-restore path that exposed it. This is the
+concrete incident standing rule 4 exists to prevent.
 
-### 2026-09-05 — Codex
-Status: done.
-Frontend dependency hygiene: production `npm audit --omit=dev` is clean, but
-the full dev audit reports `fast-uri`/`qs` advisories. Trying `npm audit fix`
-in the clean Codex worktree and will only ship the lockfile update if frontend
-tests/build stay green. Expected touch points: `frontend/package-lock.json`,
-possibly this log/checklist only. Avoiding Code-owned Vetheca files.
+**Frontend dependency hygiene:** `npm audit fix` cleared dev-only
+`fast-uri`/`qs` advisories, 0 vulnerabilities in both prod and full audit.
 
-`npm audit fix` updated only dev transitive packages (`fast-uri` 3.1.5→3.1.7,
-`qs` 6.15.3→6.16.0). `npm audit --omit=dev` and full `npm audit` now both
-report 0 vulnerabilities. Verification: backend already green on the same
-base (52/52), frontend 46/46, frontend build OK, E2E 6/6.
-
-### 2026-09-05 — Code (6)
-Status: done.
-Vetheca step 3 (see `VETIA_CLINIC_ANALYSIS.md` section J): added `ILlmClient`/
-`AnthropicLlmClient` in Infrastructure (direct HTTP call to Claude's Messages
-API, no SDK dependency). `POST /api/vetheca/ask` now returns
-`{ articles, synthesis }` — `synthesis` is `null` when `Anthropic:ApiKey`
-isn't configured (safe default, same self-guarding pattern
-`PasswordResetEmailSender` already uses for missing SMTP config).
-
-Two safety properties actually implemented, not just described in the doc:
-1. Prompt injection defense - the system prompt and user message keep fixed
-   rules separate from the retrieved PubMed abstracts, which are explicitly
-   labeled as untrusted content to analyze, never as instructions.
-2. Citation grounding - after parsing Claude's JSON response, any citation
-   referencing a PMID that wasn't in the articles actually sent gets
-   dropped before it reaches the caller. Covered by a dedicated test
-   (`AnthropicLlmClient_Drops_Citations_Referencing_Unknown_Pmids`) that
-   feeds a stubbed Anthropic response containing one real PMID and one
-   hallucinated one, and asserts only the real one survives.
-
-Backend 50/50 (2 unit + 48 integration, 2 new tests). Verified live without
-an Anthropic key configured - still returns real PubMed articles with
-`synthesis: null`, as designed. **Could not verify an actual live call to
-Claude** - that needs a real Anthropic API key from Erick's own account,
-which Code doesn't have (checked the environment, only found
-`ANTHROPIC_BASE_URL`, no key - and wouldn't have been right to reuse a
-Claude Code session credential for the app's own billing regardless).
-Erick needs to supply `Anthropic:ApiKey` (env var `Anthropic__ApiKey` or
-appsettings) before synthesis actually produces anything; whoever tests
-this live next should sanity-check the JSON parsing and citation output
-against a real response, not just the stub.
-
-Next up per the plan: still no DB persistence anywhere in Vetheca
-(deliberate - validating the external calls and response shape first,
-per the plan). Step 4 (frontend screen + real permission scoping) needs
-the Option-B RBAC question flagged in the previous entry resolved first.
-
-### 2026-09-05 — Codex
-Status: done.
-Auth/Identity hardening: prune stale refresh-token rows during login/refresh so
-`RefreshTokens` does not grow forever in a real clinic. Working in a clean
-Codex worktree because Code has uncommitted Vetheca LLM changes in the main
-checkout. Expected touch points: auth command handlers, auth integration tests,
-and release checklist. Avoiding Code-owned Vetheca/Dashboard/Prescriptions/
-Docker/Audit/Backups/CI files.
-
-Shipped cleanup in `LoginCommandHandler` and `RefreshTokenCommandHandler`, with
-2 new integration tests covering removal of expired/revoked rows on login and
-refresh while preserving active/current tokens. Verification: backend 52/52
-(2 unit + 50 integration), frontend 46/46, frontend build OK, E2E 6/6. Note:
-the main checkout's WIP Vetheca LLM tests were failing separately because the
-endpoint response shape changed from a raw article list to `{ articles,
-synthesis }`; left untouched for Code to finish with that module.
-
-### 2026-09-05 — Code (5)
-Status: done.
-Erick gave the go-ahead to start building Vetheca (formerly "VetIA").
-Shipped the first real slice per `VETIA_CLINIC_ANALYSIS.md` section J,
-steps 1-2: a real PubMed search, no LLM yet.
-
-New files: `PermissionCodes.VethecaAsk` (+ catalog entry, + granted to
-`Administrador`/`Veterinario` in `RoleDefaultPermissions.cs`),
-`Application/Common/Interfaces/IPubMedClient.cs`,
-`Application/Vetheca/Models/PubMedArticleDto.cs`,
-`Application/Vetheca/Queries/AskVetheca/*` (query+handler+validator),
-`Infrastructure/Vetheca/PubMedClient.cs` (+ `PubMedSettings.cs`, real
-E-utilities esearch+efetch XML parsing), `Api/Controllers/VethecaController.cs`
-(`POST /api/vetheca/ask`), `PubMed:` config section in `appsettings.json`,
-3 new integration tests in `VethecaTests.cs` (permission granted/denied,
-validation) using a fake `IPubMedClient` so CI never hits the real network.
-
-Verified two ways: automated suite (backend 48/48: 2 unit + 46 integration,
-no frontend/e2e touched so didn't re-run those locally — nothing there
-could have broken), and a live manual call against the real PubMed API
-(not just the test fake) using Erick's own example question from the
-original brief ("rehabilitación temprana después de TPLO") — got back real,
-correctly-parsed articles with working PubMed links.
-
-**Flagging one real limitation for whoever builds the frontend screen
-(step 4) or opens this to more than one person:** this system's RBAC is
-role-based, not per-user — granting `vetheca.ask` to a role grants it
-platform-wide to everyone in that role, not to one specific person. Erick's
-"Option B" rollout decision (he sees it first, alone) is currently only
-protected by "there's no frontend screen yet," not by real per-user
-permission scoping, which doesn't exist anywhere in this codebase today for
-any permission. Fine for now (single-clinic pilot, Erick is plausibly the
-only Administrador/Veterinario in the real environment) but don't build the
-Vetheca screen assuming Option B is enforced until this is either accepted
-as-is or a real per-user override mechanism gets built. Documented in
-`VETIA_CLINIC_ANALYSIS.md` section J.
-
-Next up: `ILlmClient` + structured synthesis over these same articles
-(step 3), per Erick's confirmed choice of Anthropic Claude.
-
-### 2026-09-05 — Code (4)
-Status: done.
-Ran a genuinely exhaustive market study (Erick called out that my earlier
-"no mature competitor exists" line was unresearched, and he was right —
-walked it back, then had an agent do proper research: ~54 tool calls, dense
-findings with sources). Full results are in `VETIA_CLINIC_ANALYSIS.md`
-section K. Short version for anyone catching up:
-- **Vetgo.ai** (Spain) is a real direct competitor — RAG over PubMed
-  Abstracts/CIMAVet — but weak public traction (no reviews, no funding).
-- **Vetesoft/MIAUV** (Colombia) is the competitor to actually worry about:
-  an established player (25+ years) already in ~30% of Colombian vet
-  clinics, now adding an AI diagnostic module. Distribution beats tech.
-- Nobody found combines live cited evidence search + real patient context +
-  strict no-auto-write governance, in Spanish. That's the real
-  differentiation — not "AI in vet medicine," which is not new.
-- Demand for AI in vet medicine generally: real, growing fast, but almost
-  entirely for documentation/scribing, not evidence search specifically —
-  that niche has no hard adoption numbers from anyone yet. Will likely need
-  market education, not just a good product.
-- Confirmed 15+ existing products use the "Vet+IA/AI" name pattern —
-  backs up dropping that naming direction entirely.
-
-**Also: the module has a real name now — `Vetheca`** (vet + bibliotheca),
-confirmed by Erick 2026-09-05, checked for conflicts (none found). "VetIA"
-and "IAVet" are both dead — do not use either anywhere new. Existing prose
-in the analysis doc still says "VetIA" in places (not yet fully swept) —
-treat `Vetheca` as the real name going forward; rename in code once
-implementation actually starts.
-
-Still nothing implemented — still waiting on Erick's go-ahead to write
-VetIA/Vetheca code (standing rule 2). Only decision #2 (PubMed key, deferred
-on purpose) remains open on the decisions table.
-
-### 2026-09-05 — Code (3)
-Status: done.
-Two small closeouts:
-1. **CI is confirmed fully green**, not just "should work now." Checked the
-   GitHub Actions API for commit `373908b` (the Node 20→24 fix): backend,
-   frontend, e2e, and docker jobs all `completed success`. Updated
-   `RELEASE_CHECKLIST.md`'s Docker item — it no longer says "unverified,"
-   the `docker` job's `docker compose up --build` + health/proxy checks on a
-   real GitHub-hosted Linux runner is the actual verification. Added a
-   dedicated CI checklist item too.
-2. Erick resolved decision #4 in `VETIA_CLINIC_ANALYSIS.md`: **Option B** —
-   VetIA Ask goes live for Erick only first (or a test account), and gets
-   opened to the rest of the clinic's vets only after he's satisfied with
-   real-question quality. Same permission-catalog mechanism either way, no
-   extra engineering — just decides who gets `vetia.ask` first when we get
-   there. Updated the decisions table. Still only #2 (PubMed key, deferred
-   on purpose) and #5 (final name) open on that doc; still no VetIA code
-   written, still waiting on Erick's go-ahead per standing rule 2.
-
-### 2026-09-05 — Code (2)
-Status: done (still analysis only — no VetIA code yet, still waiting on
-Erick's full go-ahead).
-Erick started resolving the open decisions in `VETIA_CLINIC_ANALYSIS.md`.
-Two are now confirmed: **LLM provider is Anthropic Claude** (so `ILlmClient`
-should target Claude's API when we build it, not left generic/undecided),
-and Fase 1 will not send any patient-identifiable data externally (this was
-already the plan, now explicitly signed off). Added a live "Estado de las
-decisiones" table near the top of the doc so this stays current without
-digging through the log. Also added a competitive-landscape subsection
-(G.1) answering Erick's question about existing vet software and whether
-we can use licensed references like Plumb's/VIN (short answer: not without
-a data-licensing deal with the publisher — PubMed/Crossref/PMC Open Access
-stay the only sources for now). Menu-visibility decision is still open,
-waiting on Erick to pick between "visible to any vet with the permission
-right away" vs. "just Erick/a test account first, roll out after
-validating." Still nobody's cleared to write VetIA code yet — same standing
-rule 2 caveat as the previous entry.
-
-### 2026-09-05 — Code
-Status: done (analysis only — no code, no product decision made yet).
-Erick is considering evolving this product into "VetIA Clinic": keep
-everything we've built as the paid "premium" core, and add a new AI-assisted
-veterinary research module (evidence-grounded literature search over
-PubMed/Crossref, not a chatbot) as an additional layer. He asked for a full
-written analysis, saved to git so both of us are working from the same
-context instead of him re-explaining it to each of us separately.
-
-Wrote `docs/VETIA_CLINIC_ANALYSIS.md` — full gap analysis, proposed
-architecture, new entities, API surface, security/RAG-injection concerns,
-phased roadmap, and a concrete MVP recommendation, all grounded in the actual
-current code (permission catalog, entity shapes, the audit-aggregator
-pattern, the existing-but-unused `SoapNote.GeneratedByAi` field, etc.).
-**Read that file, not just this summary** — this note is a pointer.
-
-**Important: this is a proposal, not a green light.** Per standing rule 2,
-a product-direction call like this needs Erick's explicit sign-off before
-either of us writes any VetIA code (new entities, controllers, HTTP clients
-to PubMed/Crossref/an LLM). If you have opinions, disagreements, or a better
-idea on anything in that doc (entity names, phase order, which LLM provider,
-whatever), add a "Comentarios de Codex" section at the end of
-`VETIA_CLINIC_ANALYSIS.md` itself rather than only discussing it with Erick
-by chat — keeps it visible to all three of us.
-
-Meanwhile, CI hardening (Node 20→24 fix for the `frontend`/`e2e`/`docker`
-jobs, commit `373908b`) is still in flight — unrelated to this, continuing
-that separately.
-
-### 2026-09-04 — Codex (finished and fixed by Code — see below)
-Status: in progress.
-Hardening JWT invalidation after password changes/resets: include the ASP.NET
-Identity security stamp in access tokens and validate it on every authenticated
-request, so old JWTs stop working immediately after account recovery. Expected
-touch points: `AuthenticatedUser`, JWT generator/validation wiring, auth
-integration tests, and release checklist. Avoiding Code-owned
-CI/Docker/Audit/Prescriptions/Dashboard.
-
-**Code, same day, completing this**: found this sitting **uncommitted** in the
-working directory (confirmed via `git show 464a5ec --stat` — Codex's last
-actual commit, "change my password", never touched `DependencyInjection.cs`
-at all) when I ran the mandated "full suite before done" check on what I
-thought was already-verified code. Result: **31 of 43 backend integration
-tests failing** — essentially every authenticated-then-do-something test,
-not just auth-specific ones (Dashboard, Users, Prescriptions, Appointments,
-Consultations, Audit, Owners all affected).
-Root cause, found via targeted temporary diagnostics (added, used, fully
-reverted — none committed): `OnTokenValidated`'s new code resolves
-`UserManager<ApplicationUser>`, which — via `AddEntityFrameworkStores`  —
-transitively constructs `ApplicationDbContext`, which requires
-`ICurrentUserService` in its constructor (for the tenant query filter).
-`CurrentUserService`'s constructor was **caching** `httpContextAccessor.HttpContext?.User`
-into a field. Since `OnTokenValidated` fires *during* authentication,
-resolving `UserManager` there constructs `CurrentUserService` for the
-first time in that request's DI scope *before* `HttpContext.User` gets
-replaced with the authenticated principal — permanently freezing an empty,
-unauthenticated snapshot for the rest of the request. The security-stamp
-check itself passed correctly (verified: token and DB stamps matched); the
-bug was entirely in the side effect of resolving `UserManager` this early.
-**This would have broken literally every authenticated API call in a real
-deployment** (any page refresh calls `/me`; every tenant-filtered query
-depends on the same `ApplicationDbContext`) — E2E's 6/6 never caught it
-because those tests always do a fresh UI login and never trigger a session
-restore (`/me`) or a second authenticated call within the same run in a way
-that exposed it before this write-up; the backend integration suite caught
-it immediately once run.
-Fix: `CurrentUserService` now reads `HttpContext.User` **lazily** via a
-property on every access instead of snapshotting it in the constructor —
-correct regardless of *when* or *why* the service gets constructed first.
-One-line, low-risk, in `CurrentUserService.cs` only; the security-stamp
-logic itself (`AuthenticatedUser.SecurityStamp`, `JwtTokenGenerator`,
-`OnTokenValidated`) is untouched and correct as Codex wrote it.
-Verified: backend 45/45, frontend 46/46, E2E 6/6, and live in-browser
-(login → full page reload → session restored, real tenant-scoped dashboard
-data loaded — the exact real-world path that was broken).
-Committing this as a completion of Codex's in-progress work, not a
-takeover — the security-stamp feature is good and worth keeping, it had
-one subtle bug that a from-scratch full-suite run was always going to
-catch (which is exactly why that rule exists).
-
-### 2026-09-04 — Codex
-Status: done.
-Added authenticated "change my password" flow so staff can replace
-bootstrap/admin-created passwords without requiring an email reset.
-`POST /api/auth/change-password` validates the current password, changes via
-ASP.NET Identity, and revokes active refresh tokens. Frontend adds `/account`
-from the user menu and logs the user out after a successful change. Backend
-45/45, frontend 46/46, frontend build clean, E2E 6/6. Avoided Code-owned
-CI/Docker/Audit/Prescriptions/Dashboard.
-
-### 2026-09-04 — Code
-Status: done (pending the actual GitHub Actions run to confirm — see below).
-Verified Codex's password reset (`b521059`) before moving on, per the new
-"full suite before done" rule: backend 43/43, frontend 44/44, E2E 6/6, all
-green. Picked the next item myself per the new propose-and-start rule: CI
-via GitHub Actions, `.github/workflows/ci.yml`, 4 jobs:
-- `backend`: `dotnet build`/`test` the solution.
-- `frontend`: `npm run build` + `npm test`.
-- `e2e`: spins up a plain SQL Server service container (not compose — this
-  mirrors the native dev workflow, config supplied entirely via env vars
-  since there's no `appsettings.Development.json` in a clean checkout),
-  installs Playwright's Chromium, runs the real E2E suite.
-- `docker`: writes a CI-only `.env`, then `docker compose up -d --build --wait`
-  against the actual `docker-compose.yml` a pilot deploy would run, curls
-  `/health` directly and through nginx's proxy, and a real login attempt
-  through the full stack (frontend → nginx → api → SQL Server → Identity)
-  expecting 401 for bad credentials — the deepest verification this stack
-  has had, and it needed none of the local Docker access neither of us has.
-Also added `.github/workflows/*.yml` to `.gitattributes` (LF-forced) —
-same class of bug as the shell-script CRLF issue from the backup scripts:
-this workflow embeds a heredoc bash executes on the runner.
-Validated everything checkable without actually triggering a run: YAML
-parses cleanly (`js-yaml`), traced the exact env-var/config path each job
-takes, confirmed `PasswordResetEmailSender` doesn't throw with empty SMTP
-config (so leaving it blank in CI is safe), confirmed the login handler
-throws `AuthenticationException` → 401 for bad credentials (so that final
-docker-job assertion is meaningful, not a guess).
-**This is genuinely untested until it actually runs** — I'm pushing this
-and then watching the real GitHub Actions run via the public API (repo is
-public, no auth needed) rather than declaring it done on reasoning alone.
-Will update this entry once I see the real result.
-### 2026-09-04 — Codex
-Status: done.
-Auth/Identity hardening after password reset: `IdentityService.ResetPasswordAsync`
-now revokes any active refresh tokens for that user, so an old remembered
-session cannot keep refreshing after account recovery. Covered by
-`ResetPassword_Uses_Token_And_Allows_Login_With_New_Password`, which now
-asserts the old refresh token is rejected after reset. Avoided Code-owned
-Dashboard/Prescriptions/Docker/Audit/Backups.
-
-### 2026-09-04 — Codex
-Status: done.
-Password reset self-service shipped in Auth/Identity: public
-`forgot-password` + `reset-password` endpoints using ASP.NET Identity tokens,
-generic unknown-email responses, SMTP/log sender, frontend screens, tests, and
-deployment/checklist docs. Backend 43/43, frontend 44/44, frontend build clean,
-E2E 6/6.
-Docker compose was updated with SMTP/reset URL env vars but remains unverified
-per standing rule because Docker is not available here. Avoided Audit.
-
-### 2026-09-04 — Code
-Status: done.
-Audit log shipped, in new files only (per plan, no overlap with Codex's
-SuperAdministrador work). Backend: `Application/Audit/Models/AuditEntryDto.cs`,
-`Application/Audit/Queries/GetAuditLog/*`, `Api/Controllers/AuditController.cs`.
-Aggregates 5 sources into one timeline (owners/patients created,
-consultations created+finalized, consultation amendments, prescriptions
-created+finalized, appointment status changes incl. the initial "Scheduled"
-as "Cita agendada") — merged and sorted in memory rather than a SQL UNION,
-same pragmatic approach as `GetDashboardSummaryQueryHandler`. Respects the
-existing `audit.read.all`/`audit.read.own` permissions: all-clinic vs.
-scoped to the caller's own `CreatedByUserId`/`ChangedByUserId`/etc — each
-source filtered independently since e.g. a consultation you created but a
-colleague finalized should show up in *your* feed for the "created" half
-only. 4 new integration tests, backend 41/41 combined with Codex's work.
-Frontend: new `features/audit/audit-log/*`, `core/models/audit.models.ts`,
-`core/services/audit.service.ts`. Extended `permissionGuard` to accept
-`string | string[]` in `route.data['permission']` (OR semantics) since
-audit access needs either permission, not one specific code — backward
-compatible, existing single-string routes unaffected, added guard specs
-for the array case. Touched `app.routes.ts` (new `/audit` route) and
-`shell.html` (nav link) — flagging per the shared-files rule, though
-neither overlaps anything Codex touched. Frontend 41/41.
-Verified live: Administrador sees the full clinic-wide feed going back
-through this whole project's real history (confirmed every source
-including an appointment I created live for the test, correctly showing
-"Cita agendada"); Recepcion has no nav link and gets redirected away from
-`/audit` by URL. Veterinario's own-actions scoping verified via the
-integration tests (two vets, each only sees their own).
-
-### 2026-09-04 — Codex
-Status: done.
-Taking the remaining SuperAdministrador account-management gap. Goal: make
-platform admins visible/manageable from the Users screen without weakening
-clinic tenant isolation for normal clinic admins. Expected touch points:
-Application Users query/identity methods, Users integration tests, Angular
-Users screen/specs, and release checklist. Avoided health/backups/docker.
-Also hardened aborted-request handling after E2E showed SQL Server can wrap a
-client cancellation as `SqlException`; final E2E logs no longer show a false
-500 for that teardown path.
-
-### 2026-08-29 — Code
-Status: done.
-Database backup/restore scripts shipped (still solo, Codex out).
-`scripts/backup-db.sh` / `scripts/restore-db.sh` wrap sqlcmd
-BACKUP/RESTORE DATABASE inside the `sqlserver` container; added a
-bind-mounted `./backups` host directory in `docker-compose.yml` (gitignored
-— real patient data) so output actually lands somewhere retrievable
-instead of the container's ephemeral filesystem. Restore requires typing
-"yes" before it touches anything (it's destructive by nature — full
-database replace).
-**Verified what's actually verifiable without Docker**: `bash -n` on both
-scripts (syntax), and manually traced the nested-quoting logic (host bash
-needs to expand the filename while leaving `$MSSQL_SA_PASSWORD` for the
-container's bash to expand at runtime) by extracting the exact string
-construction into a throwaway script and printing it — confirmed the
-final command string is exactly right. **Not verified**: actually running
-`docker compose exec` against a live sqlserver container, same Docker
-caveat as everything else Docker-related in this session.
-Explicitly documented in both `docs/RELEASE_CHECKLIST.md` and
-`docs/DEPLOYMENT.md` that scheduling + getting backups off-machine is
-still not automated — the scripts exist, nothing calls them yet.
-Only touched `docker-compose.yml`, `.gitignore`, new `scripts/`, and docs
-— no app code, so no build/test suite to re-run.
-
-### 2026-08-29 — Code
-Status: done.
-Health check + structured logging shipped (Codex out for now, did this solo).
-`GET /health` (anonymous) via `AddHealthChecks().AddDbContextCheck<ApplicationDbContext>()`
-— real DB connectivity check, verified live (200 "Healthy", and watched it
-actually run `SELECT 1` in the request log). Serilog for structured
-console + rolling daily file (`logs/`, 14-day retention, gitignored) plus
-`UseSerilogRequestLogging()` — verified live too, both sinks producing
-real timestamped/structured output. Deliberately not wiring a specific
-cloud sink (Seq/App Insights/Sentry) since that's a hosting/vendor decision;
-`ReadFrom.Configuration` in the Serilog setup means one can be added later
-via config alone. Wired the new health endpoint into `docker-compose.yml`
-(api healthcheck + frontend now waits on it) and added `curl` to the
-runtime image for that — **unverified**, same Docker caveat as before,
-no Docker in this environment.
-New package refs: Serilog.AspNetCore, Serilog.Sinks.File,
-Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore (pinned
-8.0.11 to match the rest of the EF Core packages). New `HealthCheckTests.cs`.
-Backend 37/37. Hit an unrelated environment hiccup along the way — Windows
-blocked the freshly-rebuilt `VetPlatform.Api.exe` apphost via an
-"Application Control policy" (twice); worked around by running
-`dotnet bin/Debug/net8.0/VetPlatform.Api.dll` directly instead of
-`dotnet run`. Not touching Prescriptions, Users, frontend, or E2E.
-
-### 2026-08-29 — Code
-Status: done.
-My half of the joint V1 smoke test: fresh backend build+test (36/36), fresh
-frontend build+test (36/36), fresh E2E run (6/6), and the manual print check
-Codex asked for — except I did it with a real headless-Chromium PDF render
-(`page.pdf()` via a throwaway Playwright spec, deleted after) instead of
-actually pressing Ctrl+P, since that's not something browser automation can
-drive but this gets the same real rendered output.
-That check caught a genuine bug the on-screen QA couldn't have shown: the
-Shell's `:host` sets `min-height: 100vh` + a paper background for the
-on-screen layout, and printing resolves `100vh` against the page box — so
-the printed prescription had the app's mint-green background bleeding
-across the whole page and a near-blank second page from the forced height.
-Fixed with three `!important` overrides in `src/styles.scss` scoped to
-`app-shell`/`.shell`/`.content` under `@media print` (same file I already
-had a print rule in for the topbar, so no new shared-file surface). Re-ran
-the PDF check after the fix: clean white background, single page. Re-ran
-the full suites again after — still 36/36/6/6.
-Saw Codex's rate-limit-vs-E2E finding land in `playwright.config.ts` — a
-reasonable, well-scoped fix (raises the limit only for the E2E-spawned API
-process), no objection, didn't touch it further.
-
-### 2026-08-29 — Codex
-Status: done.
-Running the integrated V1 smoke/QA pass after printable prescriptions. Found
-the Playwright E2E suite can exceed the new auth rate limit because it performs
-several login/logout calls from the same local IP. I am adjusting only the E2E
-server configuration/docs so tests run with a higher auth limit while app
-defaults stay unchanged. Also treating client-aborted requests in the API
-exception middleware as debug noise instead of false 500 errors seen during
-browser test teardown. Verified backend solution tests, frontend unit tests,
-frontend production build, and Playwright E2E.
-
-### 2026-08-25 — Codex
-Status: done.
-Hardened auth endpoint rate limiting from the release checklist. Added an
-ASP.NET Core rate-limit policy for auth-sensitive endpoints (`login`, `refresh`,
-`logout`), made it configurable, covered `429` behavior with integration tests,
-and updated the checklist. Touched `Program.cs`, `AuthController.cs`,
-integration test factory/tests, and docs only. Avoided Prescriptions/PDF files
-while Code owns that module.
-
-### 2026-08-25 — Code
-Status: done.
-Printable prescriptions shipped: an "Imprimir receta" button on prescription
-detail (any status, gated only by being able to view the record — front
-desk covering for a vet can still print) that calls `window.print()` against
-a print-only letterhead (clinic name from the signed-in user, patient +
-species, owner, veterinarian, status, date) with the app chrome and all
-interactive controls hidden via `@media print`.
-Backend: added `OwnerName`/`PatientSpecies` to `PrescriptionDetailDto`,
-populated via a new `.Patient.Owner` include in `GetPrescriptionByIdQueryHandler`
-— extended `PrescriptionsTests` to assert them. Backend 36/36.
-Frontend: extended `PrescriptionDetail` in **`clinical.models.ts`** (2 new
-fields, additive, no conflicts) and touched **`src/styles.scss`** (global,
-one rule hiding `.topbar` on print — this is generically useful for any
-page someone prints, not prescription-specific). Frontend 36/36 (`ng test`
-untouched by this — verified the print CSS rules are correctly present and
-scoped by inspecting `document.styleSheets` live in browser, since an
-automated tool can't drive the OS print dialog itself; on-screen
-owner/species rendering verified against real data end to end).
-Closed the "no printable prescriptions" item in both `docs/MVP.md` and
-`docs/RELEASE_CHECKLIST.md`. Did not touch `app.routes.ts`, shell nav
-structure, or Owners/Appointments/Users.
-
-### 2026-08-25 — Codex
-Status: done.
-Hardening login lockout from the release checklist: configure Identity lockout,
-record failed password attempts in `IdentityService.ValidateCredentialsAsync`,
-enable lockout for newly seeded/created users, and add integration coverage.
-Touched backend auth/identity seed + tests and release checklist only. Avoided
-frontend routes, shell navigation, permissions, Docker, and E2E files while Code
-owned Playwright E2E setup.
-
-### 2026-08-25 — Code
-Status: done.
-Set up minimal browser-driven E2E tests with Playwright — actually run and
-passing 6/6 against the real backend + a real SQL Server, not just written
-on paper (unlike the Docker setup, Playwright's Chromium installed fine
-here). New `frontend/e2e/{helpers,login,role-access,clinical-workflow}.spec.ts`
-+ `frontend/playwright.config.ts` (auto-starts both dev servers if not
-already running), `npm run e2e`, README instructions, and marked the
-"minimal E2E" checklist item done in RELEASE_CHECKLIST.md. Coverage: login
-(valid/invalid/logout), Administrador-vs-Recepcion route access, and one
-full consultation-draft→finalize→prescription-draft→finalize smoke test.
-Tests create their own fresh owners/patients/staff via API for isolation —
-no shared-state dependency on other QA data sitting in the dev DB.
-Confirmed `ng test` doesn't pick up the e2e/ specs (still 36/36). Only
-touched `frontend/package.json`, `package-lock.json`, `.gitignore`, `README.md`
-— nothing in `src/`.
-
-### 2026-08-25 — Codex
-Status: done.
-Hardening auth logout from the release checklist: add an API logout endpoint that
-revokes refresh tokens, wire the frontend "Cerrar sesión" action to call it, and
-cover the refresh-token revocation behavior with integration tests. Touched Auth
-command/controller/service files, auth tests, and the release checklist only.
-Avoided Docker, deployment docs, `app.routes.ts`, shell navigation, and
-permission defaults while Code owned deploy support.
-
-### 2026-08-25 — Code
-Status: done.
-Added Docker deploy support: `backend/Dockerfile`, `frontend/Dockerfile` +
-`frontend/nginx.conf` (serves the built Angular app, reverse-proxies
-`/api/*` to the API container so the browser only sees one origin), root
-`docker-compose.yml` (api + sqlserver + frontend), `.env.example`, and
-`docs/DEPLOYMENT.md`. Found a real gap while writing the bootstrap steps:
-there's no self-registration, so a fresh deploy with `Seed:DemoData=false`
-would have zero users and no way to ever log in — compose intentionally
-seeds the demo accounts as the bootstrap path, documented in DEPLOYMENT.md
-("log in, create the real clinic, retire the demo accounts"). Also found
-platform-administrator accounts can't be deactivated from any screen
-(not clinic-scoped) — logged in RELEASE_CHECKLIST.md, not fixed.
-Could not actually run `docker compose build` — Docker isn't installed in
-this environment — so verified by hand: every path/filename the Dockerfiles
-reference against the real repo structure, and the Angular build output dir
-(`dist/frontend/browser`) against a real `ng build` run. Recommend an actual
-`docker compose up --build` smoke test with Docker available before relying
-on this for the real pilot deploy. No app code touched.
-
-### 2026-08-25 — Code
-Status: done.
-Wrote `docs/RELEASE_CHECKLIST.md`. Concrete findings from auditing the actual
-code (not a generic template): no login lockout (`IdentityService.ValidateCredentialsAsync`
-calls `CheckPasswordAsync` directly, no `options.Lockout` configured), no
-`/logout` endpoint so refresh tokens outlive a client-side logout, no rate
-limiting anywhere, no deploy story (no Dockerfile/CI at all), plus the usual
-secrets/CORS/connection-string items that need real values before a pilot
-env. Also listed known functional gaps to tell the pilot clinic about
-(no PDF prescriptions, no audit-log UI, no password reset). Doc-only,
-no app code touched.
-
-### 2026-08-25 — Codex
-Status: done.
-Adding frontend auth-flow QA coverage for the JWT interceptor and auth guard:
-API bearer headers, refresh retry on 401, refresh failure logout, and guard
-redirect behavior. Planning to touch only new spec files under
-`frontend/src/app/core/interceptors` and `frontend/src/app/core/guards`.
-Avoiding Users, `app.routes.ts`, and shell nav while Code owns the Usuarios module.
-
-### 2026-08-25 — Code
-Status: done.
-Built the User Management (Usuarios) module end to end, gated by
-`users.manage` (Administrador/SuperAdministrador only).
-Backend: fixed `GetUsersQuery` so PlatformAdministrator can list a clinic's
-users (previously threw — that role has no `ClinicId`), added
-`POST /api/users/{id}/status` (activate/deactivate) with tenant checks and
-self-lockout prevention. 4 new integration tests, backend suite 31/31.
-Frontend: new `/users` route + "Usuarios" shell nav link (touched
-`app.routes.ts` and `layout/shell/shell.html` per the shared-files rule —
-just the one nav `<a>`, no other shell changes). New `features/users/*`,
-`core/models/user.models.ts` + `clinic.models.ts`, `core/services/users.service.ts`
-+ `clinics.service.ts`. 3 new specs, frontend suite 35/35.
-Verified live in browser: Administrador create/list/deactivate own clinic
-(self-row has no deactivate button), PlatformAdministrator clinic-picker
-across clinics, Recepcion/Veterinario correctly redirected away from `/users`.
-Committing and pushing now.
-
-### 2026-08-25 — Codex
-Status: done.
-Adding frontend QA coverage for visible states/actions in Owners and
-Appointments, focused on empty/loading/error and permission-driven UI behavior.
-Also fixing the patient-filtered Agenda "Expediente" link so it only appears
-for users with `records.read.full`.
-Planning to touch frontend spec files under `frontend/src/app/features/owners`
-and `frontend/src/app/features/appointments`, plus
-`frontend/src/app/features/appointments/appointments/appointments.ts/html`.
-Will not touch `backend/tests/VetPlatform.Api.IntegrationTests/DashboardSummaryTests.cs`.
-
-### 2026-08-25 — Code
-Status: done.
-Added the PlatformAdministrator dashboard test (cross-clinic data, since
-that role bypasses the tenant filter). Backend suite now 27/27. That closes
-out dashboard test coverage across all 4 roles — I don't see more low-risk
-backend hardening to do right now, so I'm waiting on the human/Codex for the
-next task rather than inventing new scope.
-
-### 2026-08-25 — Code
-Status: done.
-Set up this file per the human's request, so we rely less on manual relay
-for "who's touching what" before starting overlapping work. No code changes.
