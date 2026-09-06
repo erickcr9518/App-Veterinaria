@@ -53,6 +53,62 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (8) — request for Codex
+Status: proposing a new task, not started by Code (it's Auth/Identity/Users
+territory — your area, not Vetheca).
+
+**Request from Erick, came up while setting up Vetheca's rollout:** the
+current permission system assigns exactly one role per user
+(`roles.FirstOrDefault()` in `IdentityService.BuildAuthenticatedUserAsync`,
+and `CurrentUserService.Role` reads a single `ClaimTypes.Role` value), and
+role permissions are a fixed global map (`RoleDefaultPermissions.cs`) with
+no per-user override. This is a real, current gap, not hypothetical: Erick
+is exactly the "owner who is also the treating vet" case — today he can't
+have one account that both manages the clinic/staff (Administrador
+permissions: `users.manage`, `audit.read.all`, etc.) AND writes
+consultations/prescriptions (Veterinario-only permissions). Administrador
+literally cannot chart today; Veterinario can't manage staff. There's no
+good single-role answer for a small clinic where one person does
+everything, sometimes down to reception duties too.
+
+**What's being asked:** let one user account hold multiple roles at once,
+with permissions merging (union) across all of them, so an
+Administrador+Veterinario account gets everything both roles grant.
+Concretely this probably means:
+- `BuildAuthenticatedUserAsync` needs to look at *all* of a user's roles
+  (not `.FirstOrDefault()`), union their permissions from `RolePermissions`,
+  and likely emit multiple `ClaimTypes.Role` claims instead of one.
+- `CurrentUserService.Role` (singular) and anything else reading "the"
+  role as one string needs to either become a list, or you find a way to
+  preserve a single "primary" role for display purposes while permissions
+  come from the full set. Worth grepping for every place that reads
+  `ClaimTypes.Role`/`CurrentUserService.Role` before deciding the exact
+  shape — didn't do that audit myself since this isn't my area.
+- The Usuarios screen (frontend) needs a UI to assign multiple roles to
+  one user. **Explicit UX requirement from Erick, said almost verbatim,
+  worth designing around directly:** never expose raw permission codes to
+  an admin setting this up — show simple human-readable role toggles
+  instead, e.g. a person's role field becomes multi-select chips like
+  "[✓] Veterinario  [✓] Encargado de clínica  [ ] Recepción", not a
+  checklist of permission codes like `consultations.write`. He's
+  explicit and recurring about this: the whole app needs to be as
+  frictionless as "a stethoscope or thermometer" for a working vet, or
+  they abandon it — this isn't a one-off ask, treat it as a standing bar
+  for any new screen, not just this one.
+- `PlatformAdministrator` (cross-tenant bypass logic in
+  `ApplicationDbContext`'s query filter) probably needs to stay a special
+  case handled separately from ordinary multi-role, since its behavior
+  (bypassing the clinic tenant filter entirely) isn't just "more
+  permissions" - don't assume it folds cleanly into the same union logic
+  without checking.
+
+Not blocking Vetheca — that work continues in parallel. Erick would like
+this picked up soon since it affects real usability for him right now, not
+hypothetically. If you disagree with the approach or want to scope it
+differently, say so in this log rather than starting in a direction Erick
+hasn't seen — this is exactly the kind of product/UX-shaping change worth
+a quick round-trip before deep implementation, per standing rule 2.
+
 ### 2026-09-05 — Code (7)
 Status: done.
 Erick got his own Anthropic API key set up (console.anthropic.com,
