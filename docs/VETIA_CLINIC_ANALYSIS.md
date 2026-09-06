@@ -641,6 +641,61 @@ sección viene de una URL específica verificada en esa investigación.
 
 ---
 
+## L. Consideraciones futuras: franquicias multi-clínica
+
+Erick planteó un caso que hoy la arquitectura **no resuelve bien**: una
+franquicia veterinaria con varias sucursales propias (ejemplo real que
+mencionó: "La Veté"), donde el dueño necesita administrar *sus* sucursales
+sin ver las de otros clientes de la plataforma. Anotado acá para no
+perderlo — **no es trabajo para ahora**, es hipotético hasta que exista un
+cliente real de este tipo, consistente con el resto de este documento.
+
+**Por qué `SuperAdministrador` no sirve para esto:** ese rol ve **todas**
+las clínicas de **toda la plataforma**, de cualquier cliente. Dárselo al
+dueño de una franquicia le daría acceso a los datos de otros negocios que
+no tienen nada que ver con él — un problema de privacidad entre clientes
+distintos, no una solución.
+
+**Lo que haría falta, cuando llegue el momento:** un nivel intermedio entre
+"una clínica" y "toda la plataforma" — algo como una entidad
+`Organization`/franquicia que agrupe un conjunto específico de clínicas
+bajo un mismo dueño, con un rol scopeado a *ese grupo* nada más. Es una
+capa nueva en el modelo de datos (Organización → varias Clínicas → varios
+Usuarios), no un ajuste de permisos como el trabajo de roles múltiples que
+está haciendo Codex — son cosas independientes, no se pisan.
+
+**Modelo de cobro sugerido (decisión de negocio, no requiere código
+todavía):** cobrar por clínica conectada a la cuenta de la franquicia — el
+modelo estándar de la industria para software multi-sucursal (retail,
+restaurantes, cadenas de salud). Simple de explicar y de facturar; un
+negocio con más sucursales genera más uso y paga proporcionalmente más.
+
+**Consideración ética/legal importante que planteó Erick, y con la que
+coincidimos parcialmente:** compartir el historial de un paciente puntual
+*entre sucursales de la misma empresa cuando ese paciente realmente visita
+esa otra sucursal* no es problemático — así funcionan las redes de
+hospitales y cadenas veterinarias reales, y hasta mejora la atención
+(historial completo en vez de fragmentado). **Lo que sí sería un exceso:**
+que cualquier persona de cualquier sucursal pueda navegar libremente datos
+de pacientes que nunca visitaron esa sucursal, sin motivo clínico, o que el
+dueño de la franquicia (sin ser el veterinario tratante) tenga acceso de
+"mirón" al detalle clínico de cada paciente de cada sucursal solo por ser
+el dueño del negocio. Además del tema ético, la mayoría de países tienen
+leyes de protección de datos personales (no específicas de veterinaria,
+sino generales, sobre los datos del propietario de la mascota) que
+podrían verse comprometidas con un acceso así de amplio sin una razón
+legítima.
+
+**Diseño recomendado para cuando se construya esto:** compartir datos
+*cuando hace falta* (el paciente aparece en otra sucursal de la misma
+franquicia → ahí se habilita ver su historial), no dejar todo abierto por
+defecto. El rol de dueño de franquicia debería ver métricas de negocio
+(facturación, citas, rendimiento del personal) en vez de detalle clínico
+de cada paciente, salvo que también sea el veterinario tratante en un caso
+puntual.
+
+---
+
 ## Nota para Codex
 
 Esto es una propuesta de dirección de producto, todavía **no aprobada para
