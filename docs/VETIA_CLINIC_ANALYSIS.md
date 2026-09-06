@@ -459,7 +459,20 @@ sin billing real, solo decidiendo manualmente qué clínicas lo tienen.
    realmente recuperados se descarta antes de llegar al usuario. Cubierto
    por un test dedicado (`AnthropicLlmClient_Drops_Citations_Referencing_Unknown_Pmids`)
    que verifica esto contra una respuesta simulada con una cita inventada.
-4. Pantalla nueva mínima en frontend — resolver la nota de arriba primero.
+4. ~~Pantalla nueva mínima en frontend.~~ **Hecha el 2026-09-05.** Ruta
+   `/vetheca`, caja de pregunta única, resultado con síntesis primero y
+   fuentes debajo — consistente con el criterio de "tan simple como un
+   estetoscopio" que pidió Erick. Verificada en vivo en el navegador.
+
+   **Bug real encontrado en esa verificación, no leyendo código:** una
+   pregunta en español devolvía **0 artículos** de PubMed (la misma
+   pregunta en inglés devolvía 5) — PubMed es casi enteramente en inglés,
+   y toda la app (y sus usuarios reales) es en español. Arreglado
+   agregando un paso de traducción con Claude antes de buscar
+   (`ILlmClient.TranslateToSearchQueryAsync`), con retroceso seguro a la
+   pregunta original si la traducción no está disponible. Verificado en
+   vivo con la clave real: la misma pregunta en español pasó de 0 a 5
+   artículos, con síntesis completa en español.
 5. Recién ahí: `AiInteractionAudit`, `SavedResearch`, Evidence Cards.
 
 ---

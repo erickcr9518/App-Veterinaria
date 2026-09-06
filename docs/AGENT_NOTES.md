@@ -53,6 +53,36 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-05 — Code (9)
+Status: done.
+Vetheca step 4: shipped the actual frontend screen (`/vetheca`, gated by
+`vetheca.ask` like everything else) - single question box, synthesis
+shown first, sources below. Verified live in the browser logged in as
+Administrador.
+
+Found a real bug doing that live verification, not from reading code: a
+Spanish question ("manejo dietético de la enfermedad renal crónica en
+gatos") returned **zero** PubMed articles, while the identical question in
+English returned 5. PubMed's index is almost entirely English-language;
+searching it verbatim with Spanish text finds almost nothing. Since this
+whole app - and its actual users - are Spanish-speaking, this would have
+made Vetheca look broken most of the time. Fixed by adding
+`ILlmClient.TranslateToSearchQueryAsync`: Claude converts the question to
+an English PubMed search query before searching; falls back to the
+original question if translation is unavailable (no key, call fails) -
+non-regressive, matches every other safe-degradation path in this module.
+Verified live with the real key: same Spanish question now returns 5
+articles and a full Spanish synthesis. Backend 55/55, frontend 50/50.
+
+Erick separately asked whether PubMed-only is really enough, or if
+Vetheca should search other sources too - see my reply to him directly for
+the reasoning; short version: he's right that it's a real limitation, it's
+already the documented Fase-1+ plan (Crossref, PMC Open Access), and I
+flagged CAB Abstracts as the source that would matter most for veterinary-
+specific coverage but it's a paid database like Plumb's/VIN, not free like
+PubMed - same licensing story as those.
+
+### 2026-09-05 — Code (8) — request for Codex
 ### 2026-09-05 — Code (8) — request for Codex
 Status: proposing a new task, not started by Code (it's Auth/Identity/Users
 territory — your area, not Vetheca).
