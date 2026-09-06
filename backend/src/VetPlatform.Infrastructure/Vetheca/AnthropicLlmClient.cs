@@ -74,19 +74,24 @@ public class AnthropicLlmClient : ILlmClient
         terminología médica/veterinaria relevante (estilo MeSH cuando
         aplique).
 
-        Reglas importantes sobre la forma de la consulta:
-        - Elegí el diagnóstico o problema clínico CENTRAL de la pregunta,
-          no trates de incluir cada detalle mencionado (edad, todos los
-          signos clínicos, etc.) - eso sobrecarga la búsqueda.
-        - Usá como máximo 2-3 conceptos clave. NUNCA encadenes más de 2
-          operadores AND/OR - en PubMed, encadenar muchos AND exige que
-          TODOS los términos aparezcan juntos en el mismo artículo, lo
-          cual casi siempre devuelve cero resultados relevantes o rellena
-          con resultados irrelevantes.
-        - Preferí una frase corta de términos separados por espacios
-          (2-5 palabras) en vez de una expresión booleana compleja,
-          salvo que un único "AND" entre dos conceptos sea claramente
-          necesario.
+        Reglas importantes sobre la forma de la consulta - PubMed exige que
+        TODAS las palabras de una búsqueda sin comillas aparezcan juntas en
+        el mismo artículo (aunque no uses "AND" explícito), así que cada
+        palabra que agregás reduce drásticamente los resultados:
+        - Máximo 3-4 palabras clave en total, nunca más. Esto no es una
+          sugerencia blanda: 5+ palabras casi siempre devuelven 0
+          resultados en PubMed, incluso para temas bien estudiados.
+        - Elegí solo: especie + fármaco/condición/diagnóstico central.
+          Descartá el resto de los detalles del caso (edad, signos
+          clínicos secundarios, etc.) - eso sobrecarga la búsqueda.
+        - NUNCA incluyas palabras calificativas genéricas como "safety",
+          "long-term", "best", "effective/effectiveness", "optimal" -
+          no ayudan a encontrar artículos, solo restan resultados. Esas
+          preguntas (¿es seguro?, ¿es efectivo?) se responden analizando
+          el contenido de los artículos encontrados, no buscando esas
+          palabras literalmente en PubMed.
+        - NUNCA encadenes más de 2 operadores AND/OR explícitos - mismo
+          problema, agravado.
 
         Respondé ÚNICAMENTE con la consulta de búsqueda en texto plano, sin
         comillas, sin explicación, sin JSON, en una sola línea.
@@ -167,6 +172,15 @@ public class AnthropicLlmClient : ILlmClient
             }
 
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (WasTruncatedByMaxTokens(responseBody))
+            {
+                _logger.LogWarning(
+                    "La respuesta de Anthropic para Vetheca se cortó por alcanzar max_tokens ({MaxTokens}). " +
+                    "El contenido generado era más largo de lo esperado para esta pregunta - subir MaxTokens si esto se repite seguido.",
+                    maxTokens);
+            }
+
             var text = ExtractResponseText(responseBody);
             if (text is null)
             {
@@ -201,6 +215,13 @@ public class AnthropicLlmClient : ILlmClient
         }
 
         return builder.ToString();
+    }
+
+    private static bool WasTruncatedByMaxTokens(string responseBody)
+    {
+        using var document = JsonDocument.Parse(responseBody);
+        return document.RootElement.TryGetProperty("stop_reason", out var stopReason) &&
+            stopReason.ValueEquals("max_tokens");
     }
 
     private static string? ExtractResponseText(string responseBody)
