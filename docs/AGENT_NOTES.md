@@ -53,6 +53,61 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-07 — Code (12)
+Status: done.
+
+Erick asked, unprompted, if I had my own ideas to improve/innovate on
+Vetheca (not just react to his). Proposed 4; he approved building 1-3 now,
+holding 4 (drug-interaction/dosage cross-check against the patient's own
+record) as documented-only - his call, he flagged it as a likely source of
+conflicts (interaction data quality/liability) worth thinking through more
+before building. All 3 approved ideas are now built, tested, and verified
+live against the real Claude/PubMed APIs - see
+`docs/VETIA_CLINIC_ANALYSIS.md` section N for the original proposal.
+
+1. **Study type from real PubMed metadata.** `PubMedArticleDto.StudyType`,
+   parsed from the article's own `PublicationTypeList` in the `efetch` XML
+   (filtering out uninformative tags like "Journal Article"). Deliberately
+   *not* asked of the LLM - this is NLM-assigned structured metadata, zero
+   hallucination risk, `null` (shown as "no confirmado") when PubMed itself
+   didn't tag it, never invented.
+
+2. **Citation quote verification.** The synthesis prompt now requires a
+   literal ~30-word excerpt per citation; `AnthropicLlmClient` checks
+   (normalized substring match) that the excerpt actually appears in the
+   cited article's own abstract text - independent of the existing PMID-
+   grounding check. Important distinction: a failed PMID match still drops
+   the citation outright (unambiguous hallucination), but a failed quote
+   match does NOT drop it - only flags `QuoteVerified: false`, shown
+   honestly in a new "Verificación de citas" section rather than hidden.
+   Same "show uncertainty, don't hide it" principle as the existing
+   evidence-insufficient badge.
+
+3. **Response feedback.** 👍/👎 on any synthesis - thumbs-down prompts for
+   an optional short note before submitting. Stored as
+   `VethecaSearchLog.Feedback`/`FeedbackNote` (one migration,
+   `AddVethecaFeedback` - no new table needed, unlike 1-2 which needed zero
+   migrations since their data lives in the existing `ResultJson` blob).
+   New endpoint `POST /api/vetheca/{id}/feedback`, ownership-checked same
+   pattern as save/unsave (403 if not the asking user).
+
+Backend 74/74 (7 new: quote-verified/unverified, feedback submit +
+ownership-forbidden, real PubMed XML → correct StudyType parse). Frontend
+62/62 (6 new). One real test bug caught and fixed along the way: a single
+`it()` tried to call `createComponent()` twice (verified + unverified in
+one test) - Vitest/TestBed only allows one `configureTestingModule` per
+test, split into two tests.
+
+Verified live end-to-end with a real question ("tratamiento de la
+displasia de cadera en perros grandes") against the real Claude/PubMed
+APIs: all 5 real sources showed a real study type (mostly "Review"); the
+citation section showed 4 real citations, 3 verified and 1 correctly
+flagged unverified (a real LLM paraphrase, not a hallucination - exactly
+the ambiguous case this feature is designed to surface honestly instead of
+guessing); clicked 👍 and confirmed via network inspection the request hit
+`POST /api/vetheca/{id}/feedback` and returned a real `204 No Content`
+from the real database.
+
 ### 2026-09-06 — Code (11)
 Status: done. Also folded everything before "Code (7)" into a compact
 "Earlier history" summary below, per standing rule 5 - this file had grown

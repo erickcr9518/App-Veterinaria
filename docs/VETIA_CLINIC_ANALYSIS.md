@@ -853,10 +853,12 @@ resolviendo el dato en cada clínica.
 ## N. Mejoras a Vetheca (2026-09-06)
 
 Erick pidió ideas propias de mejora, no solo reaccionar a las suyas. Se
-propusieron cuatro; **1, 2 y 3 se aprobaron para construir ahora** (ver el
-log de `AGENT_NOTES.md` para el estado real de implementación); **4 queda
-solo documentada** — Erick mismo señaló que le preocupan los conflictos que
-podría traer, sin descartarla del todo.
+propusieron cuatro; **1, 2 y 3 se aprobaron y ya están construidas,
+probadas (74/74 backend, 62/62 frontend) y verificadas en vivo contra
+Claude/PubMed reales** — ver "Code (12)" en `AGENT_NOTES.md` para el
+detalle de la verificación; **4 queda solo documentada** — Erick mismo
+señaló que le preocupan los conflictos que podría traer, sin descartarla
+del todo.
 
 1. **Verificación de que la cita respalda la afirmación.** Hasta ahora solo
    se verificaba que el PMID citado fuera real (existiera entre los
