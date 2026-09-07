@@ -89,7 +89,11 @@ fixtures — goes into the system.
       `logout`, `forgot-password`, `reset-password`, `change-password`) now
       use ASP.NET Core rate limiting by client IP, defaulting to 10 requests per minute and
       returning `429` when exceeded. Configurable through
-      `RateLimiting:Auth:*` and covered by integration tests.
+      `RateLimiting:Auth:*` and covered by integration tests. `POST
+      /api/vetheca/ask` is separately rate-limited per user (not IP — several
+      vets in the same clinic can share a network), defaulting to 20/hour,
+      configurable through `RateLimiting:Vetheca:*` — this one guards a paid
+      external API call, not brute-force abuse.
 - [x] **Refresh-token cleanup.** Login and refresh-token rotation now remove
       stale refresh-token rows for that same user (`RevokedAtUtc` set or
       `ExpiresAtUtc` in the past), so normal use does not grow the
@@ -205,8 +209,8 @@ Worth setting expectations rather than surprising them:
 
 ## Automated test coverage snapshot
 
-As of this checklist update: backend 65/65 (7 unit + 58 integration),
-frontend 55/55, E2E 6/6 —
+As of this checklist update (2026-09-07): backend 76/76 (7 unit + 69
+integration), frontend 63/63, E2E 6/6 —
 re-run all before relying on these numbers, since they move as both agents
 add coverage.
 These cover role/permission access
