@@ -18,4 +18,10 @@ public class VethecaSearchLog : BaseAuditableEntity, ITenantEntity
     public string ResultJson { get; set; } = string.Empty;
     public bool IsSaved { get; set; }
     public string? Title { get; set; }
+
+    // Null until the asking user rates the answer. True = helpful,
+    // false = not helpful - real signal on where Vetheca falls short,
+    // without Erick having to manually re-test every question himself.
+    public bool? Feedback { get; set; }
+    public string? FeedbackNote { get; set; }
 }

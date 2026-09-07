@@ -15,6 +15,7 @@ public class VethecaSearchLogConfiguration : IEntityTypeConfiguration<VethecaSea
         builder.Property(v => v.ModelUsed).HasMaxLength(100);
         builder.Property(v => v.Title).HasMaxLength(200);
         builder.Property(v => v.ResultJson).IsRequired();
+        builder.Property(v => v.FeedbackNote).HasMaxLength(1000);
 
         builder.HasIndex(v => new { v.ClinicId, v.CreatedByUserId, v.IsSaved });
     }

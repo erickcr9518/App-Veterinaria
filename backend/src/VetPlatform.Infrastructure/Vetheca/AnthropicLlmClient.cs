@@ -36,7 +36,11 @@ public class AnthropicLlmClient : ILlmClient
            ni información que no esté en esos abstracts.
         2. Nunca inventes un PMID, DOI, autor o dato bibliográfico. Cada cita
            que hagas debe usar el PMID exacto de uno de los artículos
-           entregados.
+           entregados, y debe incluir un extracto textual breve (máximo
+           ~30 palabras) copiado LITERALMENTE del abstract de ese artículo
+           que respalde la afirmación. Si no podés encontrar una frase
+           literal del abstract que respalde lo que estás afirmando, no
+           hagas esa cita - decilo en las limitaciones en vez de forzarla.
         3. No afirmes haber leído el artículo completo - los artículos
            entregados son solo abstracts. No extrapoles más allá de lo que el
            abstract realmente dice.
@@ -63,7 +67,7 @@ public class AnthropicLlmClient : ILlmClient
           "hallazgosPrincipales": ["string", "..."],
           "aplicabilidadClinica": "string o null",
           "limitaciones": "string o null",
-          "citas": [{"pmid": "string", "afirmacion": "string"}]
+          "citas": [{"pmid": "string", "afirmacion": "string", "extracto": "string, literal del abstract"}]
         }
         """;
 
@@ -269,7 +273,12 @@ public class AnthropicLlmClient : ILlmClient
                 ClinicalApplicability = raw.AplicabilidadClinica,
                 Limitations = raw.Limitaciones,
                 Citations = (raw.Citas ?? Array.Empty<RawCitation>())
-                    .Select(c => new VethecaCitationDto { Pmid = c.Pmid ?? string.Empty, Claim = c.Afirmacion ?? string.Empty })
+                    .Select(c => new VethecaCitationDto
+                    {
+                        Pmid = c.Pmid ?? string.Empty,
+                        Claim = c.Afirmacion ?? string.Empty,
+                        SupportingExcerpt = c.Extracto,
+                    })
                     .ToArray(),
             };
         }
@@ -280,17 +289,43 @@ public class AnthropicLlmClient : ILlmClient
         }
     }
 
-    // Structural grounding check: drop any citation whose PMID wasn't in the
-    // articles we actually sent. A model that hallucinates a citation must
-    // never reach the user un-checked - see the class-level comment.
+    // Two grounding checks, neither of which trusts the model's own say-so:
+    // 1. Drop any citation whose PMID wasn't in the articles we actually
+    //    sent - a hallucinated citation must never reach the user un-checked.
+    // 2. For citations that survive that, verify the quoted excerpt
+    //    actually appears in that article's abstract (normalized comparison
+    //    to tolerate whitespace/case differences, not exact-byte matching).
+    //    Unlike the PMID check, a failed quote match doesn't get dropped -
+    //    it's shown honestly as unverified (QuoteVerified: false) instead,
+    //    since a real quote that fails a naive string check is a different
+    //    problem than an invented PMID.
     private static VethecaSynthesisDto FilterUngroundedCitations(VethecaSynthesisDto synthesis, IReadOnlyList<PubMedArticleDto> articles)
     {
-        var knownPmids = articles.Select(a => a.Pmid).ToHashSet();
-        var groundedCitations = synthesis.Citations.Where(c => knownPmids.Contains(c.Pmid)).ToArray();
+        var articlesByPmid = articles.ToDictionary(a => a.Pmid);
 
-        return groundedCitations.Length == synthesis.Citations.Count
-            ? synthesis
-            : synthesis with { Citations = groundedCitations };
+        var groundedCitations = synthesis.Citations
+            .Where(c => articlesByPmid.ContainsKey(c.Pmid))
+            .Select(c => c with { QuoteVerified = QuoteAppearsInAbstract(c.SupportingExcerpt, articlesByPmid[c.Pmid].AbstractText) })
+            .ToArray();
+
+        return synthesis with { Citations = groundedCitations };
+    }
+
+    private static bool QuoteAppearsInAbstract(string? excerpt, string? abstractText)
+    {
+        if (string.IsNullOrWhiteSpace(excerpt) || string.IsNullOrWhiteSpace(abstractText))
+        {
+            return false;
+        }
+
+        return Normalize(abstractText).Contains(Normalize(excerpt), StringComparison.Ordinal);
+    }
+
+    private static string Normalize(string text)
+    {
+        var lowered = text.ToLowerInvariant();
+        var withoutPunctuation = new string(lowered.Where(ch => !char.IsPunctuation(ch)).ToArray());
+        return string.Join(' ', withoutPunctuation.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
 
     private static string StripMarkdownFences(string text)
@@ -323,5 +358,6 @@ public class AnthropicLlmClient : ILlmClient
 
     private record RawCitation(
         [property: JsonPropertyName("pmid")] string? Pmid,
-        [property: JsonPropertyName("afirmacion")] string? Afirmacion);
+        [property: JsonPropertyName("afirmacion")] string? Afirmacion,
+        [property: JsonPropertyName("extracto")] string? Extracto);
 }

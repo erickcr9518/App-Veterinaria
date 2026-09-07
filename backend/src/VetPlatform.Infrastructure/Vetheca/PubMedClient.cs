@@ -126,6 +126,8 @@ public class PubMedClient : IPubMedClient
                 return string.IsNullOrWhiteSpace(label) ? section.Value : $"{label}: {section.Value}";
             });
 
+        var studyType = ExtractStudyType(article);
+
         return new PubMedArticleDto
         {
             Pmid = pmid,
@@ -135,7 +137,29 @@ public class PubMedClient : IPubMedClient
             Year = year,
             AbstractText = abstractText is null ? null : string.Join(" ", abstractText),
             Url = $"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+            StudyType = studyType,
         };
+    }
+
+    // "Journal Article" is on almost every record and says nothing useful;
+    // everything else in PubMed's PublicationTypeList (Randomized Controlled
+    // Trial, Systematic Review, Case Reports, etc.) is real, NLM-assigned
+    // metadata worth surfacing. Null when nothing informative is tagged -
+    // shown as "no confirmado", never guessed.
+    private static readonly HashSet<string> UninformativePublicationTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Journal Article", "English Abstract",
+    };
+
+    private static string? ExtractStudyType(XElement? article)
+    {
+        var types = article?.Element("PublicationTypeList")?.Elements("PublicationType")
+            .Select(t => t.Value)
+            .Where(t => !string.IsNullOrWhiteSpace(t) && !UninformativePublicationTypes.Contains(t))
+            .Distinct()
+            .ToArray();
+
+        return types is { Length: > 0 } ? string.Join(", ", types) : null;
     }
 
     private string BuildUrl(string endpoint, Dictionary<string, string> queryParams)

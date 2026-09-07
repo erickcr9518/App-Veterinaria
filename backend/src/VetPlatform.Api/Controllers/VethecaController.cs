@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VetPlatform.Application.Vetheca.Commands.SaveVethecaSearch;
+using VetPlatform.Application.Vetheca.Commands.SubmitVethecaFeedback;
 using VetPlatform.Application.Vetheca.Commands.UnsaveVethecaSearch;
 using VetPlatform.Application.Vetheca.Models;
 using VetPlatform.Application.Vetheca.Queries.AskVetheca;
@@ -54,6 +55,14 @@ public class VethecaController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/feedback")]
+    [Authorize(Policy = PermissionCodes.VethecaAsk)]
+    public async Task<IActionResult> SubmitFeedback(Guid id, SubmitVethecaFeedbackRequest request, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new SubmitVethecaFeedbackCommand(id, request.Helpful, request.Note), cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("saved")]
     [Authorize(Policy = PermissionCodes.VethecaAsk)]
     public async Task<ActionResult<IReadOnlyList<VethecaSavedSearchSummaryDto>>> GetSaved(CancellationToken cancellationToken)
@@ -74,3 +83,5 @@ public class VethecaController : ControllerBase
 public record AskVethecaRequest(string Question, int? MaxResults);
 
 public record SaveVethecaSearchRequest(string? Title);
+
+public record SubmitVethecaFeedbackRequest(bool Helpful, string? Note);

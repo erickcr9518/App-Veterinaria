@@ -202,6 +202,137 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task AnthropicLlmClient_Marks_A_Quote_Verified_When_It_Really_Appears_In_The_Abstract()
+    {
+        var articles = new[]
+        {
+            new PubMedArticleDto { Pmid = "111", Title = "Real article", Authors = "Smith J", Journal = "Vet Surg", Year = "2020", AbstractText = "Meloxicam did not significantly alter renal function over six months." },
+        };
+
+        var anthropicResponseJson = """
+            {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"evidenciaSuficiente\": true, \"resumen\": \"Resumen.\", \"hallazgosPrincipales\": [\"Hallazgo\"], \"aplicabilidadClinica\": null, \"limitaciones\": null, \"citas\": [{\"pmid\": \"111\", \"afirmacion\": \"No afecto la funcion renal\", \"extracto\": \"did not significantly alter renal function\"}]}"
+                }
+              ]
+            }
+            """;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(anthropicResponseJson));
+        var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
+        var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
+
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, CancellationToken.None);
+
+        var citation = Assert.Single(synthesis!.Citations);
+        Assert.True(citation.QuoteVerified);
+    }
+
+    [Fact]
+    public async Task AnthropicLlmClient_Marks_A_Quote_Unverified_When_It_Does_Not_Appear_In_The_Abstract()
+    {
+        var articles = new[]
+        {
+            new PubMedArticleDto { Pmid = "111", Title = "Real article", Authors = "Smith J", Journal = "Vet Surg", Year = "2020", AbstractText = "Meloxicam did not significantly alter renal function over six months." },
+        };
+
+        var anthropicResponseJson = """
+            {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"evidenciaSuficiente\": true, \"resumen\": \"Resumen.\", \"hallazgosPrincipales\": [\"Hallazgo\"], \"aplicabilidadClinica\": null, \"limitaciones\": null, \"citas\": [{\"pmid\": \"111\", \"afirmacion\": \"Afirmacion no respaldada\", \"extracto\": \"this exact phrase is not in the abstract\"}]}"
+                }
+              ]
+            }
+            """;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(anthropicResponseJson));
+        var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
+        var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
+
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, CancellationToken.None);
+
+        var citation = Assert.Single(synthesis!.Citations);
+        Assert.False(citation.QuoteVerified);
+    }
+
+    [Fact]
+    public async Task PubMedClient_Extracts_The_Real_Study_Type_From_PublicationTypeList()
+    {
+        var efetchXml = """
+            <PubmedArticleSet>
+              <PubmedArticle>
+                <MedlineCitation>
+                  <PMID Version="1">111</PMID>
+                  <Article PubModel="Print">
+                    <Journal><Title>Veterinary Surgery</Title><JournalIssue><PubDate><Year>2023</Year></PubDate></JournalIssue></Journal>
+                    <ArticleTitle>A randomized trial.</ArticleTitle>
+                    <Abstract><AbstractText>Some abstract text.</AbstractText></Abstract>
+                    <AuthorList><Author><LastName>Smith</LastName><Initials>J</Initials></Author></AuthorList>
+                    <PublicationTypeList>
+                      <PublicationType>Journal Article</PublicationType>
+                      <PublicationType>Randomized Controlled Trial</PublicationType>
+                    </PublicationTypeList>
+                  </Article>
+                </MedlineCitation>
+              </PubmedArticle>
+            </PubmedArticleSet>
+            """;
+
+        using var httpClient = new HttpClient(new PubMedStubHttpMessageHandler(efetchXml))
+        {
+            BaseAddress = new Uri("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"),
+        };
+        var settings = Options.Create(new PubMedSettings());
+        var pubMedClient = new PubMedClient(httpClient, settings, NullLogger<PubMedClient>.Instance);
+
+        var articles = await pubMedClient.SearchAsync("test query", 5, CancellationToken.None);
+
+        var article = Assert.Single(articles);
+        Assert.Equal("Randomized Controlled Trial", article.StudyType);
+    }
+
+    [Fact]
+    public async Task User_Can_Submit_Feedback_On_Their_Own_Search()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var email = $"vetheca-feedback-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new { question = "rehabilitation after TPLO in dogs", maxResults = 5 });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+
+        var feedbackResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, $"/api/vetheca/{askResult!.Id}/feedback", new { helpful = false, note = "No encontró lo que buscaba" });
+
+        Assert.Equal(HttpStatusCode.NoContent, feedbackResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task User_Cannot_Submit_Feedback_On_Another_Users_Search()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var ownerEmail = $"vetheca-fb-owner-{Guid.NewGuid():N}@vetplatform.test";
+        var intruderEmail = $"vetheca-fb-intruder-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        var (clinicId, _) = await _factory.CreateClinicUserAsync(ownerEmail, RoleNames.Veterinarian, password);
+        await _factory.CreateClinicUserInClinicAsync(clinicId, intruderEmail, RoleNames.Veterinarian, password);
+        var ownerAuth = await LoginAsync(client, ownerEmail, password);
+        var intruderAuth = await LoginAsync(client, intruderEmail, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, ownerAuth.AccessToken, "/api/vetheca/ask", new { question = "rehabilitation after TPLO in dogs", maxResults = 5 });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+
+        var intruderAttempt = await PostAsAuthenticatedJsonAsync(client, intruderAuth.AccessToken, $"/api/vetheca/{askResult!.Id}/feedback", new { helpful = true, note = (string?)null });
+
+        Assert.Equal(HttpStatusCode.Forbidden, intruderAttempt.StatusCode);
+    }
+
+    [Fact]
     public async Task Ask_Persists_A_Log_Entry_Visible_In_The_Audit_Log()
     {
         var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
@@ -429,6 +560,33 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
                 Content = new StringContent(_responseJson, Encoding.UTF8, "application/json"),
             };
             return Task.FromResult(response);
+        }
+    }
+
+    // Routes esearch calls to a fixed PMID list and efetch calls to fixed
+    // article XML, so PubMedClient's real parsing logic (including study
+    // type extraction) runs against known input.
+    private class PubMedStubHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly string _efetchXml;
+
+        public PubMedStubHttpMessageHandler(string efetchXml)
+        {
+            _efetchXml = efetchXml;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var isEsearch = request.RequestUri!.AbsolutePath.Contains("esearch", StringComparison.OrdinalIgnoreCase);
+            var body = isEsearch
+                ? """{"esearchresult": {"idlist": ["111"]}}"""
+                : _efetchXml;
+            var contentType = isEsearch ? "application/json" : "application/xml";
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, contentType),
+            });
         }
     }
 }
