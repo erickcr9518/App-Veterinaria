@@ -810,20 +810,43 @@ quiere migrarse?** Erick confirmó (2026-09-06) que, por su propia experiencia
 trabajando en distintos lugares, cada clínica suele usar un sistema
 diferente — es un mercado repartido, no hay uno dominante. Esto decide el
 diseño: **no tiene sentido apostar a integrarnos en vivo con un proveedor
-puntual** (cada integración de ese tipo es trabajo aparte, específico de
-ese sistema, y nunca cubriríamos a todos). El punto de partida correcto es
-el camino agnóstico: la clínica sube su lista de stock (Excel/CSV) desde
-cualquier sistema que use, sin necesitar que ese sistema tenga una API.
-Integraciones en vivo con sistemas puntuales quedan como algo a evaluar
-después, solo si en el futuro se identifica que muchas clínicas reales usan
-el mismo proveedor específico y ese proveedor sí ofrece una conexión
-técnica real.
+puntual** como plan principal (cada integración de ese tipo es trabajo
+aparte, específico de ese sistema, y nunca cubriríamos a todos).
+
+Erick también planteó una duda real sobre el archivo subido a mano: "la
+gente es perezosa", en la práctica nadie va a estar subiendo un Excel cada
+semana, y terminaríamos con datos de stock desactualizados — peor que no
+tener el dato, porque podría decirle al veterinario que algo está
+disponible cuando ya se acabó. Con eso en la mesa, la conclusión conjunta
+quedó en **tres niveles**, de mejor a más limitado:
+
+1. **Inventario propio de la app (la mejor opción, por lejos).** Si la
+   clínica usa el módulo de inventario/facturación de VetPlatform mismo
+   (cuando se construya), este problema entero desaparece — no es una
+   integración, es la misma base de datos. Vetheca consulta el stock real
+   en el momento, sin ningún paso intermedio ni posibilidad de estar
+   desactualizado. Vale la pena tenerlo presente como un incentivo real
+   para que las clínicas adopten el inventario propio en vez de quedarse
+   con otro sistema — Vetheca funciona mejor y más simple con el
+   ecosistema completo.
+2. **Ingesta automática de un reporte que el otro sistema ya manda solo.**
+   Para clínicas que se quedan con su propio sistema: en vez de depender
+   de que una persona suba un archivo a mano (que en la práctica no va a
+   pasar seguido), usar la función de exportación programada que la
+   mayoría de sistemas de facturación ya tienen — aunque no tengan una API
+   completa, casi todos pueden mandar un reporte automático (por correo o
+   a una carpeta) todos los días. Nosotros solo procesamos ese archivo
+   cuando llega, sin que nadie tenga que acordarse de nada. Resuelve la
+   preocupación de "desactualizado" sin apostar a un proveedor específico.
+3. **Integración en vivo con un proveedor puntual.** Solo caso por caso,
+   cuando haya clínicas reales usando la app y se sepa exactamente qué
+   sistema tienen y si ese sistema ofrece una conexión técnica real. No es
+   el plan por defecto.
 
 Diseñar la verificación de stock detrás de una interfaz intercambiable
 desde el día uno (mismo patrón que `IPubMedClient`/`ILlmClient`), para que
-no importe si el dato viene del inventario propio de la app, de un archivo
-subido a mano, o eventualmente de una conexión en vivo con un sistema
-externo puntual.
+el motor de Vetheca no sepa ni le importe cuál de los tres niveles está
+resolviendo el dato en cada clínica.
 
 ---
 
