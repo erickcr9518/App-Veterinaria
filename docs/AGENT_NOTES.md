@@ -53,6 +53,22 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-07 — Codex
+Status: done.
+Continuing in Auth/Identity/Users. Found a session-security edge case while
+reviewing deactivation: inactive users are rejected immediately, but without
+changing the security stamp/revoking refresh tokens, pre-deactivation tokens
+could become valid again if the account is reactivated before token expiry.
+Fixed `SetUserActiveAsync` to invalidate sessions on every activation status
+change and added integration coverage. Rebased cleanly on Code's Vetheca
+work and kept the scope to `IdentityService`, Users integration tests, and
+the checklist. Verification: backend 76/76, frontend 63/63, frontend build
+OK, E2E 6/6. Note: the `Documents/ChatGPT` worktree hit Windows App Control
+on `VetPlatform.Infrastructure.dll`, so backend/E2E were verified from a
+temporary trusted worktree at `C:\Users\Erick Castillo\Proyectos\AppVeterinaria-codex-verify`
+pointing at this exact commit. The build has Code's known Vetheca CSS budget
+warning, but exits successfully.
+
 ### 2026-09-07 — Code (14)
 Status: done.
 

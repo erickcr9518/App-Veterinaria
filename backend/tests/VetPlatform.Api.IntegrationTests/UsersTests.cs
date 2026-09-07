@@ -29,6 +29,7 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
         var vetUserId = await _factory.CreateClinicUserInClinicAsync(clinicId, vetEmail, RoleNames.Veterinarian, Password);
 
         var adminAuth = await LoginAsync(adminEmail);
+        var vetAuth = await LoginAsync(vetEmail);
 
         var list = await GetAsAuthenticatedAsync<List<UserSummary>>(adminAuth.AccessToken, "/api/users");
         Assert.Contains(list, u => u.UserId == vetUserId && u.IsActive);
@@ -36,8 +37,32 @@ public class UsersTests : IClassFixture<VetPlatformApiFactory>
         var deactivateResponse = await PostAsAuthenticatedJsonAsync(adminAuth.AccessToken, $"/api/users/{vetUserId}/status", new { isActive = false });
         Assert.Equal(HttpStatusCode.NoContent, deactivateResponse.StatusCode);
 
+        var inactiveAccessResponse = await SendAuthenticatedAsync(vetAuth.AccessToken, HttpMethod.Get, "/api/auth/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, inactiveAccessResponse.StatusCode);
+
+        var inactiveRefreshResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refreshToken = vetAuth.RefreshToken,
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, inactiveRefreshResponse.StatusCode);
+
         var listAfter = await GetAsAuthenticatedAsync<List<UserSummary>>(adminAuth.AccessToken, "/api/users");
         Assert.Contains(listAfter, u => u.UserId == vetUserId && !u.IsActive);
+
+        var reactivateResponse = await PostAsAuthenticatedJsonAsync(adminAuth.AccessToken, $"/api/users/{vetUserId}/status", new { isActive = true });
+        Assert.Equal(HttpStatusCode.NoContent, reactivateResponse.StatusCode);
+
+        var staleAccessAfterReactivationResponse = await SendAuthenticatedAsync(vetAuth.AccessToken, HttpMethod.Get, "/api/auth/me");
+        Assert.Equal(HttpStatusCode.Unauthorized, staleAccessAfterReactivationResponse.StatusCode);
+
+        var staleRefreshAfterReactivationResponse = await _client.PostAsJsonAsync("/api/auth/refresh", new
+        {
+            refreshToken = vetAuth.RefreshToken,
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, staleRefreshAfterReactivationResponse.StatusCode);
+
+        var vetAuthAfterReactivation = await LoginAsync(vetEmail);
+        Assert.Equal(RoleNames.Veterinarian, vetAuthAfterReactivation.Role);
     }
 
     [Fact]
