@@ -392,6 +392,30 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
     }
 
     [Fact]
+    public async Task Audit_Log_Summary_Shows_Feedback_Once_Submitted()
+    {
+        var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));
+        var email = $"vetheca-audit-fb-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new { question = "rehabilitation after TPLO in dogs", maxResults = 5 });
+        var askResult = await askResponse.Content.ReadFromJsonAsync<AskVethecaResult>();
+
+        var auditLogBeforeFeedback = await GetAsAuthenticatedAsync<List<AuditEntryDto>>(client, auth.AccessToken, "/api/audit");
+        var entryBeforeFeedback = Assert.Single(auditLogBeforeFeedback, e => e.EntityType == "VethecaSearchLog" && e.EntityId == askResult!.Id);
+        Assert.DoesNotContain("👎", entryBeforeFeedback.Summary);
+
+        await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, $"/api/vetheca/{askResult!.Id}/feedback", new { helpful = false, note = "No cubrió perros pequeños" });
+
+        var auditLogAfterFeedback = await GetAsAuthenticatedAsync<List<AuditEntryDto>>(client, auth.AccessToken, "/api/audit");
+        var entryAfterFeedback = Assert.Single(auditLogAfterFeedback, e => e.EntityType == "VethecaSearchLog" && e.EntityId == askResult.Id);
+        Assert.Contains("👎", entryAfterFeedback.Summary);
+        Assert.Contains("No cubrió perros pequeños", entryAfterFeedback.Summary);
+    }
+
+    [Fact]
     public async Task User_Can_Save_A_Search_And_See_It_In_Their_Saved_List()
     {
         var client = CreateClientWithFakes(new FakePubMedClient(), new FakeLlmClient(CreateFakeSynthesis()));

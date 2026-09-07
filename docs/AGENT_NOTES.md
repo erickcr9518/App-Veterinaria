@@ -53,6 +53,25 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-07 — Code (14)
+Status: done.
+
+Small follow-up to the feedback feature shipped a couple commits ago
+(Code (12)): the 👍/👎 was being saved but was write-only - nowhere did
+it actually surface to anyone reviewing clinic activity, which defeats
+its stated purpose ("give Erick real signal on where Vetheca fails").
+`GetAuditLogQueryHandler`'s Vetheca entries now append the feedback to
+the existing Summary line when present (" — 👎: <note>" or " — 👍"),
+reusing the aggregator's own `Truncate` helper for the note. No new
+endpoint, no new UI - the audit screen already existed and already showed
+every ask; this just makes the feedback visible where it's already being
+looked at instead of buried in the database.
+
+Backend 76/76 (1 new: submits negative feedback with a note, confirms the
+audit summary contains neither/then both the 👎 marker and the note
+text). Frontend unaffected (63/63, unchanged) - this was a pure backend
+read-model change on an existing endpoint.
+
 ### 2026-09-07 — Code (13)
 Status: done.
 

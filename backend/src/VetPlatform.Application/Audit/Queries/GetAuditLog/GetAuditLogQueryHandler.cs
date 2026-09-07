@@ -231,7 +231,7 @@ public class GetAuditLogQueryHandler : IRequestHandler<GetAuditLogQuery, IReadOn
             .AsNoTracking()
             .Where(v => v.CreatedAtUtc >= fromUtc && v.CreatedAtUtc <= toUtc)
             .Where(v => ownUserId == null || v.CreatedByUserId == ownUserId)
-            .Select(v => new { v.Id, v.Question, v.ArticleCount, v.CreatedAtUtc, v.CreatedByUserId })
+            .Select(v => new { v.Id, v.Question, v.ArticleCount, v.CreatedAtUtc, v.CreatedByUserId, v.Feedback, v.FeedbackNote })
             .ToListAsync(cancellationToken);
 
         entries.AddRange(vethecaSearches.Select(v => new AuditEntryDto
@@ -241,7 +241,7 @@ public class GetAuditLogQueryHandler : IRequestHandler<GetAuditLogQuery, IReadOn
             EntityType = "VethecaSearchLog",
             EntityId = v.Id,
             Action = "Consulta a Vetheca",
-            Summary = $"{Truncate(v.Question, 120)} ({v.ArticleCount} fuente{(v.ArticleCount == 1 ? string.Empty : "s")})",
+            Summary = $"{Truncate(v.Question, 120)} ({v.ArticleCount} fuente{(v.ArticleCount == 1 ? string.Empty : "s")}){FormatFeedback(v.Feedback, v.FeedbackNote)}",
             PerformedByName = ResolveNamePlaceholder(v.CreatedByUserId),
         }));
 
@@ -282,5 +282,16 @@ public class GetAuditLogQueryHandler : IRequestHandler<GetAuditLogQuery, IReadOn
     private static string Truncate(string text, int maxLength)
     {
         return text.Length <= maxLength ? text : text[..maxLength] + "…";
+    }
+
+    private static string FormatFeedback(bool? feedback, string? note)
+    {
+        if (feedback is null)
+        {
+            return string.Empty;
+        }
+
+        var label = feedback.Value ? " — 👍" : " — 👎";
+        return string.IsNullOrWhiteSpace(note) ? label : $"{label}: {Truncate(note, 120)}";
     }
 }
