@@ -850,6 +850,44 @@ resolviendo el dato en cada clínica.
 
 ---
 
+## N. Mejoras a Vetheca (2026-09-06)
+
+Erick pidió ideas propias de mejora, no solo reaccionar a las suyas. Se
+propusieron cuatro; **1, 2 y 3 se aprobaron para construir ahora** (ver el
+log de `AGENT_NOTES.md` para el estado real de implementación); **4 queda
+solo documentada** — Erick mismo señaló que le preocupan los conflictos que
+podría traer, sin descartarla del todo.
+
+1. **Verificación de que la cita respalda la afirmación.** Hasta ahora solo
+   se verificaba que el PMID citado fuera real (existiera entre los
+   artículos recuperados). Esto agrega una capa más: Claude debe entregar
+   un extracto textual breve del abstract que respalde cada afirmación, y
+   el sistema comprueba automáticamente (no solo confía en el LLM) que ese
+   extracto realmente aparece en el abstract del artículo citado — mismo
+   principio que la verificación de PMIDs, aplicado ahora al contenido.
+2. **Tipo de estudio por fuente, sin inventar una escala de calidad.**
+   Deliberadamente NO es la jerarquía de evidencia que la sección 8 del
+   brief pide investigar primero — es más chico y ya viene resuelto:
+   PubMed etiqueta la mayoría de artículos con su tipo de publicación real
+   (ensayo aleatorizado, revisión sistemática, reporte de caso, etc.) en
+   los mismos metadatos que ya se descargan — no hace falta que el LLM lo
+   adivine. Si un artículo no tiene esa etiqueta, se muestra "no
+   confirmado", nunca inventado.
+3. **Retroalimentación del veterinario por respuesta.** Un simple 👍/👎 con
+   nota opcional en cada consulta. Le da a Erick señal real de dónde falla
+   Vetheca sin tener que probarlo todo él mismo indefinidamente, como hizo
+   hoy.
+4. **Búsqueda ampliada a especies relacionadas cuando no hay evidencia de
+   la especie exacta (solo documentada, no aprobada para construir).**
+   Buscar en especies cercanas cuando la especie exacta no tiene
+   literatura, mostrándolo siempre con una etiqueta bien visible de
+   extrapolación entre especies — nunca mezclado como si fuera de la
+   especie preguntada. Erick prefirió dejarla pendiente por el riesgo de
+   conflicto que percibe; retomar si en algún momento se decide que vale
+   la pena pese a eso.
+
+---
+
 ## Nota para Codex
 
 Esto es una propuesta de dirección de producto, todavía **no aprobada para
