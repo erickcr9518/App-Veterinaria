@@ -6,11 +6,14 @@ export interface VethecaArticle {
   year: string | null;
   abstractText: string | null;
   url: string;
+  studyType: string | null;
 }
 
 export interface VethecaCitation {
   pmid: string;
   claim: string;
+  supportingExcerpt: string | null;
+  quoteVerified: boolean;
 }
 
 export interface VethecaSynthesis {

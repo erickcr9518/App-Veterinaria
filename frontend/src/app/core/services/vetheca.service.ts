@@ -27,4 +27,8 @@ export class VethecaService {
   getSavedSearchById(id: string): Observable<VethecaSavedSearchDetail> {
     return this.http.get<VethecaSavedSearchDetail>(`${environment.apiUrl}/vetheca/saved/${id}`);
   }
+
+  submitFeedback(id: string, helpful: boolean, note: string | null): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/vetheca/${id}/feedback`, { helpful, note });
+  }
 }

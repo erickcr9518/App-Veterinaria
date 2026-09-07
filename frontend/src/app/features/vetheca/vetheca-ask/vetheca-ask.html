@@ -84,6 +84,45 @@
           <p>{{ synthesis.limitations }}</p>
         }
       </article>
+
+      @if (synthesis.citations.length > 0) {
+        <section class="citations">
+          <h2>Verificación de citas</h2>
+          @for (citation of synthesis.citations; track citation.pmid + citation.claim) {
+            <article class="citation-card">
+              <p class="citation-claim">{{ citation.claim }}</p>
+              @if (citation.supportingExcerpt) {
+                <p class="citation-excerpt">«{{ citation.supportingExcerpt }}»</p>
+              }
+              <p class="citation-status">
+                PMID {{ citation.pmid }} —
+                @if (citation.quoteVerified) {
+                  <span class="verified">✓ texto verificado contra el abstract</span>
+                } @else {
+                  <span class="unverified">⚠ no se pudo verificar el texto exacto</span>
+                }
+              </p>
+            </article>
+          }
+        </section>
+      }
+
+      <div class="feedback-bar">
+        @if (result.feedbackGiven === null) {
+          <span class="feedback-question">¿Te sirvió esta respuesta?</span>
+          <button type="button" class="feedback-button" [disabled]="isSendingFeedback()" (click)="rateHelpful(true)">👍 Sí</button>
+          <button type="button" class="feedback-button" [disabled]="isSendingFeedback()" (click)="rateHelpful(false)">👎 No</button>
+        } @else {
+          <span class="feedback-thanks">Gracias por tu calificación.</span>
+        }
+      </div>
+
+      @if (showFeedbackNote()) {
+        <form [formGroup]="feedbackForm" (ngSubmit)="submitFeedbackNote()" class="feedback-note-form">
+          <textarea formControlName="note" rows="2" placeholder="¿Qué falló? (opcional)"></textarea>
+          <button type="submit" [disabled]="isSendingFeedback()">Enviar</button>
+        </form>
+      }
     } @else {
       <p class="empty">No se pudo generar un resumen esta vez — mostrando los artículos encontrados igual.</p>
     }
@@ -95,6 +134,7 @@
           <article class="source-card">
             <h3>{{ article.title }}</h3>
             <p class="meta">{{ article.authors }} — {{ article.journal }} ({{ article.year }})</p>
+            <p class="study-type">Tipo de estudio: {{ article.studyType || 'no confirmado' }}</p>
             @if (article.abstractText) {
               <p class="abstract">{{ article.abstractText }}</p>
             }

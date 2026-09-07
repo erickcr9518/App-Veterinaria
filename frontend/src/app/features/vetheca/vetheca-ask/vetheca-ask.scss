@@ -254,6 +254,13 @@
   font-size: 13px;
 }
 
+.source-card .study-type {
+  margin: 0;
+  color: #52615c;
+  font-size: 12px;
+  font-style: italic;
+}
+
 .source-card .abstract {
   margin: 4px 0 0;
   color: #16211e;
@@ -271,4 +278,110 @@
 
 .source-card a:hover {
   text-decoration: underline;
+}
+
+.citations {
+  display: grid;
+  gap: 10px;
+}
+
+.citations h2 {
+  margin: 0;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #16211e;
+}
+
+.citation-card {
+  background: #fff;
+  border: 1px solid rgba(22, 33, 30, 0.12);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.citation-claim {
+  margin: 0;
+  font-size: 14px;
+  color: #16211e;
+}
+
+.citation-excerpt {
+  margin: 0;
+  font-size: 13px;
+  color: #52615c;
+  font-style: italic;
+}
+
+.citation-status {
+  margin: 0;
+  font-size: 12px;
+  color: #52615c;
+}
+
+.citation-status .verified {
+  color: #1c6b52;
+  font-weight: 600;
+}
+
+.citation-status .unverified {
+  color: #8a5a00;
+  font-weight: 600;
+}
+
+.feedback-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.feedback-question {
+  font-size: 13px;
+  color: #52615c;
+}
+
+.feedback-button {
+  padding: 6px 14px;
+  border: 1px solid rgba(22, 33, 30, 0.2);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.feedback-button:hover {
+  border-color: #16211e;
+}
+
+.feedback-thanks {
+  font-size: 13px;
+  color: #1c6b52;
+}
+
+.feedback-note-form {
+  display: flex;
+  gap: 8px;
+}
+
+.feedback-note-form textarea {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid rgba(22, 33, 30, 0.2);
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
+}
+
+.feedback-note-form button {
+  align-self: flex-start;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #16211e;
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
 }

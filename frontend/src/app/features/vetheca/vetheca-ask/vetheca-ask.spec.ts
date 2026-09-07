@@ -32,6 +32,58 @@ describe('VethecaAsk', () => {
     expect(fixture.nativeElement.textContent).toContain('No se encontró evidencia suficiente');
   });
 
+  it('shows the study type of each source, or "no confirmado" when missing', async () => {
+    const result = createResult();
+    result.articles[0].studyType = null;
+    const fixture = await createComponent({ ask: () => of(result) });
+    askQuestion(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Tipo de estudio: no confirmado');
+  });
+
+  it('shows a verified badge when the citation excerpt matches the abstract', async () => {
+    const fixture = await createComponent({ ask: () => of(createResult()) });
+    askQuestion(fixture);
+    expect(fixture.nativeElement.textContent).toContain('texto verificado');
+  });
+
+  it('shows a warning when the citation excerpt could not be verified', async () => {
+    const unverified = createResult();
+    unverified.synthesis!.citations[0].quoteVerified = false;
+    const fixture = await createComponent({ ask: () => of(unverified) });
+    askQuestion(fixture);
+    expect(fixture.nativeElement.textContent).toContain('no se pudo verificar el texto exacto');
+  });
+
+  it('lets the user rate a response as helpful', async () => {
+    const submitFeedback = vi.fn(() => of(undefined));
+    const fixture = await createComponent({ ask: () => of(createResult()), submitFeedback });
+    askQuestion(fixture);
+
+    fixture.componentInstance.rateHelpful(true);
+    fixture.detectChanges();
+
+    expect(submitFeedback).toHaveBeenCalledWith('log-1', true, null);
+    expect(fixture.nativeElement.textContent).toContain('Gracias por tu calificación');
+  });
+
+  it('asks for a note before submitting a "not helpful" rating', async () => {
+    const submitFeedback = vi.fn(() => of(undefined));
+    const fixture = await createComponent({ ask: () => of(createResult()), submitFeedback });
+    askQuestion(fixture);
+
+    fixture.componentInstance.rateHelpful(false);
+    fixture.detectChanges();
+    expect(submitFeedback).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.showFeedbackNote()).toBe(true);
+
+    fixture.componentInstance.feedbackForm.controls.note.setValue('No encontró nada relevante');
+    fixture.componentInstance.submitFeedbackNote();
+    fixture.detectChanges();
+
+    expect(submitFeedback).toHaveBeenCalledWith('log-1', false, 'No encontró nada relevante');
+  });
+
   it('shows an error message when the request fails', async () => {
     const fixture = await createComponent({ ask: () => throwError(() => new Error('boom')) });
     askQuestion(fixture);
@@ -119,6 +171,7 @@ describe('VethecaAsk', () => {
           year: '2023',
           abstractText: 'Abstract de prueba.',
           url: 'https://pubmed.ncbi.nlm.nih.gov/12345678/',
+          studyType: 'Randomized Controlled Trial',
         },
       ],
       synthesis: {
@@ -128,7 +181,9 @@ describe('VethecaAsk', () => {
         keyFindings: ['Hallazgo de prueba'],
         clinicalApplicability: 'Aplicabilidad de prueba.',
         limitations: 'Limitaciones de prueba.',
-        citations: [{ pmid: '12345678', claim: 'Afirmación de prueba' }],
+        citations: [
+          { pmid: '12345678', claim: 'Afirmación de prueba', supportingExcerpt: 'extracto textual', quoteVerified: true },
+        ],
       },
     };
   }

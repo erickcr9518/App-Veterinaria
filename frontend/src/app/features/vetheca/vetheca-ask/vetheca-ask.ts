@@ -10,6 +10,7 @@ interface DisplayedResult {
   synthesis: VethecaSynthesis | null;
   isSaved: boolean;
   title: string | null;
+  feedbackGiven: boolean | null;
 }
 
 @Component({
@@ -25,9 +26,11 @@ export class VethecaAsk implements OnInit {
 
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
+  readonly isSendingFeedback = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly result = signal<DisplayedResult | null>(null);
   readonly savedSearches = signal<VethecaSavedSearchSummary[]>([]);
+  readonly showFeedbackNote = signal(false);
 
   readonly form = this.fb.group({
     question: ['', [Validators.required, Validators.maxLength(500)]],
@@ -35,6 +38,10 @@ export class VethecaAsk implements OnInit {
 
   readonly saveForm = this.fb.group({
     title: ['', [Validators.maxLength(200)]],
+  });
+
+  readonly feedbackForm = this.fb.group({
+    note: ['', [Validators.maxLength(1000)]],
   });
 
   ngOnInit(): void {
@@ -51,6 +58,7 @@ export class VethecaAsk implements OnInit {
     this.errorMessage.set(null);
     this.result.set(null);
     this.saveForm.reset();
+    this.resetFeedbackUi();
 
     this.vethecaService.ask(question).subscribe({
       next: (response) => {
@@ -61,6 +69,7 @@ export class VethecaAsk implements OnInit {
           synthesis: response.synthesis,
           isSaved: false,
           title: null,
+          feedbackGiven: null,
         });
         this.isLoading.set(false);
       },
@@ -119,6 +128,7 @@ export class VethecaAsk implements OnInit {
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.resetFeedbackUi();
 
     this.vethecaService.getSavedSearchById(id).subscribe({
       next: (detail) => {
@@ -130,6 +140,7 @@ export class VethecaAsk implements OnInit {
           synthesis: detail.synthesis,
           isSaved: true,
           title: detail.title,
+          feedbackGiven: null,
         });
         this.isLoading.set(false);
       },
@@ -138,6 +149,47 @@ export class VethecaAsk implements OnInit {
         this.isLoading.set(false);
       },
     });
+  }
+
+  rateHelpful(helpful: boolean): void {
+    if (!helpful) {
+      // Ask for a short note on what went wrong before actually submitting -
+      // more useful signal than a bare thumbs-down.
+      this.showFeedbackNote.set(true);
+      return;
+    }
+
+    this.sendFeedback(true, null);
+  }
+
+  submitFeedbackNote(): void {
+    const note = this.feedbackForm.value.note?.trim() || null;
+    this.sendFeedback(false, note);
+  }
+
+  private sendFeedback(helpful: boolean, note: string | null): void {
+    const current = this.result();
+    if (!current || this.isSendingFeedback()) {
+      return;
+    }
+
+    this.isSendingFeedback.set(true);
+    this.vethecaService.submitFeedback(current.id, helpful, note).subscribe({
+      next: () => {
+        this.result.set({ ...current, feedbackGiven: helpful });
+        this.showFeedbackNote.set(false);
+        this.isSendingFeedback.set(false);
+      },
+      error: () => {
+        this.errorMessage.set('No se pudo enviar la calificación.');
+        this.isSendingFeedback.set(false);
+      },
+    });
+  }
+
+  private resetFeedbackUi(): void {
+    this.showFeedbackNote.set(false);
+    this.feedbackForm.reset();
   }
 
   private loadSavedSearches(): void {
