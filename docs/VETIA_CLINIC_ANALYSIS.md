@@ -805,6 +805,26 @@ antes de que haga falta. Si en el futuro se licencia una fuente estructurada
 tipo Plumb's/CAB Abstracts (ver secciones G.1 y K), esa misma fuente
 también podría alimentar esta función con más rigor.
 
+**¿Y si la clínica ya tiene su propio sistema de facturación/inventario y no
+quiere migrarse?** Erick confirmó (2026-09-06) que, por su propia experiencia
+trabajando en distintos lugares, cada clínica suele usar un sistema
+diferente — es un mercado repartido, no hay uno dominante. Esto decide el
+diseño: **no tiene sentido apostar a integrarnos en vivo con un proveedor
+puntual** (cada integración de ese tipo es trabajo aparte, específico de
+ese sistema, y nunca cubriríamos a todos). El punto de partida correcto es
+el camino agnóstico: la clínica sube su lista de stock (Excel/CSV) desde
+cualquier sistema que use, sin necesitar que ese sistema tenga una API.
+Integraciones en vivo con sistemas puntuales quedan como algo a evaluar
+después, solo si en el futuro se identifica que muchas clínicas reales usan
+el mismo proveedor específico y ese proveedor sí ofrece una conexión
+técnica real.
+
+Diseñar la verificación de stock detrás de una interfaz intercambiable
+desde el día uno (mismo patrón que `IPubMedClient`/`ILlmClient`), para que
+no importe si el dato viene del inventario propio de la app, de un archivo
+subido a mano, o eventualmente de una conexión en vivo con un sistema
+externo puntual.
+
 ---
 
 ## Nota para Codex
