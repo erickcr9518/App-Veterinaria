@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using VetPlatform.Application.Vetheca.Commands.SaveVethecaSearch;
 using VetPlatform.Application.Vetheca.Commands.SubmitVethecaFeedback;
 using VetPlatform.Application.Vetheca.Commands.UnsaveVethecaSearch;
@@ -33,6 +34,7 @@ public class VethecaController : ControllerBase
 
     [HttpPost("ask")]
     [Authorize(Policy = PermissionCodes.VethecaAsk)]
+    [EnableRateLimiting("Vetheca")]
     public async Task<ActionResult<AskVethecaResult>> Ask(AskVethecaRequest request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new AskVethecaQuery(request.Question, request.MaxResults ?? 5), cancellationToken);

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -68,6 +69,26 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = authRateLimitPermitLimit,
                 QueueLimit = 0,
                 Window = TimeSpan.FromSeconds(authRateLimitWindowSeconds),
+            });
+    });
+    // Every Vetheca ask hits a paid external LLM API, so it's rate-limited
+    // per user (not per IP - several vets in the same clinic can share a
+    // network) to contain the cost of an accidental rapid-fire loop, not to
+    // fight abuse the way the Auth policy does.
+    options.AddPolicy("Vetheca", httpContext =>
+    {
+        var configuration = httpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var vethecaRateLimitPermitLimit = configuration.GetValue("RateLimiting:Vetheca:PermitLimit", 20);
+        var vethecaRateLimitWindowSeconds = configuration.GetValue("RateLimiting:Vetheca:WindowSeconds", 3600);
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            GetVethecaRateLimitPartitionKey(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = vethecaRateLimitPermitLimit,
+                QueueLimit = 0,
+                Window = TimeSpan.FromSeconds(vethecaRateLimitWindowSeconds),
             });
     });
 });
@@ -147,6 +168,12 @@ static string GetRateLimitPartitionKey(HttpContext context)
     }
 
     return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+}
+
+static string GetVethecaRateLimitPartitionKey(HttpContext context)
+{
+    var userId = context.User.FindFirstValue("user_id") ?? context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    return userId ?? GetRateLimitPartitionKey(context);
 }
 
 public partial class Program

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VethecaService } from '../../../core/services/vetheca.service';
@@ -73,8 +74,12 @@ export class VethecaAsk implements OnInit {
         });
         this.isLoading.set(false);
       },
-      error: () => {
-        this.errorMessage.set('No se pudo completar la búsqueda. Intentá de nuevo en unos minutos.');
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage.set(
+          error.status === 429
+            ? 'Hiciste muchas preguntas en poco tiempo. Esperá unos minutos antes de volver a preguntar.'
+            : 'No se pudo completar la búsqueda. Intentá de nuevo en unos minutos.'
+        );
         this.isLoading.set(false);
       },
     });

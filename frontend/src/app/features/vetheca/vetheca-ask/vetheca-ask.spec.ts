@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { VethecaAskResult, VethecaSavedSearchDetail, VethecaSavedSearchSummary } from '../../../core/models/vetheca.models';
@@ -89,6 +90,15 @@ describe('VethecaAsk', () => {
     askQuestion(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('No se pudo completar la búsqueda');
+  });
+
+  it('shows a friendly rate-limit message when asking too many questions too fast', async () => {
+    const fixture = await createComponent({
+      ask: () => throwError(() => new HttpErrorResponse({ status: 429 })),
+    });
+    askQuestion(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Hiciste muchas preguntas en poco tiempo');
   });
 
   it('lets the user save a search and shows the saved badge afterwards', async () => {

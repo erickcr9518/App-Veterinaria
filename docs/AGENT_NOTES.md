@@ -53,6 +53,36 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-07 — Code (13)
+Status: done.
+
+Backlog/hardening item, not a product decision - picked up per standing
+rule 2 rather than asking first. Every Vetheca "ask" costs real money (a
+paid Anthropic call), and until now there was nothing stopping an
+accidental rapid-fire loop (bad script, someone mashing the button, a
+retry bug) from running up the bill. Added a per-user rate limit on
+`POST /api/vetheca/ask` only - 20 asks/hour by default
+(`RateLimiting:Vetheca` in `appsettings.json`), reusing the exact
+`AddRateLimiter`/fixed-window pattern already in place for the Auth
+endpoints in `Program.cs`. Partitioned by user id (the same claim
+`CurrentUserService` reads), not IP - several vets in the same clinic
+share a network, so an IP-based limit would throttle the wrong thing.
+Save/unsave/feedback/saved-list stay unlimited - only the paid call is
+guarded.
+
+Frontend: a 429 now shows a specific message ("Hiciste muchas preguntas
+en poco tiempo...") instead of the generic search-failed one.
+
+Backend 75/75 (1 new: drives the real ASP.NET Core rate limiter down to a
+1-request limit via test-only config override, confirms the 2nd ask gets
+429 while `/api/vetheca/saved` stays 200 for the same throttled user).
+Frontend 63/63 (1 new, mocked 429). Didn't live-verify this one against
+the real 20/hour default - would mean 21 real paid Claude calls just to
+trigger it, which is exactly the kind of cost this feature exists to
+avoid; the integration test exercises the real (not mocked) ASP.NET Core
+rate-limiter middleware, which is the part actually at risk of being
+wrong.
+
 ### 2026-09-07 — Code (12)
 Status: done.
 

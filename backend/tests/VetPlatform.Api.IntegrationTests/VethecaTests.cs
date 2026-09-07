@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -293,6 +294,41 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
 
         var article = Assert.Single(articles);
         Assert.Equal("Randomized Controlled Trial", article.StudyType);
+    }
+
+    [Fact]
+    public async Task Ask_Returns_TooManyRequests_When_The_Per_User_Rate_Limit_Is_Exceeded()
+    {
+        var client = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["RateLimiting:Vetheca:PermitLimit"] = "1",
+                    ["RateLimiting:Vetheca:WindowSeconds"] = "60",
+                }));
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IPubMedClient>();
+                services.AddScoped(_ => (IPubMedClient)new FakePubMedClient());
+            });
+        }).CreateClient();
+
+        var email = $"vetheca-ratelimit-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var firstAsk = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new { question = "rehabilitation after TPLO in dogs", maxResults = 5 });
+        Assert.Equal(HttpStatusCode.OK, firstAsk.StatusCode);
+
+        var secondAsk = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new { question = "another question entirely", maxResults = 5 });
+        Assert.Equal(HttpStatusCode.TooManyRequests, secondAsk.StatusCode);
+
+        // The rate limit only guards the paid ask call - reading the saved
+        // list back must keep working even while a user is throttled.
+        var savedList = await GetRawAsAuthenticatedAsync(client, auth.AccessToken, "/api/vetheca/saved");
+        Assert.Equal(HttpStatusCode.OK, savedList.StatusCode);
     }
 
     [Fact]
