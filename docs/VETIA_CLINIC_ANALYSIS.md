@@ -760,6 +760,53 @@ puntual.
 
 ---
 
+## M. Consideración futura: Vetheca consciente del inventario de la clínica
+
+Erick propuso (2026-09-06) que cuando Vetheca mencione un medicamento como
+opción de tratamiento, el sistema revise si ese medicamento está disponible
+en el inventario de la clínica — y si no está, sugiera una alternativa de
+la misma familia farmacológica que sí esté en stock, en vez de simplemente
+nombrar algo que el veterinario no puede conseguir ahí mismo. **No es para
+ahora** — anotado para cuando exista la dependencia que le falta.
+
+**Aclaración importante que surgió en la conversación:** facturación e
+inventario no son lo mismo. Lo que hace falta para esta idea es solo un
+módulo de **inventario** (qué medicamentos tiene la clínica, en qué
+cantidad) — no un sistema completo de facturación/cobros a clientes, que
+puede seguir siendo una necesidad aparte (o algo que la clínica maneje con
+otra herramienta). Esto simplifica la dependencia real.
+
+**Dependencia real, sin la cual esto no se puede construir:** hoy no existe
+ningún inventario de medicamentos en la app — nadie carga stock. Esta idea
+tiene dos partes:
+1. Construir el módulo de Inventario/Farmacia (ya estaba anotado como
+   módulo futuro en la sección 2 del brief original — "Pharmacy" e
+   "Inventory" explícitamente no prioritarios por ahora).
+2. Conectarlo con Vetheca: cuando la síntesis mencione un medicamento,
+   consultar el inventario; si no está, buscar alternativas de la misma
+   familia farmacológica entre lo que sí hay en stock.
+
+La parte 2 depende completamente de que la parte 1 exista primero.
+
+**Consideración de seguridad para cuando se construya:** sugerir "no tenés
+X pero tenés Y, de la misma familia" es un paso más delicado que mostrar
+evidencia — se acerca a sugerir un cambio de tratamiento, no solo informar.
+Aplicar la misma regla de siempre, reforzada: nunca decir "usá esto en su
+lugar", sino algo como "en tu clínica hay disponible Y, de la misma familia
+farmacológica que X — evaluá si es una alternativa apropiada para este
+paciente." La decisión sigue siendo enteramente del veterinario tratante.
+
+**Nota técnica para cuando se implemente:** la forma más simple de resolver
+"¿son de la misma familia farmacológica?" sería dejar que el propio LLM
+razone sobre esto (tiene conocimiento farmacológico general de sobra para
+clases terapéuticas comunes), en vez de construir o comprar una base de
+datos formal de clasificación de fármacos — coherente con no sobre-diseñar
+antes de que haga falta. Si en el futuro se licencia una fuente estructurada
+tipo Plumb's/CAB Abstracts (ver secciones G.1 y K), esa misma fuente
+también podría alimentar esta función con más rigor.
+
+---
+
 ## Nota para Codex
 
 Esto es una propuesta de dirección de producto, todavía **no aprobada para
