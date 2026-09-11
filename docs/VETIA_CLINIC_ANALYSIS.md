@@ -900,11 +900,13 @@ subir algo. Por diseño, el sistema nunca guarda el PDF original, solo el
 texto extraído — nunca termina teniendo una segunda copia redistribuible
 de contenido de otra persona.
 
-Backend de subida/gestión ya construido y probado (ver "Code (15)" en
-`AGENT_NOTES.md`) — subir un PDF, verlo listado, borrarlo, compartido por
-toda la clínica igual que Propietarios/Pacientes. **Todavía no hace nada
-útil**: falta conectar esta biblioteca a la búsqueda real de `ask`, que
-es el paso que realmente importa.
+**Completa y verificada en vivo** (ver "Code (15)" y "Code (16)" en
+`AGENT_NOTES.md`): subir un PDF, verlo listado, borrarlo, compartido por
+toda la clínica igual que Propietarios/Pacientes — y ahora sí conectado a
+`ask`: cuando preguntás algo, Vetheca busca también en tus documentos
+propios, y si encuentra algo relevante lo cita mostrando "📚 De tu
+biblioteca" con el documento y la página exacta, con la misma
+verificación honesta de citas que ya tenía PubMed.
 
 Erick también preguntó por separado si Vetheca podría interpretar
 imágenes subidas (radiografías, resultados de laboratorio) y opinar sobre

@@ -53,6 +53,57 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-10/11 — Code (16)
+Status: done - closes out the "bring your own literature" feature from
+Code (15) below.
+
+Wired the clinic's uploaded library into the actual `ask` flow - the part
+that was missing before. `ILibraryChunkSearchService`
+(`Application/Vetheca/Services`) ranks a clinic's own chunks by simple
+keyword overlap against both the original question and the translated
+PubMed search query (purchased manuals could be in either language) - no
+vector store needed at this scale (a clinic's own library is a handful
+of documents, not millions of records; revisit if that stops being
+true). `ILlmClient.SynthesizeAsync` now takes these excerpts alongside
+PubMed articles; `AnthropicLlmClient`'s citation schema grew a `fuente`
+discriminator ("pubmed"/"biblioteca") so a citation can point at "your
+document, page X" instead of only a PMID - grounded and quote-verified
+with the exact same non-trust-the-model logic as the existing PMID path,
+just keyed by (document title, page) instead of PMID.
+
+Frontend: a collapsible "📚 Mi biblioteca" panel on the Vetheca screen
+(upload form + list with delete) - collapsed by default so it doesn't
+compete with the main "ask a question" flow for attention. Citations from
+the library now show a "📚 De tu biblioteca" badge and "Documento, página
+N" instead of a PMID.
+
+Backend 84/84 (7 new: the real AnthropicLlmClient grounds/verifies a
+library citation and drops a hallucinated one - same pattern as the
+existing PMID tests; the real handler searches a clinic's own uploaded
+document and passes the right chunk through; tenant isolation holds for
+library search too). Frontend 65/65 (2 new).
+
+Live-verified end to end against the real backend and database (not just
+tests): generated a real one-page PDF, uploaded it through a real
+authenticated request from the browser (the file-picker itself isn't
+drivable through this session's browser-automation tools, so the upload
+call was issued as a real `fetch()` from the page's own JS console
+instead of a literal click-through - still a real request against the
+real endpoint, not a mock), reloaded the page and confirmed Angular
+showed it via the real `GET /api/vetheca/library` ("📚 Mi biblioteca (1)",
+title, page count), then deleted it through the actual UI button and
+confirmed it disappeared for real. Did not spend a real paid Claude call
+proving a library citation renders in a live synthesis - the grounding
+logic that would exercise is already covered by real (unmocked)
+`AnthropicLlmClient` tests above, and the citation UI rendering is
+covered by a frontend spec - spending real money on Claude to duplicate
+that assurance didn't seem worth it.
+
+Idea 4 (species extrapolation) is still the only one of the original four
+not built, per Erick's own call. Erick separately asked about image
+interpretation (radiographs/lab results) - still just documented, not
+started.
+
 ### 2026-09-10 — Code (15)
 Status: in progress (backend upload/manage done; search integration still to come).
 
