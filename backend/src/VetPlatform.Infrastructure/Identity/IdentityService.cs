@@ -197,7 +197,20 @@ public class IdentityService : IIdentityService
 
         user.IsActive = isActive;
         var result = await _userManager.UpdateAsync(user);
-        return result.Succeeded;
+        if (!result.Succeeded)
+        {
+            return false;
+        }
+
+        var stampResult = await _userManager.UpdateSecurityStampAsync(user);
+        if (!stampResult.Succeeded)
+        {
+            return false;
+        }
+
+        await RevokeActiveRefreshTokensAsync(user.Id);
+
+        return true;
     }
 
     public async Task<UserAccountResult> SetUserRolesAsync(Guid userId, IReadOnlyCollection<string> roles)

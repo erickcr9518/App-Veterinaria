@@ -152,7 +152,10 @@ fixtures — goes into the system.
       still returns only that clinic's staff. Platform users can activate or
       deactivate other platform administrators, while self-lockout prevention
       remains in place and clinic admins still cannot see or touch platform
-      accounts. Covered by `UsersTests` plus the Users component spec.
+      accounts. Activation status changes also invalidate the target user's
+      old access/refresh tokens, so a deactivated account cannot regain a
+      pre-existing session if it is later reactivated. Covered by `UsersTests`
+      plus the Users component spec.
 - [x] **Multi-role clinic staff accounts.** Clinic users can now hold more
       than one clinic role (for example, Administrador + Veterinario), and
       authentication returns the union of all permissions through JWT role
