@@ -20,6 +20,8 @@ public interface IApplicationDbContext
     DbSet<Prescription> Prescriptions { get; }
     DbSet<PrescriptionItem> PrescriptionItems { get; }
     DbSet<VethecaSearchLog> VethecaSearchLogs { get; }
+    DbSet<VethecaLibraryDocument> VethecaLibraryDocuments { get; }
+    DbSet<VethecaLibraryChunk> VethecaLibraryChunks { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

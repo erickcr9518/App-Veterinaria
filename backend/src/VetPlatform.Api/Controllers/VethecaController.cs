@@ -1,14 +1,18 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using VetPlatform.Application.Vetheca.Commands.DeleteVethecaLibraryDocument;
 using VetPlatform.Application.Vetheca.Commands.SaveVethecaSearch;
 using VetPlatform.Application.Vetheca.Commands.SubmitVethecaFeedback;
 using VetPlatform.Application.Vetheca.Commands.UnsaveVethecaSearch;
+using VetPlatform.Application.Vetheca.Commands.UploadVethecaLibraryDocument;
 using VetPlatform.Application.Vetheca.Models;
 using VetPlatform.Application.Vetheca.Queries.AskVetheca;
 using VetPlatform.Application.Vetheca.Queries.GetSavedVethecaSearchById;
 using VetPlatform.Application.Vetheca.Queries.GetSavedVethecaSearches;
+using VetPlatform.Application.Vetheca.Queries.GetVethecaLibraryDocuments;
 using VetPlatform.Domain.Constants;
 
 namespace VetPlatform.Api.Controllers;
@@ -80,6 +84,43 @@ public class VethecaController : ControllerBase
         var result = await _sender.Send(new GetSavedVethecaSearchByIdQuery(id), cancellationToken);
         return Ok(result);
     }
+
+    // The clinic's own purchased reference literature (see the 2026-09-10
+    // "bring your own literature" idea in docs/VETIA_CLINIC_ANALYSIS.md).
+    // Shared across the clinic like Owners/Patients - any user with
+    // vetheca.ask can upload, list, or remove a document, not just whoever
+    // uploaded it.
+    [HttpPost("library")]
+    [Authorize(Policy = PermissionCodes.VethecaAsk)]
+    [RequestSizeLimit(52_428_800)]
+    public async Task<ActionResult<VethecaLibraryDocumentDto>> UploadLibraryDocument(
+        [FromForm] UploadVethecaLibraryDocumentRequest request, CancellationToken cancellationToken)
+    {
+        await using var stream = new MemoryStream();
+        await request.File.CopyToAsync(stream, cancellationToken);
+
+        var result = await _sender.Send(
+            new UploadVethecaLibraryDocumentCommand(request.Title, request.File.FileName, stream.ToArray()),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("library")]
+    [Authorize(Policy = PermissionCodes.VethecaAsk)]
+    public async Task<ActionResult<IReadOnlyList<VethecaLibraryDocumentDto>>> GetLibraryDocuments(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetVethecaLibraryDocumentsQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpDelete("library/{id:guid}")]
+    [Authorize(Policy = PermissionCodes.VethecaAsk)]
+    public async Task<IActionResult> DeleteLibraryDocument(Guid id, CancellationToken cancellationToken)
+    {
+        await _sender.Send(new DeleteVethecaLibraryDocumentCommand(id), cancellationToken);
+        return NoContent();
+    }
 }
 
 public record AskVethecaRequest(string Question, int? MaxResults);
@@ -87,3 +128,9 @@ public record AskVethecaRequest(string Question, int? MaxResults);
 public record SaveVethecaSearchRequest(string? Title);
 
 public record SubmitVethecaFeedbackRequest(bool Helpful, string? Note);
+
+public class UploadVethecaLibraryDocumentRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public IFormFile File { get; set; } = null!;
+}

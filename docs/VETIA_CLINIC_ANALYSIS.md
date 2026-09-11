@@ -888,6 +888,31 @@ del todo.
    conflicto que percibe; retomar si en algún momento se decide que vale
    la pena pese a eso.
 
+## O. Biblioteca propia de la clínica (2026-09-10, en progreso)
+
+Erick preguntó si podía comprar literatura propia (manuales, libros de
+texto) y subirla para que Vetheca la consulte, además de PubMed. Aprobado
+para construir. Punto legal importante conversado antes de escribir
+código: comprar una copia digital y usarla internamente (que el equipo la
+consulte) generalmente está permitido, pero depende de la licencia del
+producto específico — es responsabilidad de Erick verificar eso antes de
+subir algo. Por diseño, el sistema nunca guarda el PDF original, solo el
+texto extraído — nunca termina teniendo una segunda copia redistribuible
+de contenido de otra persona.
+
+Backend de subida/gestión ya construido y probado (ver "Code (15)" en
+`AGENT_NOTES.md`) — subir un PDF, verlo listado, borrarlo, compartido por
+toda la clínica igual que Propietarios/Pacientes. **Todavía no hace nada
+útil**: falta conectar esta biblioteca a la búsqueda real de `ask`, que
+es el paso que realmente importa.
+
+Erick también preguntó por separado si Vetheca podría interpretar
+imágenes subidas (radiografías, resultados de laboratorio) y opinar sobre
+lo que observa. Técnicamente viable (el modelo de IA soporta visión),
+pero es una conversación aparte y más grande — interpretación de
+imágenes clínicas es un terreno de responsabilidad distinto a buscar
+evidencia científica. Documentado acá, no iniciado.
+
 ---
 
 ## Nota para Codex

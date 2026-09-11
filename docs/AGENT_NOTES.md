@@ -53,6 +53,74 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-10 — Code (15)
+Status: in progress (backend upload/manage done; search integration still to come).
+
+Erick asked for a fourth Vetheca idea beyond the 1-3 already shipped: let
+him upload his own purchased literature (a manual, a textbook PDF) so
+Vetheca can search it too, not just PubMed. Talked through the legal
+angle first since it matters - buying a digital copy generally covers
+internal/organizational use, but the actual answer depends on that
+specific product's license terms, and it's Erick's call what he uploads;
+this system just needs to handle it responsibly, which is why only
+*extracted text* is stored, never the original PDF bytes - the system
+never holds a second redistributable copy of someone else's content.
+
+**Real problem hit before writing any code:** picked `UglyToad.PdfPig`
+off NuGet for PDF text extraction and it turned out to be a stale/
+abandoned package id now owned by an unrelated NuGet account ("grinay",
+unverified, pushing an odd "1.7.0-custom-5" version) - not the real
+maintainers. Verified via NuGet's search API (owners field) and the
+actual GitHub README, which points at a *different* package id: plain
+`PdfPig` (owners `BobLd`/`EliotJones`/`PdfPig`, Apache 2.0, 31M+ downloads,
+real version history 0.0.1 through 0.1.16). Installed that one instead.
+Worth remembering for whoever adds the next NuGet package to this repo -
+check the owners field, not just the package name matching what you
+expect.
+
+**What's built (backend only so far):**
+- `VethecaLibraryDocument`/`VethecaLibraryChunk` entities - a document is
+  one uploaded PDF, chunks are its text split by page (further split
+  only if a page is unusually long). Shared per-clinic like Owners/
+  Patients, not private to the uploader - any `vetheca.ask` user can
+  upload, list, or delete, matching how the rest of the clinic's shared
+  data works, unlike VethecaSearchLog's private-to-the-asker model.
+- `POST /api/vetheca/library` (multipart upload, 50MB cap via
+  `[RequestSizeLimit]`), `GET /api/vetheca/library`, `DELETE
+  /api/vetheca/library/{id}` - all behind the existing `vetheca.ask`
+  permission, no new permission code needed for this slice.
+- `IPdfTextExtractor`/`PdfPigTextExtractor` (Infrastructure) - same
+  interface-in-Application/implementation-in-Infrastructure split as
+  `IPubMedClient`/`ILlmClient`.
+- A bad/corrupt upload comes back as a clean 400 (`ValidationException`),
+  not a 500.
+
+**Not built yet - the actually-useful part:** Vetheca's `ask` flow
+doesn't search this library yet, so uploading a document does nothing
+observable beyond appearing in a list. Next step is wiring a "search my
+clinic's chunks" step into `AskVethecaQueryHandler` alongside the
+existing PubMed search, extending `AnthropicLlmClient`'s citation schema
+so a citation can point at "your document, page X" instead of only a
+PMID, and a frontend screen to upload/manage documents plus show library
+citations in results. Deliberately stopped here rather than build the
+whole thing in one pass, given how much new surface (dependency choice,
+entities, migration, endpoints) this slice alone already was.
+
+Backend 80/80 (7 new: real upload + real PdfPig extraction + list,
+rejects a non-PDF file, a colleague sees and can delete someone else's
+upload, tenant isolation). No frontend changes yet, so nothing to
+live-verify in the browser this round - the integration tests already
+exercise the real (unmocked) PdfPig extraction and real HTTP endpoints
+against a real test database.
+
+Separately, Erick also asked about letting Vetheca look at uploaded
+images (lab results, X-rays) and comment on what it observes. Technically
+feasible (Claude has vision), but flagged as a bigger conversation than
+this one - that's clinical image interpretation, not literature search,
+a meaningfully different liability/scope question. Not started; revisit
+once the library feature above is finished, so we're not juggling two
+large new Vetheca surfaces at once.
+
 ### 2026-09-07 — Code (14)
 Status: done.
 

@@ -41,6 +41,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<PrescriptionItem> PrescriptionItems => Set<PrescriptionItem>();
     public DbSet<VethecaSearchLog> VethecaSearchLogs => Set<VethecaSearchLog>();
+    public DbSet<VethecaLibraryDocument> VethecaLibraryDocuments => Set<VethecaLibraryDocument>();
+    public DbSet<VethecaLibraryChunk> VethecaLibraryChunks => Set<VethecaLibraryChunk>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
