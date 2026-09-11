@@ -6,6 +6,46 @@
     </div>
   </header>
 
+  <section class="library-panel">
+    <button type="button" class="library-toggle" (click)="toggleLibraryPanel()">
+      📚 Mi biblioteca ({{ libraryDocuments().length }})
+    </button>
+
+    @if (showLibraryPanel()) {
+      <div class="library-content">
+        <p class="library-hint">
+          Subí libros o manuales que ya compraste (PDF) para que Vetheca también busque ahí, además de PubMed.
+        </p>
+
+        <form [formGroup]="libraryForm" (ngSubmit)="uploadLibraryDocument()" class="library-upload-form">
+          <input formControlName="title" type="text" placeholder="Título del documento" />
+          <input type="file" accept="application/pdf" (change)="onLibraryFileSelected($event)" />
+          <button type="submit" [disabled]="libraryForm.invalid || !selectedFileName() || isUploadingDocument()">
+            {{ isUploadingDocument() ? 'Subiendo...' : 'Subir' }}
+          </button>
+        </form>
+
+        @if (libraryError(); as message) {
+          <p class="error">{{ message }}</p>
+        }
+
+        @if (libraryDocuments().length > 0) {
+          <ul class="library-list">
+            @for (document of libraryDocuments(); track document.id) {
+              <li class="library-item">
+                <span class="library-title">{{ document.title }}</span>
+                <span class="library-meta">{{ document.pageCount }} página{{ document.pageCount === 1 ? '' : 's' }}</span>
+                <button type="button" class="link-button" (click)="deleteLibraryDocument(document.id)">Eliminar</button>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty">Todavía no subiste ningún documento.</p>
+        }
+      </div>
+    }
+  </section>
+
   <form class="ask-form" [formGroup]="form" (ngSubmit)="ask()">
     <textarea
       formControlName="question"
@@ -88,16 +128,23 @@
       @if (synthesis.citations.length > 0) {
         <section class="citations">
           <h2>Verificación de citas</h2>
-          @for (citation of synthesis.citations; track citation.pmid + citation.claim) {
+          @for (citation of synthesis.citations; track (citation.pmid ?? citation.libraryDocumentId) + citation.claim) {
             <article class="citation-card">
+              @if (citation.source === 'Library') {
+                <span class="citation-source-badge library">📚 De tu biblioteca</span>
+              }
               <p class="citation-claim">{{ citation.claim }}</p>
               @if (citation.supportingExcerpt) {
                 <p class="citation-excerpt">«{{ citation.supportingExcerpt }}»</p>
               }
               <p class="citation-status">
-                PMID {{ citation.pmid }} —
+                @if (citation.source === 'Library') {
+                  {{ citation.libraryDocumentTitle }}, página {{ citation.libraryPageNumber }} —
+                } @else {
+                  PMID {{ citation.pmid }} —
+                }
                 @if (citation.quoteVerified) {
-                  <span class="verified">✓ texto verificado contra el abstract</span>
+                  <span class="verified">✓ texto verificado</span>
                 } @else {
                   <span class="unverified">⚠ no se pudo verificar el texto exacto</span>
                 }

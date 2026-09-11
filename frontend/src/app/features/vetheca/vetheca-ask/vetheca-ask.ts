@@ -2,7 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VethecaService } from '../../../core/services/vetheca.service';
-import { VethecaArticle, VethecaSavedSearchSummary, VethecaSynthesis } from '../../../core/models/vetheca.models';
+import {
+  VethecaArticle,
+  VethecaLibraryDocument,
+  VethecaSavedSearchSummary,
+  VethecaSynthesis,
+} from '../../../core/models/vetheca.models';
 
 interface DisplayedResult {
   id: string;
@@ -33,6 +38,13 @@ export class VethecaAsk implements OnInit {
   readonly savedSearches = signal<VethecaSavedSearchSummary[]>([]);
   readonly showFeedbackNote = signal(false);
 
+  readonly libraryDocuments = signal<VethecaLibraryDocument[]>([]);
+  readonly isUploadingDocument = signal(false);
+  readonly libraryError = signal<string | null>(null);
+  readonly selectedFileName = signal<string | null>(null);
+  readonly showLibraryPanel = signal(false);
+  private selectedFile: File | null = null;
+
   readonly form = this.fb.group({
     question: ['', [Validators.required, Validators.maxLength(500)]],
   });
@@ -45,8 +57,13 @@ export class VethecaAsk implements OnInit {
     note: ['', [Validators.maxLength(1000)]],
   });
 
+  readonly libraryForm = this.fb.group({
+    title: ['', [Validators.required, Validators.maxLength(200)]],
+  });
+
   ngOnInit(): void {
     this.loadSavedSearches();
+    this.loadLibraryDocuments();
   }
 
   ask(): void {
@@ -202,6 +219,61 @@ export class VethecaAsk implements OnInit {
       next: (searches) => this.savedSearches.set(searches),
       error: () => {
         // Non-critical for the main flow - just leave the saved list empty.
+      },
+    });
+  }
+
+  toggleLibraryPanel(): void {
+    this.showLibraryPanel.set(!this.showLibraryPanel());
+  }
+
+  onLibraryFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.selectedFile = file;
+    this.selectedFileName.set(file?.name ?? null);
+  }
+
+  uploadLibraryDocument(): void {
+    if (this.libraryForm.invalid || !this.selectedFile || this.isUploadingDocument()) {
+      return;
+    }
+
+    const title = this.libraryForm.value.title!.trim();
+    this.isUploadingDocument.set(true);
+    this.libraryError.set(null);
+
+    this.vethecaService.uploadLibraryDocument(title, this.selectedFile).subscribe({
+      next: (document) => {
+        this.libraryDocuments.set([document, ...this.libraryDocuments()]);
+        this.libraryForm.reset();
+        this.selectedFile = null;
+        this.selectedFileName.set(null);
+        this.isUploadingDocument.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.libraryError.set(
+          error.status === 400
+            ? 'El archivo no es un PDF válido o está dañado.'
+            : 'No se pudo subir el documento. Intentá de nuevo.'
+        );
+        this.isUploadingDocument.set(false);
+      },
+    });
+  }
+
+  deleteLibraryDocument(id: string): void {
+    this.vethecaService.deleteLibraryDocument(id).subscribe({
+      next: () => this.libraryDocuments.set(this.libraryDocuments().filter((d) => d.id !== id)),
+      error: () => this.libraryError.set('No se pudo eliminar el documento.'),
+    });
+  }
+
+  private loadLibraryDocuments(): void {
+    this.vethecaService.getLibraryDocuments().subscribe({
+      next: (documents) => this.libraryDocuments.set(documents),
+      error: () => {
+        // Non-critical for the main flow - just leave the library list empty.
       },
     });
   }

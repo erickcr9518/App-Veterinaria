@@ -9,8 +9,14 @@ export interface VethecaArticle {
   studyType: string | null;
 }
 
+export type VethecaCitationSource = 'PubMed' | 'Library';
+
 export interface VethecaCitation {
-  pmid: string;
+  source: VethecaCitationSource;
+  pmid: string | null;
+  libraryDocumentId: string | null;
+  libraryDocumentTitle: string | null;
+  libraryPageNumber: number | null;
   claim: string;
   supportingExcerpt: string | null;
   quoteVerified: boolean;
@@ -48,4 +54,12 @@ export interface VethecaSavedSearchDetail {
   createdAtUtc: string;
   articles: VethecaArticle[];
   synthesis: VethecaSynthesis | null;
+}
+
+export interface VethecaLibraryDocument {
+  id: string;
+  title: string;
+  fileName: string;
+  pageCount: number;
+  uploadedAtUtc: string;
 }

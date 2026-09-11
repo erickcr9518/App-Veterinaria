@@ -1,7 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { VethecaAskResult, VethecaSavedSearchDetail, VethecaSavedSearchSummary } from '../../../core/models/vetheca.models';
+import {
+  VethecaAskResult,
+  VethecaLibraryDocument,
+  VethecaSavedSearchDetail,
+  VethecaSavedSearchSummary,
+} from '../../../core/models/vetheca.models';
 import { VethecaService } from '../../../core/services/vetheca.service';
 import { VethecaAsk } from './vetheca-ask';
 
@@ -114,6 +119,51 @@ describe('VethecaAsk', () => {
     expect(fixture.nativeElement.textContent).toContain('Guardada como "Mi título"');
   });
 
+  it('shows a badge and page reference for a citation from the clinic library', async () => {
+    const result = createResult();
+    result.synthesis!.citations = [
+      {
+        source: 'Library',
+        pmid: null,
+        libraryDocumentId: 'doc-1',
+        libraryDocumentTitle: 'Manual de dosis felinas',
+        libraryPageNumber: 3,
+        claim: 'Afirmación de la biblioteca',
+        supportingExcerpt: 'extracto de la biblioteca',
+        quoteVerified: true,
+      },
+    ];
+    const fixture = await createComponent({ ask: () => of(result) });
+    askQuestion(fixture);
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('De tu biblioteca');
+    expect(text).toContain('Manual de dosis felinas, página 3');
+  });
+
+  it('shows uploaded library documents and lets the user delete one', async () => {
+    const documents: VethecaLibraryDocument[] = [
+      { id: 'doc-1', title: 'Manual de dosis felinas', fileName: 'dosis.pdf', pageCount: 12, uploadedAtUtc: '2026-09-10T00:00:00Z' },
+    ];
+    const deleteLibraryDocument = vi.fn(() => of(undefined));
+    const fixture = await createComponent({
+      ask: () => of(createResult()),
+      getLibraryDocuments: () => of(documents),
+      deleteLibraryDocument,
+    });
+
+    fixture.componentInstance.toggleLibraryPanel();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Manual de dosis felinas');
+
+    fixture.componentInstance.deleteLibraryDocument('doc-1');
+    fixture.detectChanges();
+
+    expect(deleteLibraryDocument).toHaveBeenCalledWith('doc-1');
+    expect(fixture.componentInstance.libraryDocuments()).toEqual([]);
+  });
+
   it('shows previously saved searches and opens one on click', async () => {
     const savedSummary: VethecaSavedSearchSummary = {
       id: 'log-2',
@@ -156,6 +206,7 @@ describe('VethecaAsk', () => {
   async function createComponent(overrides: Partial<VethecaService>): Promise<ComponentFixture<VethecaAsk>> {
     const vethecaService: Partial<VethecaService> = {
       getSavedSearches: () => of([]),
+      getLibraryDocuments: () => of([]),
       ...overrides,
     };
 
@@ -192,7 +243,16 @@ describe('VethecaAsk', () => {
         clinicalApplicability: 'Aplicabilidad de prueba.',
         limitations: 'Limitaciones de prueba.',
         citations: [
-          { pmid: '12345678', claim: 'Afirmación de prueba', supportingExcerpt: 'extracto textual', quoteVerified: true },
+          {
+            source: 'PubMed',
+            pmid: '12345678',
+            libraryDocumentId: null,
+            libraryDocumentTitle: null,
+            libraryPageNumber: null,
+            claim: 'Afirmación de prueba',
+            supportingExcerpt: 'extracto textual',
+            quoteVerified: true,
+          },
         ],
       },
     };

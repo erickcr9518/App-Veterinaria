@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { VethecaAskResult, VethecaSavedSearchDetail, VethecaSavedSearchSummary } from '../models/vetheca.models';
+import {
+  VethecaAskResult,
+  VethecaLibraryDocument,
+  VethecaSavedSearchDetail,
+  VethecaSavedSearchSummary,
+} from '../models/vetheca.models';
 
 @Injectable({ providedIn: 'root' })
 export class VethecaService {
@@ -30,5 +35,20 @@ export class VethecaService {
 
   submitFeedback(id: string, helpful: boolean, note: string | null): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/vetheca/${id}/feedback`, { helpful, note });
+  }
+
+  getLibraryDocuments(): Observable<VethecaLibraryDocument[]> {
+    return this.http.get<VethecaLibraryDocument[]>(`${environment.apiUrl}/vetheca/library`);
+  }
+
+  uploadLibraryDocument(title: string, file: File): Observable<VethecaLibraryDocument> {
+    const formData = new FormData();
+    formData.append('Title', title);
+    formData.append('File', file);
+    return this.http.post<VethecaLibraryDocument>(`${environment.apiUrl}/vetheca/library`, formData);
+  }
+
+  deleteLibraryDocument(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/vetheca/library/${id}`);
   }
 }
