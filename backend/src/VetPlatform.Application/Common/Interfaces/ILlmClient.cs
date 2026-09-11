@@ -13,8 +13,11 @@ public interface ILlmClient
 
     // Returns null when synthesis isn't available (no API key configured, or the
     // call failed) - callers should still show the raw articles in that case.
+    // libraryExcerpts is the clinic's own uploaded literature relevant to the
+    // question (may be empty) - cited separately from PubMed articles.
     Task<VethecaSynthesisDto?> SynthesizeAsync(
         string question,
         IReadOnlyList<PubMedArticleDto> articles,
+        IReadOnlyList<LibraryChunkMatchDto> libraryExcerpts,
         CancellationToken cancellationToken);
 }

@@ -195,7 +195,7 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
         var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
         var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
 
-        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, CancellationToken.None);
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, Array.Empty<LibraryChunkMatchDto>(), CancellationToken.None);
 
         Assert.NotNull(synthesis);
         var citation = Assert.Single(synthesis!.Citations);
@@ -225,7 +225,7 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
         var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
         var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
 
-        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, CancellationToken.None);
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, Array.Empty<LibraryChunkMatchDto>(), CancellationToken.None);
 
         var citation = Assert.Single(synthesis!.Citations);
         Assert.True(citation.QuoteVerified);
@@ -254,10 +254,73 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
         var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
         var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
 
-        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, CancellationToken.None);
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", articles, Array.Empty<LibraryChunkMatchDto>(), CancellationToken.None);
 
         var citation = Assert.Single(synthesis!.Citations);
         Assert.False(citation.QuoteVerified);
+    }
+
+    [Fact]
+    public async Task AnthropicLlmClient_Grounds_A_Library_Citation_And_Verifies_Its_Quote()
+    {
+        var documentId = Guid.NewGuid();
+        var libraryExcerpts = new[]
+        {
+            new LibraryChunkMatchDto(documentId, "Manual de dosis felinas", 1, "Dosis recomendada de meloxicam en felinos es 0.05 mg por kilogramo."),
+        };
+
+        var anthropicResponseJson = """
+            {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"evidenciaSuficiente\": true, \"resumen\": \"Resumen.\", \"hallazgosPrincipales\": [\"Hallazgo\"], \"aplicabilidadClinica\": null, \"limitaciones\": null, \"citas\": [{\"fuente\": \"biblioteca\", \"documento\": \"Manual de dosis felinas\", \"pagina\": 1, \"afirmacion\": \"La dosis es 0.05 mg/kg\", \"extracto\": \"Dosis recomendada de meloxicam en felinos es 0.05 mg por kilogramo\"}]}"
+                }
+              ]
+            }
+            """;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(anthropicResponseJson));
+        var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
+        var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
+
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", Array.Empty<PubMedArticleDto>(), libraryExcerpts, CancellationToken.None);
+
+        var citation = Assert.Single(synthesis!.Citations);
+        Assert.Equal(VethecaCitationSource.Library, citation.Source);
+        Assert.Equal(documentId, citation.LibraryDocumentId);
+        Assert.True(citation.QuoteVerified);
+    }
+
+    [Fact]
+    public async Task AnthropicLlmClient_Drops_A_Library_Citation_That_Does_Not_Match_Any_Retrieved_Excerpt()
+    {
+        // Same safety property as the PMID grounding test above, applied to
+        // the library source: a document/page the model wasn't actually
+        // given must never reach the user as a citation.
+        var libraryExcerpts = new[]
+        {
+            new LibraryChunkMatchDto(Guid.NewGuid(), "Manual de dosis felinas", 1, "Contenido real de la pagina uno."),
+        };
+
+        var anthropicResponseJson = """
+            {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "{\"evidenciaSuficiente\": true, \"resumen\": \"Resumen.\", \"hallazgosPrincipales\": [\"Hallazgo\"], \"aplicabilidadClinica\": null, \"limitaciones\": null, \"citas\": [{\"fuente\": \"biblioteca\", \"documento\": \"Documento que no existe\", \"pagina\": 999, \"afirmacion\": \"Afirmacion inventada\", \"extracto\": \"texto inventado\"}]}"
+                }
+              ]
+            }
+            """;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(anthropicResponseJson));
+        var settings = Options.Create(new AnthropicSettings { ApiKey = "test-key", Model = "claude-sonnet-5", MaxTokens = 500 });
+        var llmClient = new AnthropicLlmClient(httpClient, settings, NullLogger<AnthropicLlmClient>.Instance);
+
+        var synthesis = await llmClient.SynthesizeAsync("pregunta de prueba", Array.Empty<PubMedArticleDto>(), libraryExcerpts, CancellationToken.None);
+
+        Assert.Empty(synthesis!.Citations);
     }
 
     [Fact]
@@ -585,7 +648,8 @@ public class VethecaTests : IClassFixture<VetPlatformApiFactory>
         public Task<string?> TranslateToSearchQueryAsync(string question, CancellationToken cancellationToken)
             => Task.FromResult(_translatedQuery);
 
-        public Task<VethecaSynthesisDto?> SynthesizeAsync(string question, IReadOnlyList<PubMedArticleDto> articles, CancellationToken cancellationToken)
+        public Task<VethecaSynthesisDto?> SynthesizeAsync(
+            string question, IReadOnlyList<PubMedArticleDto> articles, IReadOnlyList<LibraryChunkMatchDto> libraryExcerpts, CancellationToken cancellationToken)
             => Task.FromResult<VethecaSynthesisDto?>(_synthesis);
     }
 

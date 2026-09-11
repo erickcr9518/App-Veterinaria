@@ -16,8 +16,13 @@ namespace VetPlatform.Application.Vetheca.Queries.AskVetheca;
 // research list. See VethecaSearchLog's own comment for why one table.
 public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethecaResult>
 {
+    // How many of the clinic's own library chunks to pull in alongside the
+    // PubMed articles - kept modest so the prompt doesn't balloon.
+    private const int MaxLibraryExcerpts = 5;
+
     private readonly IPubMedClient _pubMedClient;
     private readonly ILlmClient _llmClient;
+    private readonly ILibraryChunkSearchService _libraryChunkSearchService;
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<AskVethecaQueryHandler> _logger;
@@ -25,12 +30,14 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
     public AskVethecaQueryHandler(
         IPubMedClient pubMedClient,
         ILlmClient llmClient,
+        ILibraryChunkSearchService libraryChunkSearchService,
         IApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
         ILogger<AskVethecaQueryHandler> logger)
     {
         _pubMedClient = pubMedClient;
         _llmClient = llmClient;
+        _libraryChunkSearchService = libraryChunkSearchService;
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _logger = logger;
@@ -50,27 +57,52 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
 
         var articles = await _pubMedClient.SearchAsync(searchQuery, request.MaxResults, cancellationToken);
 
+        var clinicId = _currentUserService.ClinicId
+            ?? throw new ForbiddenAccessException("El usuario actual no esta asociado a ninguna clinica.");
+
+        // Search the clinic's own uploaded literature with both the original
+        // question (likely Spanish) and the translated query (English) -
+        // purchased manuals could be in either language.
+        var libraryExcerpts = await SearchLibraryAsync(clinicId, request.Question, searchQuery, cancellationToken);
+
         VethecaSynthesisDto? synthesis = null;
-        if (articles.Count > 0)
+        if (articles.Count > 0 || libraryExcerpts.Count > 0)
         {
-            synthesis = await _llmClient.SynthesizeAsync(request.Question, articles, cancellationToken);
+            synthesis = await _llmClient.SynthesizeAsync(request.Question, articles, libraryExcerpts, cancellationToken);
         }
 
-        var logEntry = await LogSearchAsync(request.Question, searchQuery, articles, synthesis, cancellationToken);
+        var logEntry = await LogSearchAsync(clinicId, request.Question, searchQuery, articles, synthesis, cancellationToken);
 
         return new AskVethecaResult(logEntry.Id, articles, synthesis);
     }
 
+    private async Task<IReadOnlyList<LibraryChunkMatchDto>> SearchLibraryAsync(
+        Guid clinicId, string question, string searchQuery, CancellationToken cancellationToken)
+    {
+        var byQuestion = await _libraryChunkSearchService.SearchAsync(clinicId, question, MaxLibraryExcerpts, cancellationToken);
+        if (string.Equals(question, searchQuery, StringComparison.OrdinalIgnoreCase))
+        {
+            return byQuestion;
+        }
+
+        var bySearchQuery = await _libraryChunkSearchService.SearchAsync(clinicId, searchQuery, MaxLibraryExcerpts, cancellationToken);
+
+        return byQuestion
+            .Concat(bySearchQuery)
+            .GroupBy(e => (e.DocumentId, e.PageNumber))
+            .Select(g => g.First())
+            .Take(MaxLibraryExcerpts)
+            .ToArray();
+    }
+
     private async Task<VethecaSearchLog> LogSearchAsync(
+        Guid clinicId,
         string question,
         string searchQuery,
         IReadOnlyList<PubMedArticleDto> articles,
         VethecaSynthesisDto? synthesis,
         CancellationToken cancellationToken)
     {
-        var clinicId = _currentUserService.ClinicId
-            ?? throw new ForbiddenAccessException("El usuario actual no esta asociado a ninguna clinica.");
-
         var storedResult = new VethecaStoredResult(articles, synthesis);
 
         var logEntry = new VethecaSearchLog

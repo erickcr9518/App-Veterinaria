@@ -2,9 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
 using UglyToad.PdfPig.Writer;
 using VetPlatform.Application.Auth.Models;
+using VetPlatform.Application.Common.Interfaces;
 using VetPlatform.Application.Vetheca.Models;
 using VetPlatform.Domain.Constants;
 
@@ -112,6 +114,122 @@ public class VethecaLibraryTests : IClassFixture<VetPlatformApiFactory>
         var documents = await listResponse.Content.ReadFromJsonAsync<List<VethecaLibraryDocumentDto>>();
 
         Assert.DoesNotContain(documents!, d => d.Id == uploaded!.Id);
+    }
+
+    [Fact]
+    public async Task Ask_Searches_The_Clinics_Own_Library_And_Passes_Relevant_Chunks_To_The_Llm()
+    {
+        // Grounding/quote-verification of library citations is the real
+        // AnthropicLlmClient's job and is tested directly against that class
+        // in VethecaTests.cs (same pattern as the existing PMID grounding
+        // tests). This test only verifies the piece that lives in the
+        // handler: that a relevant uploaded document is actually found and
+        // handed to the LLM client - using a recording fake to observe what
+        // it received, rather than the real Anthropic API.
+        var recordingLlm = new RecordingLlmClient();
+        var client = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IPubMedClient>();
+                services.AddScoped<IPubMedClient>(_ => new EmptyPubMedClient());
+                services.RemoveAll<ILlmClient>();
+                services.AddScoped<ILlmClient>(_ => recordingLlm);
+            });
+        }).CreateClient();
+
+        var email = $"vetheca-lib-ask-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(email, RoleNames.Veterinarian, password);
+        var auth = await LoginAsync(client, email, password);
+
+        var pageText = "Dosis recomendada de meloxicam en felinos con osteoartritis cronica es 0.05 mg por kilogramo.";
+        var pdfBytes = BuildSinglePagePdf(pageText);
+        await UploadAsync(client, auth.AccessToken, "Manual de dosis felinas", "dosis.pdf", pdfBytes);
+
+        var askResponse = await PostAsAuthenticatedJsonAsync(client, auth.AccessToken, "/api/vetheca/ask", new { question = "meloxicam dosis felinos osteoartritis", maxResults = 5 });
+        Assert.Equal(HttpStatusCode.OK, askResponse.StatusCode);
+
+        var excerpt = Assert.Single(recordingLlm.LastLibraryExcerpts!);
+        Assert.Equal("Manual de dosis felinas", excerpt.DocumentTitle);
+        Assert.Equal(1, excerpt.PageNumber);
+        Assert.Equal(pageText, excerpt.Text);
+    }
+
+    [Fact]
+    public async Task Ask_Does_Not_Search_The_Library_Of_A_Different_Clinic()
+    {
+        var recordingLlm = new RecordingLlmClient();
+        var client = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                // Uses a PubMed result (not EmptyPubMedClient) so synthesis
+                // always runs regardless of the library search outcome -
+                // otherwise a correctly-empty library search and "never
+                // called the LLM at all" would be indistinguishable here.
+                services.RemoveAll<IPubMedClient>();
+                services.AddScoped<IPubMedClient>(_ => new SingleArticlePubMedClient());
+                services.RemoveAll<ILlmClient>();
+                services.AddScoped<ILlmClient>(_ => recordingLlm);
+            });
+        }).CreateClient();
+
+        var otherClinicEmail = $"vetheca-lib-other-{Guid.NewGuid():N}@vetplatform.test";
+        var ownEmail = $"vetheca-lib-own-{Guid.NewGuid():N}@vetplatform.test";
+        const string password = "Password123!";
+        await _factory.CreateClinicUserAsync(otherClinicEmail, RoleNames.Veterinarian, password);
+        await _factory.CreateClinicUserAsync(ownEmail, RoleNames.Veterinarian, password);
+
+        var otherAuth = await LoginAsync(client, otherClinicEmail, password);
+        var ownAuth = await LoginAsync(client, ownEmail, password);
+
+        var pdfBytes = BuildSinglePagePdf("Meloxicam dosis felinos osteoartritis en la otra clinica.");
+        await UploadAsync(client, otherAuth.AccessToken, "Manual de la otra clinica", "otra.pdf", pdfBytes);
+
+        await PostAsAuthenticatedJsonAsync(client, ownAuth.AccessToken, "/api/vetheca/ask", new { question = "meloxicam dosis felinos osteoartritis", maxResults = 5 });
+
+        Assert.Empty(recordingLlm.LastLibraryExcerpts!);
+    }
+
+    private class EmptyPubMedClient : IPubMedClient
+    {
+        public Task<IReadOnlyList<PubMedArticleDto>> SearchAsync(string query, int maxResults, CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<PubMedArticleDto>>(Array.Empty<PubMedArticleDto>());
+    }
+
+    private class SingleArticlePubMedClient : IPubMedClient
+    {
+        public Task<IReadOnlyList<PubMedArticleDto>> SearchAsync(string query, int maxResults, CancellationToken cancellationToken)
+        {
+            IReadOnlyList<PubMedArticleDto> articles = new[]
+            {
+                new PubMedArticleDto { Pmid = "1", Title = "T", Authors = "A", Journal = "J", Year = "2023", AbstractText = "Abstract." },
+            };
+            return Task.FromResult(articles);
+        }
+    }
+
+    private class RecordingLlmClient : ILlmClient
+    {
+        public IReadOnlyList<LibraryChunkMatchDto>? LastLibraryExcerpts { get; private set; }
+
+        public Task<string?> TranslateToSearchQueryAsync(string question, CancellationToken cancellationToken)
+            => Task.FromResult<string?>(null);
+
+        public Task<VethecaSynthesisDto?> SynthesizeAsync(
+            string question, IReadOnlyList<PubMedArticleDto> articles, IReadOnlyList<LibraryChunkMatchDto> libraryExcerpts, CancellationToken cancellationToken)
+        {
+            LastLibraryExcerpts = libraryExcerpts;
+            return Task.FromResult<VethecaSynthesisDto?>(null);
+        }
+    }
+
+    private static async Task<HttpResponseMessage> PostAsAuthenticatedJsonAsync<TBody>(HttpClient client, string accessToken, string requestUri, TBody body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, requestUri) { Content = JsonContent.Create(body) };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        return await client.SendAsync(request);
     }
 
     private static byte[] BuildSinglePagePdf(string text)
