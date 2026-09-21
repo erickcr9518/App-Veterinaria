@@ -14,6 +14,7 @@ const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: 'Administrador', label: 'Administrador' },
   { value: DEFAULT_CLINIC_ROLE, label: 'Veterinario' },
   { value: 'Recepcion', label: 'Recepcion' },
+  { value: 'Veterinario Vetheca', label: 'Veterinario (solo Vetheca)' },
   { value: PLATFORM_ROLE, label: 'Superadministrador (plataforma)' },
 ];
 

@@ -6,7 +6,9 @@
     </div>
 
     <nav class="nav-links">
-      <a routerLink="/dashboard">Panel</a>
+      @if (hasClinicalAccess()) {
+        <a routerLink="/dashboard">Panel</a>
+      }
       @if (hasPermission('owners.read')) {
         <a routerLink="/owners">Propietarios</a>
       }

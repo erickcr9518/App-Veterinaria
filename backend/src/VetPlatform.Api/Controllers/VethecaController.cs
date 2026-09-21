@@ -13,6 +13,7 @@ using VetPlatform.Application.Vetheca.Queries.AskVetheca;
 using VetPlatform.Application.Vetheca.Queries.GetSavedVethecaSearchById;
 using VetPlatform.Application.Vetheca.Queries.GetSavedVethecaSearches;
 using VetPlatform.Application.Vetheca.Queries.GetVethecaLibraryDocuments;
+using VetPlatform.Application.Vetheca.Queries.GetVethecaQuota;
 using VetPlatform.Domain.Constants;
 
 namespace VetPlatform.Api.Controllers;
@@ -42,6 +43,14 @@ public class VethecaController : ControllerBase
     public async Task<ActionResult<AskVethecaResult>> Ask(AskVethecaRequest request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new AskVethecaQuery(request.Question, request.MaxResults ?? 5), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("quota")]
+    [Authorize(Policy = PermissionCodes.VethecaAsk)]
+    public async Task<ActionResult<VethecaQuotaDto>> GetQuota(CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetVethecaQuotaQuery(), cancellationToken);
         return Ok(result);
     }
 

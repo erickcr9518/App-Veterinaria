@@ -44,6 +44,8 @@ public class ExceptionHandlingMiddleware
                 (HttpStatusCode.Unauthorized, authenticationException.Message, null),
             ForbiddenAccessException forbiddenException =>
                 (HttpStatusCode.Forbidden, forbiddenException.Message, null),
+            QuotaExceededException quotaException =>
+                (HttpStatusCode.TooManyRequests, quotaException.Message, null),
             _ => (HttpStatusCode.InternalServerError, "Ocurrió un error inesperado en el servidor.", null),
         };
 
@@ -55,11 +57,17 @@ public class ExceptionHandlingMiddleware
         context.Response.ContentType = "application/problem+json";
         context.Response.StatusCode = (int)statusCode;
 
+        // Lets the client tell a quota rejection apart from the plain
+        // rate-limiter 429 (which has no body) and show the right message.
+        var quota = exception as QuotaExceededException;
+
         var payload = new
         {
             status = (int)statusCode,
             title,
             errors,
+            code = quota?.Code,
+            resetsAtUtc = quota?.ResetsAtUtc,
             traceId = context.TraceIdentifier,
         };
 

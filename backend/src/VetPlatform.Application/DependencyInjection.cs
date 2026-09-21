@@ -21,6 +21,7 @@ public static class DependencyInjection
         // Pure business logic over IApplicationDbContext, no Infrastructure-only
         // dependency needed, so it's registered here rather than in Infrastructure.
         services.AddScoped<ILibraryChunkSearchService, LibraryChunkSearchService>();
+        services.AddScoped<IVethecaQuotaService, VethecaQuotaService>();
 
         return services;
     }

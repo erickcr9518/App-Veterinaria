@@ -7,14 +7,19 @@ public static class RoleNames
     public const string Veterinarian = "Veterinario";
     public const string Receptionist = "Recepcion";
 
+    // A veterinarian who only uses Vetheca (evidence search) and none of the
+    // clinical-management modules - the access level for pilot colleagues and,
+    // later, self-registered users. Subject to a monthly question quota.
+    public const string VethecaVeterinarian = "Veterinario Vetheca";
+
     public static readonly IReadOnlyList<string> All = new[]
     {
-        PlatformAdministrator, Administrator, Veterinarian, Receptionist
+        PlatformAdministrator, Administrator, Veterinarian, Receptionist, VethecaVeterinarian
     };
 
     public static readonly IReadOnlyList<string> ClinicRoles = new[]
     {
-        Administrator, Veterinarian, Receptionist
+        Administrator, Veterinarian, Receptionist, VethecaVeterinarian
     };
 
     public static string GetPrimaryRole(IEnumerable<string> roles)

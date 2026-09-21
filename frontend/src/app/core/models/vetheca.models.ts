@@ -56,6 +56,14 @@ export interface VethecaSavedSearchDetail {
   synthesis: VethecaSynthesis | null;
 }
 
+// monthlyLimit/remaining are null for accounts without a question limit.
+export interface VethecaQuota {
+  monthlyLimit: number | null;
+  usedThisMonth: number;
+  remaining: number | null;
+  resetsAtUtc: string;
+}
+
 export interface VethecaLibraryDocument {
   id: string;
   title: string;

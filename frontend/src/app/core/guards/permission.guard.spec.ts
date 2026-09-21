@@ -1,19 +1,35 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { permissionGuard } from './permission.guard';
+import { clinicAccessGuard, permissionGuard } from './permission.guard';
 
 describe('permissionGuard', () => {
   let router: Router;
-  let fakeAuthService: { allowed: boolean; requestedPermission: string | null; hasPermission: (code: string) => boolean };
+  let fakeAuthService: {
+    allowed: boolean;
+    requestedPermission: string | null;
+    home: string;
+    clinicalAccess: boolean;
+    hasPermission: (code: string) => boolean;
+    homeRoute: () => string;
+    hasClinicalAccess: () => boolean;
+  };
 
   beforeEach(() => {
     fakeAuthService = {
       allowed: false,
       requestedPermission: null,
+      home: '/dashboard',
+      clinicalAccess: true,
       hasPermission(code: string): boolean {
         this.requestedPermission = code;
         return this.allowed;
+      },
+      homeRoute(): string {
+        return this.home;
+      },
+      hasClinicalAccess(): boolean {
+        return this.clinicalAccess;
       },
     };
 
@@ -65,6 +81,33 @@ describe('permissionGuard', () => {
 
     expect(result instanceof UrlTree).toBe(true);
     expect(router.serializeUrl(result as UrlTree)).toBe('/dashboard');
+  });
+
+  it('redirects a Vetheca-only user to Vetheca instead of the dashboard', () => {
+    fakeAuthService.home = '/vetheca';
+
+    const result = runGuard('patients.read');
+
+    expect(router.serializeUrl(result as UrlTree)).toBe('/vetheca');
+  });
+
+  it('lets a user with clinical access into the dashboard', () => {
+    const result = TestBed.runInInjectionContext(() =>
+      clinicAccessGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+    );
+
+    expect(result).toBe(true);
+  });
+
+  it('keeps a Vetheca-only user out of the dashboard and sends them home', () => {
+    fakeAuthService.clinicalAccess = false;
+    fakeAuthService.home = '/vetheca';
+
+    const result = TestBed.runInInjectionContext(() =>
+      clinicAccessGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+    );
+
+    expect(router.serializeUrl(result as UrlTree)).toBe('/vetheca');
   });
 
   function runGuard(permission?: string | string[]): boolean | UrlTree {

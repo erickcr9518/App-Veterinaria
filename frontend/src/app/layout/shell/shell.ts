@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { CurrentUser } from '../../core/models/auth.models';
+import { userHasClinicalAccess } from '../../core/services/access';
 import { AuthService } from '../../core/services/auth.service';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -8,6 +9,7 @@ const ROLE_LABELS: Record<string, string> = {
   Veterinario: 'Veterinario',
   Recepcion: 'Recepcion',
   SuperAdministrador: 'Superadministrador',
+  'Veterinario Vetheca': 'Veterinario (Vetheca)',
 };
 
 @Component({
@@ -22,6 +24,7 @@ export class Shell {
   private readonly router = inject(Router);
 
   readonly currentUser = this.authService.currentUser;
+  readonly hasClinicalAccess = computed(() => userHasClinicalAccess(this.currentUser()));
 
   hasPermission(code: string): boolean {
     return this.authService.hasPermission(code);

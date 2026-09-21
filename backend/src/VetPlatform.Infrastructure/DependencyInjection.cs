@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IPasswordResetEmailSender, PasswordResetEmailSender>();
 
+        services.Configure<VethecaQuotaSettings>(configuration.GetSection(VethecaQuotaSettings.SectionName));
         services.Configure<PubMedSettings>(configuration.GetSection(PubMedSettings.SectionName));
         services.AddHttpClient<IPubMedClient, PubMedClient>((provider, client) =>
         {

@@ -35,7 +35,7 @@ export class Login {
     this.errorMessage.set(null);
 
     this.authService.login(email!, password!).subscribe({
-      next: () => this.router.navigateByUrl('/dashboard'),
+      next: () => this.router.navigateByUrl(this.authService.homeRoute()),
       error: (error: unknown) => {
         this.isSubmitting.set(false);
         this.errorMessage.set(this.resolveErrorMessage(error));

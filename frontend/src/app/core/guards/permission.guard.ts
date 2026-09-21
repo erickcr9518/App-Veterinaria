@@ -13,5 +13,14 @@ export const permissionGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  return router.createUrlTree(['/dashboard']);
+  return router.createUrlTree([authService.homeRoute()]);
+};
+
+// The dashboard summarizes clinical data, so a Vetheca-only user has nothing
+// to see there - send them to their own home instead.
+export const clinicAccessGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  return authService.hasClinicalAccess() ? true : router.createUrlTree([authService.homeRoute()]);
 };

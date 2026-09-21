@@ -1,6 +1,8 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-import { permissionGuard } from './core/guards/permission.guard';
+import { clinicAccessGuard, permissionGuard } from './core/guards/permission.guard';
+import { AuthService } from './core/services/auth.service';
 
 export const routes: Routes = [
   {
@@ -23,6 +25,7 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+        canActivate: [clinicAccessGuard],
       },
       {
         path: 'owners',
@@ -126,7 +129,7 @@ export const routes: Routes = [
         path: 'account',
         loadComponent: () => import('./features/auth/account/account').then((m) => m.Account),
       },
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: '', pathMatch: 'full', redirectTo: () => inject(AuthService).homeRoute() },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,13 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { VethecaService } from '../../../core/services/vetheca.service';
 import {
   VethecaArticle,
   VethecaLibraryDocument,
+  VethecaQuota,
   VethecaSavedSearchSummary,
   VethecaSynthesis,
 } from '../../../core/models/vetheca.models';
+
+const QUOTA_EXCEEDED_CODE = 'vetheca_quota_exceeded';
 
 interface DisplayedResult {
   id: string;
@@ -38,6 +41,13 @@ export class VethecaAsk implements OnInit {
   readonly savedSearches = signal<VethecaSavedSearchSummary[]>([]);
   readonly showFeedbackNote = signal(false);
 
+  readonly quota = signal<VethecaQuota | null>(null);
+  readonly quotaExhausted = computed(() => {
+    const current = this.quota();
+    return current !== null && current.remaining !== null && current.remaining <= 0;
+  });
+  readonly quotaResetLabel = computed(() => this.formatResetDate(this.quota()?.resetsAtUtc));
+
   readonly libraryDocuments = signal<VethecaLibraryDocument[]>([]);
   readonly isUploadingDocument = signal(false);
   readonly libraryError = signal<string | null>(null);
@@ -64,10 +74,11 @@ export class VethecaAsk implements OnInit {
   ngOnInit(): void {
     this.loadSavedSearches();
     this.loadLibraryDocuments();
+    this.loadQuota();
   }
 
   ask(): void {
-    if (this.form.invalid || this.isLoading()) {
+    if (this.form.invalid || this.isLoading() || this.quotaExhausted()) {
       return;
     }
 
@@ -90,14 +101,12 @@ export class VethecaAsk implements OnInit {
           feedbackGiven: null,
         });
         this.isLoading.set(false);
+        this.loadQuota();
       },
       error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(
-          error.status === 429
-            ? 'Hiciste muchas preguntas en poco tiempo. Esperá unos minutos antes de volver a preguntar.'
-            : 'No se pudo completar la búsqueda. Intentá de nuevo en unos minutos.'
-        );
+        this.errorMessage.set(this.resolveAskError(error));
         this.isLoading.set(false);
+        this.loadQuota();
       },
     });
   }
@@ -219,6 +228,36 @@ export class VethecaAsk implements OnInit {
       next: (searches) => this.savedSearches.set(searches),
       error: () => {
         // Non-critical for the main flow - just leave the saved list empty.
+      },
+    });
+  }
+
+  private resolveAskError(error: HttpErrorResponse): string {
+    if (error.status === 429 && error.error?.code === QUOTA_EXCEEDED_CODE) {
+      const resetLabel = this.formatResetDate(error.error.resetsAtUtc);
+      return `Alcanzaste el límite de preguntas de este mes.${resetLabel ? ` Se reinicia el ${resetLabel}.` : ''}`;
+    }
+
+    if (error.status === 429) {
+      return 'Hiciste muchas preguntas en poco tiempo. Esperá unos minutos antes de volver a preguntar.';
+    }
+
+    return 'No se pudo completar la búsqueda. Intentá de nuevo en unos minutos.';
+  }
+
+  private formatResetDate(isoDate: string | undefined): string {
+    if (!isoDate) {
+      return '';
+    }
+
+    return new Date(isoDate).toLocaleDateString('es-CR', { day: 'numeric', month: 'long' });
+  }
+
+  private loadQuota(): void {
+    this.vethecaService.getQuota().subscribe({
+      next: (quota) => this.quota.set(quota),
+      error: () => {
+        // Non-critical - the server still enforces the limit on every ask.
       },
     });
   }

@@ -29,6 +29,16 @@ describe('Shell', () => {
     expect(navTexts).toEqual(['Panel', 'Propietarios', 'Pacientes', 'Agenda']);
   });
 
+  it('shows only Vetheca, without the dashboard, to a Vetheca-only user', async () => {
+    const fixture = await createComponent(['vetheca.ask']);
+
+    const navTexts = fixture.debugElement
+      .queryAll(By.css('.nav-links a'))
+      .map((link) => link.nativeElement.textContent.trim());
+
+    expect(navTexts).toEqual(['Vetheca']);
+  });
+
   it('logs out and navigates back to login', async () => {
     const authService = createAuthService(['owners.read']);
     const fixture = await createComponent(['owners.read'], authService);

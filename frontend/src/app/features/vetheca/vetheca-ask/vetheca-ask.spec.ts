@@ -97,6 +97,55 @@ describe('VethecaAsk', () => {
     expect(fixture.nativeElement.textContent).toContain('No se pudo completar la búsqueda');
   });
 
+  it('shows how many questions are left this month when the account has a limit', async () => {
+    const fixture = await createComponent({
+      getQuota: () => of({ monthlyLimit: 100, usedThisMonth: 40, remaining: 60, resetsAtUtc: '2026-10-01T00:00:00Z' }),
+    });
+
+    fixture.componentInstance.form.controls.question.setValue('una pregunta');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Preguntas disponibles este mes: 60 de 100');
+    expect(fixture.nativeElement.querySelector('.ask-form button[type="submit"]').disabled).toBe(false);
+  });
+
+  it('shows nothing about a quota for accounts without a limit', async () => {
+    const fixture = await createComponent({});
+
+    expect(fixture.nativeElement.querySelector('.quota')).toBeNull();
+  });
+
+  it('blocks asking and explains why when the monthly limit is used up', async () => {
+    const ask = vi.fn(() => of(createResult()));
+    const fixture = await createComponent({
+      ask,
+      getQuota: () => of({ monthlyLimit: 100, usedThisMonth: 100, remaining: 0, resetsAtUtc: '2026-10-01T00:00:00Z' }),
+    });
+    askQuestion(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Llegaste al límite de preguntas de este mes (100)');
+    expect(fixture.nativeElement.querySelector('.ask-form button[type="submit"]').disabled).toBe(true);
+    expect(ask).not.toHaveBeenCalled();
+  });
+
+  it('explains a monthly-limit rejection from the server differently from the too-fast rate limit', async () => {
+    const fixture = await createComponent({
+      ask: () =>
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 429,
+              error: { code: 'vetheca_quota_exceeded', resetsAtUtc: '2026-10-01T00:00:00Z' },
+            }),
+        ),
+    });
+    askQuestion(fixture);
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Alcanzaste el límite de preguntas de este mes');
+    expect(text).not.toContain('muchas preguntas en poco tiempo');
+  });
+
   it('shows a friendly rate-limit message when asking too many questions too fast', async () => {
     const fixture = await createComponent({
       ask: () => throwError(() => new HttpErrorResponse({ status: 429 })),
@@ -207,6 +256,7 @@ describe('VethecaAsk', () => {
     const vethecaService: Partial<VethecaService> = {
       getSavedSearches: () => of([]),
       getLibraryDocuments: () => of([]),
+      getQuota: () => of({ monthlyLimit: null, usedThisMonth: 0, remaining: null, resetsAtUtc: '2026-10-01T00:00:00Z' }),
       ...overrides,
     };
 

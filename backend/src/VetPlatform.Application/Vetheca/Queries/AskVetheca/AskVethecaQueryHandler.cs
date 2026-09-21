@@ -23,6 +23,7 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
     private readonly IPubMedClient _pubMedClient;
     private readonly ILlmClient _llmClient;
     private readonly ILibraryChunkSearchService _libraryChunkSearchService;
+    private readonly IVethecaQuotaService _quotaService;
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly ILogger<AskVethecaQueryHandler> _logger;
@@ -31,6 +32,7 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
         IPubMedClient pubMedClient,
         ILlmClient llmClient,
         ILibraryChunkSearchService libraryChunkSearchService,
+        IVethecaQuotaService quotaService,
         IApplicationDbContext dbContext,
         ICurrentUserService currentUserService,
         ILogger<AskVethecaQueryHandler> logger)
@@ -38,6 +40,7 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
         _pubMedClient = pubMedClient;
         _llmClient = llmClient;
         _libraryChunkSearchService = libraryChunkSearchService;
+        _quotaService = quotaService;
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _logger = logger;
@@ -45,6 +48,10 @@ public class AskVethecaQueryHandler : IRequestHandler<AskVethecaQuery, AskVethec
 
     public async Task<AskVethecaResult> Handle(AskVethecaQuery request, CancellationToken cancellationToken)
     {
+        // Checked before any external call - every ask past the limit would
+        // otherwise still cost a paid LLM request.
+        await _quotaService.EnsureAvailableAsync(cancellationToken);
+
         // PubMed's index is almost entirely in English, so a question asked in
         // Spanish (the expected case - this whole app is in Spanish) searched
         // verbatim finds close to nothing. Translate to a search query first;

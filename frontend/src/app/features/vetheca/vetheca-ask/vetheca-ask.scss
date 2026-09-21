@@ -54,6 +54,17 @@
   cursor: not-allowed;
 }
 
+.quota {
+  margin: 0;
+  font-size: 13px;
+  color: #52615c;
+}
+
+.quota.exhausted {
+  color: #9b2c1f;
+  font-weight: 600;
+}
+
 .saved-list {
   display: flex;
   flex-wrap: wrap;

@@ -41,5 +41,9 @@ public static class RoleDefaultPermissions
             PermissionCodes.RecordsReadBasic,
             PermissionCodes.AppointmentsRead, PermissionCodes.AppointmentsWrite,
         },
+        [RoleNames.VethecaVeterinarian] = new[]
+        {
+            PermissionCodes.VethecaAsk,
+        },
     };
 }

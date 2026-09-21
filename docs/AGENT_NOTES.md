@@ -53,6 +53,63 @@ below says to actually ask.
 
 ## Log
 
+### 2026-09-21 — Code (17)
+Status: done (step 1 of 3 of the Vetheca-first launch plan).
+
+Strategy decision, after Erick asked for a brutally honest read on whether
+this has a future: launch **Vetheca first, as a standalone product** for
+colleague vets, and defer practice management and voice-to-SOAP (voice lives
+in the consultation record, so it waits too). Reasons: zero real users so
+far, Costa Rica alone is a small market, QVet is entrenched, and without
+e-invoicing/inventory we can't replace a clinic's whole system. Pilot =
+6-8 weeks, ~8-10 colleagues under the NDA; the success signal is unprompted
+weekly use / recommendation, not payment. No billing is built. Market note:
+Erick is in Costa Rica (an earlier reply wrongly assumed Colombia).
+
+Built this round:
+- PWA committed (f828ebd): service worker (prod only, app shell only - API
+  calls deliberately not cached), manifest, paw icons. Real-Chrome install
+  check still pending (the embedded test browser blocks service workers).
+- New role **"Veterinario Vetheca"** (`RoleNames.VethecaVeterinarian`): only
+  `vetheca.ask`. Assignable from the Users screen. Frontend home route is now
+  permission-aware (`homeRouteFor`): login, the `''` redirect and the
+  permission-guard fallback send a Vetheca-only user to `/vetheca`, the Panel
+  link is hidden and `/dashboard` is guarded (`clinicAccessGuard`).
+- **Monthly question quota** (`IVethecaQuotaService`): counts the user's own
+  `VethecaSearchLog` rows (every ask already writes one) - no new table, no
+  migration. Only accounts whose sole Vetheca role is "Veterinario Vetheca"
+  are limited (`Vetheca:Quota:VethecaVeterinarianMonthlyLimit`, default 100);
+  Administrador/Veterinario are unlimited for now. Month rolls over at
+  midnight Costa Rica time (fixed UTC-6). Checked before any external call.
+  Over the limit = HTTP 429 with `code: vetheca_quota_exceeded` (distinct from
+  the per-hour rate-limiter's bodiless 429). `GET /api/vetheca/quota`; the
+  screen shows "Preguntas disponibles este mes: X de Y" and disables the
+  button at 0.
+
+Backend 88/88 (4 new), frontend 76/76 (11 new). Verified live with a real
+"Veterinario Vetheca" user and a limit of 1: lands on /vetheca, only the
+Vetheca link, /owners and /dashboard bounce back, one real question
+answered, then the exhausted message and disabled button. That verification
+also caught two bugs before commit: the month boundary was UTC (message said
+"30 de septiembre") and "1 preguntas" agreement.
+
+Gotcha for pilot provisioning: users in the SAME clinic share the document
+library and Administrador-visible audit log. Each colleague should have their
+own clinic until self-signup (next step) creates a personal clinic per
+account. A test user (`colega.vetheca@vetplatform.test`) was created in the
+dev DB.
+
+Next (approved by Erick): (2) self-signup + email verification + veterinarian
+verification via colegiado number and a photo of the Colegio carnet (not the
+cedula - less sensitive), manual review queue, image deleted right after the
+decision; (3) student mode (institutional email or proof of enrollment, lower
+quota, "educational use" notice).
+
+Idea logged, not started: more sources. The Merck Veterinary Manual's terms
+prohibit copying, hosting, scraping or using its content for AI, so it needs
+written permission from Merck. Europe PMC (free API, no key, PubMed + Agricola
++ ~6.5M open-access full texts) is the natural first extra source.
+
 ### 2026-09-10/11 — Code (16)
 Status: done - closes out the "bring your own literature" feature from
 Code (15) below.

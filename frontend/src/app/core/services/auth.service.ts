@@ -3,6 +3,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable, catchError, of, tap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResult, CurrentUser, PasswordResetRequestResult } from '../models/auth.models';
+import { homeRouteFor, userHasClinicalAccess } from './access';
 
 const ACCESS_TOKEN_KEY = 'vetplatform.accessToken';
 const REFRESH_TOKEN_KEY = 'vetplatform.refreshToken';
@@ -80,6 +81,14 @@ export class AuthService {
 
   hasPermission(code: string): boolean {
     return this.currentUserSignal()?.permissions.includes(code) ?? false;
+  }
+
+  hasClinicalAccess(): boolean {
+    return userHasClinicalAccess(this.currentUserSignal());
+  }
+
+  homeRoute(): string {
+    return homeRouteFor(this.currentUserSignal());
   }
 
   private applyAuthResult(result: AuthResult): void {

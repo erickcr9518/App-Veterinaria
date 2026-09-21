@@ -52,13 +52,24 @@
       rows="3"
       placeholder="Ej: ¿Sirve la rehabilitación temprana después de una TPLO en perros?"
     ></textarea>
-    <button type="submit" [disabled]="form.invalid || isLoading()">
+    <button type="submit" [disabled]="form.invalid || isLoading() || quotaExhausted()">
       @if (isLoading()) {
         Buscando evidencia y generando un resumen...
       } @else {
         Preguntar
       }
     </button>
+    @if (quota(); as currentQuota) {
+      @if (currentQuota.monthlyLimit !== null) {
+        <p class="quota" [class.exhausted]="quotaExhausted()">
+          @if (quotaExhausted()) {
+            Llegaste al límite de preguntas de este mes ({{ currentQuota.monthlyLimit }}). Se reinicia el {{ quotaResetLabel() }}.
+          } @else {
+            Preguntas disponibles este mes: {{ currentQuota.remaining }} de {{ currentQuota.monthlyLimit }}.
+          }
+        </p>
+      }
+    }
   </form>
 
   @if (savedSearches().length > 0) {

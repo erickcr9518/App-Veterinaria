@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   VethecaAskResult,
   VethecaLibraryDocument,
+  VethecaQuota,
   VethecaSavedSearchDetail,
   VethecaSavedSearchSummary,
 } from '../models/vetheca.models';
@@ -35,6 +36,10 @@ export class VethecaService {
 
   submitFeedback(id: string, helpful: boolean, note: string | null): Observable<void> {
     return this.http.post<void>(`${environment.apiUrl}/vetheca/${id}/feedback`, { helpful, note });
+  }
+
+  getQuota(): Observable<VethecaQuota> {
+    return this.http.get<VethecaQuota>(`${environment.apiUrl}/vetheca/quota`);
   }
 
   getLibraryDocuments(): Observable<VethecaLibraryDocument[]> {
